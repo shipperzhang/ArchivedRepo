@@ -1,211 +1,147 @@
-import argparse
-import sys, os
-
-from argparse import RawTextHelpFormatter
+import os
+import glob
+import time
+import shutil
+import datetime
+import func_addr
+import gobmk_sub
+import label_adjust
+import main_discover
+import compile_process
+import post_process_data
 from argparse import ArgumentParser
+from argparse import RawTextHelpFormatter
+from main_discover import check_exe, check_strip
 
 
+f_dic = ''
 
 
-# keep the imtermediate binary/final.s or not.
-k = False
-f_dic = ""
-
-iter_num = 0
-
-def check_exe():
-    lines = []
-    with open("elf.info") as f:
-        lines = f.readlines()
-    if "LSB shared object" in lines[0]:
-        return False
-    else:
-        return True
-
-def check_32():
-    lines = []
-    with open("elf.info") as f:
-        lines = f.readlines()
-    if "32-bit" in lines[0]:
-        return True
-    else:
-        return False
-
-def check_strip():
-    lines = []
-    with open("elf.info") as f:
-        lines = f.readlines()
-    if "not stripped" in lines[0]:
-        return True
-    else:
-        return False
-
-
-
-
-def reassemble():
-    if check_32() == True:
-        # 32-bit binary
-        os.system('gcc final.s -lm -lrt -lpthread -lcrypt -m32')
-    else:
-        # 64-bit binary
-        os.system('gcc final.s -lm -lrt -lpthread -lcrypt')
-
-
-def process(f, i):
+def process(filepath, iter_curr, iter_num, keep):
     try:
-        os.system("rm final_*.txt")
+        for f in glob.glob('final_*.txt'): os.remove(f)
 
         # suppose we use this method to obtain function information
-        os.system("cp " + f + " func_discover/")
-        os.system("python func_discover/func_addr.py func_discover/"+f + " " + str(i))
-        os.system("rm final_data.s")
-        os.system('rm useless_func.info')
-        if i > 0:
-            os.system("python useless_func_discover.py " + f)
+        func_addr.func_addr(filepath, iter_curr)
 
-        os.system('echo \"' + str(i) + '\" > count.txt')
-        os.system("strip " + f)
-        os.system("python main_discover.py " + f)
+        if os.path.isfile('final_data.s'): os.remove('final_data.s')
+        if os.path.isfile('useless_func.info'): os.remove('useless_func.info')
 
-        os.system("./init.native " + f)
-        if not os.path.isfile("final.s"):
-            return False
+        if iter_curr > 0: func_addr.useless_func_discover(filepath)
 
-        os.system("python post_process_data.py")
+        with open('count.txt', 'w') as f: f.write(str(iter_curr))
+        os.system('strip ' + filepath)
+        main_discover.main_discover(filepath)
 
-        os.system('echo ".section .eh_frame" >> final_data.s')
-        os.system('cat eh_frame_split.info >> final_data.s')
-        os.system('echo ".section .eh_frame_hdr" >> final_data.s')
-        os.system('cat eh_frame_hdr_split.info >> final_data.s')
+        os.system("./init.native " + filepath)
+        if not os.path.isfile("final.s"): return False
 
-        os.system('cat final_data.s >> final.s')
+        post_process_data.post_process_data()
 
-        if k:
-            os.system("cp final.s final.s." + str(i))
+        with open('final_data.s', 'a') as f:
+            f.write('.section .eh_frame\n')
+            with open('eh_frame_split.info') as eh: f.write(eh.read())
+            f.write('.section .eh_frame_hdr\n')
+            with open('eh_frame_hdr_split.info') as eh: f.write(eh.read())
+        with open('final.s', 'a') as f:
+            with open('final_data.s', 'r') as fd: f.write(fd.read())
 
-        if "gobmk" in f:
-            # FIXME!
-            os.system("python gobmk_sub.py")
+        if keep:
+            shutil.copy('final.s', 'final.s.' + str(iter_curr))
 
-        os.system("python compile_process.py")
-        os.system("python label_adjust.py")
+        if "gobmk" in filepath:
+            gobmk_sub.gobmk_sub()
 
-        reassemble()
+        compile_process.main()
+        label_adjust.label_adjust()
+        compile_process.reassemble()
 
-        if iter_num > 0:
-            os.system("cp a.out " + f)
+        if iter_num > 1:
+            shutil.copy('a.out', filepath)
 
-        if k:
+        if keep:
             print f_dic
-            os.system("cp a.out " + f_dic + "/" + f + "." + str(i+1))
-            os.system("mv final.s." + str(i) + " " + f_dic)
-
-    except :
+            shutil.copy('a.out', f_dic + "/" + filepath + "." + str(iter_curr + 1))
+            shutil.move('final.s.' + str(iter_curr), f_dic)
+    except Exception as e:
+        print(e)
         return False
     else:
-
-        os.system('rm ' + "faddr_old.txt." + str(i))
-        os.system('rm ' + "faddr.txt." + str(i))
-
-
-        return True
-
-
-
-
-def iterate (f, iterations):
-    print "start to process binary: " + f
-
-    for i in xrange(0, iterations):
-        print ("########## iteration round "+str(i+1) + " begin ! ###########")
-        if process(f, i):
-            pass
-        else:
-            return False
-        print ("########## iteration round "+str(i+1) + " finish ! ##########")
+        if os.path.isfile('faddr_old.txt.' + str(iter_curr)):
+            os.remove('faddr_old.txt.' + str(iter_curr))
+        if os.path.isfile('faddr.txt.' + str(iter_curr)):
+            os.remove('faddr.txt.' + str(iter_curr))
 
     return True
 
 
-def check (b, f, al):
-    if not al:
-        al = []
+def iterate (filepath, iterations, keep):
+    print "Start to process binary: " + filepath
 
-    if not os.path.isfile(b):
+    for i in range(iterations):
+        print ("########## Iteration round " + str(i+1) + " begin ! ###########")
+        if not process(filepath, i, iterations, keep): return False
+        print ("########## Iteration round " + str(i+1) + " finish ! ##########")
+    return True
+
+
+def check(filepath, assumptions):
+    if not assumptions: assumptions = []
+
+    if not os.path.isfile(filepath):
         print "cannot find input binary"
         return False
 
-    if '/' in b:
-        # not in current directory
-        os.system('cp ' + b + ' .')
+    if os.path.dirname(filepath) != os.getcwd():
+        shutil.copy(filepath, '.')
 
-
-    os.system('file ' + f + ' > elf.info')
-    if check_exe() == False:
+    os.system('file ' + filepath + ' > elf.info')
+    if not check_exe():
         print "Uroboros doesn't support shared library"
         return False
 
     # if assumption three is utilized, then input binary must be unstripped.
-    if '3' in al and check_strip() == False:
-        print '''Uroboros doesn't support stripped binaries when using assumption three'''
+    if '3' in assumptions and not check_strip():
+        print 'Uroboros does not support stripped binaries when using assumption three'
         return False
 
     return True
 
 
-import datetime
-import time
-
-
-def fold_withtamp (f):
+def fold_withtamp(filepath):
     global f_dic
     ts = time.time()
     st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%H:%M:%S')
-
-    f_dic = "test_fold_" + f + '_' + st
-
-    os.system('mkdir ' + f_dic)
+    f_dic = "test_fold_" + filepath + '_' + st
+    os.mkdir(f_dic)
 
 
-def set_assumption (l):
+def set_assumption (assumptions):
     # 2 -> assumption two: fix data section starting address
     # Note that assumption two require linker script to reassemble!
     # Some of the examples can be found at ./ld_scripts/*
     # 3 -> assumption three: function starting address + jump table
     # _ -> not defined.
 
-    a = 0
-    b = 0
-
-    if not l:
+    if not assumptions:
         with open('assumption_set.info', 'w') as f:
-            f.writelines(["1\n"])
-
+            f.write('1\n')
     else:
-        chk = (i in ['2', '3'] for i in l)
-
-
+        chk = (i in ['2', '3'] for i in assumptions)
         if any(chk) == False:
             print "assumption undefined!"
             print "accecpt assumptions: 2 for assumption two and 3 for assumption three"
             return False
-
-        l = set(l)
-
-        l = ' '.join(l)
-        l += "\n"
-
         with open('assumption_set.info', 'w') as f:
-            f.writelines(l)
-
+            f.write(' '.join(assumptions) + '\n')
     return True
 
 
-if __name__ == "__main__":
+def main():
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     p = ArgumentParser(formatter_class=RawTextHelpFormatter)
     p.add_argument("binary",
-                   help="path to the input binary, for example, /home/szw175/ls")
+                   help="path to the input binary")
     p.add_argument("-i", "--iteration", type=int,
                    help="the number of disassemble-(instrument)-reassemble iterations")
     p.add_argument("-k", "--keep", action="count",
@@ -219,27 +155,16 @@ assumption two and three: -a 2 -a 3''')
     p.add_argument('--version', action='version', version='Uroboros 0.11')
 
     args = p.parse_args()
-    b = args.binary
-    i = args.iteration
-    iter_num = i
-    k = (args.keep > 0)
+    binfile = args.binary
+    iter_num = args.iteration if args.iteration else 1
+    keep = (args.keep > 0)
+
+    filepath = os.path.realpath(binfile)
+    if check(filepath, args.assumption) and set_assumption(args.assumption):
+        if keep: fold_withtamp(filepath)
+        if iterate(os.path.basename(filepath), iter_num, keep): print "Processing succeeded"
+        else: print "Exception, processing failed"
 
 
-    f = os.path.basename(b)
-    if check(b, f, args.assumption) == False or set_assumption(args.assumption) == False:
-        pass
-
-    else:
-        if k:
-            fold_withtamp(f)
-
-        if args.iteration:
-            if iterate(f, i):
-                print "processing succeeded"
-            else:
-                print "exception, processing failed"
-        else:
-            if process(f, 0):
-                print "processing succeeded"
-            else:
-                print "exception, processing failed"
+if __name__ == "__main__":
+    main()

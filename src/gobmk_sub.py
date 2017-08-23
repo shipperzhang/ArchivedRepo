@@ -1,5 +1,3 @@
-import sys, os
-
 # subsititution for binary gobmk
 # this script mainly supports two subsitution.
 # 1. code section:
@@ -42,28 +40,28 @@ import sys, os
 
 # these two rules preserve in the loop processing.
 
-lines = []
-with open ("final.s") as f:
-    lines = f.readlines()
+def gobmk_sub():
 
-
-for i in range(len(lines)):
-    l = lines[i]
-    if "S_0x80E0400(" in l: # we found it
-        label = l.split(':')[0]
-        lines[i] = label + " : mov S_0x80F6380-0x15f80(,%edi,0x4),%eax\n"
-        lines[i+1] = "mov S_0x80F6380-0x15f7c(,%edi,0x4),%edx\n"
-        lines[i+2] = "mov S_0x80F6380-0x15f78(,%edi,0x4),%ebx\n"
-        lines[i+3] = "mov S_0x80F6380-0x15f74(,%edi,0x4),%ecx\n"
-    elif ".long S_0x80C0000" in l:
-        if "03" in lines[i+4] and "00" in lines[i+5] and "48" in lines[i+8] and "e1" in lines[i+9] and "fa" in lines[i+10] and "3f" in lines[i+11]:
-            # found the right one
-            continue
-        else:
-            lines[i] = ".byte 0x00\n"
-            lines[i+1] = ".byte 0x00\n"
-            lines[i+2] = ".byte 0x0C\n"
-            lines[i+3] = ".byte 0x08\n"
-
-with open('final.s', 'w') as f:
-    f.writelines(lines)
+    with open ("final.s") as f:
+        lines = f.readlines()
+    
+    for i in range(len(lines)):
+        l = lines[i]
+        if "S_0x80E0400(" in l: # we found it
+            label = l.split(':')[0]
+            lines[i] = label + " : mov S_0x80F6380-0x15f80(,%edi,0x4),%eax\n"
+            lines[i+1] = "mov S_0x80F6380-0x15f7c(,%edi,0x4),%edx\n"
+            lines[i+2] = "mov S_0x80F6380-0x15f78(,%edi,0x4),%ebx\n"
+            lines[i+3] = "mov S_0x80F6380-0x15f74(,%edi,0x4),%ecx\n"
+        elif ".long S_0x80C0000" in l:
+            if "03" in lines[i+4] and "00" in lines[i+5] and "48" in lines[i+8] and "e1" in lines[i+9] and "fa" in lines[i+10] and "3f" in lines[i+11]:
+                # found the right one
+                continue
+            else:
+                lines[i] = ".byte 0x00\n"
+                lines[i+1] = ".byte 0x00\n"
+                lines[i+2] = ".byte 0x0C\n"
+                lines[i+3] = ".byte 0x08\n"
+    
+    with open('final.s', 'w') as f:
+        f.writelines(lines)
