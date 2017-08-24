@@ -34,7 +34,7 @@ module Analysis = struct
       cfg#set_funcs fl;
 
       let u_fl = get_userfuncs fl in
-      print_endline "user defined func number ";
+      print_string "     user defined func number ";
       print_int (List.length u_fl);
       print_string "\n";
        let il' =

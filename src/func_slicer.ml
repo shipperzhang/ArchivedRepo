@@ -578,7 +578,7 @@ class func_slicer instrs funcs =
       self#funcaddr_from_file;
       self#build_func_info;
       let fl = self#get_func_list in
-      print_string "func number ";
+      print_string "     func number ";
       print_int (List.length fl);
       print_string "\n";
       (* self#print_f fl; *)

@@ -49,7 +49,7 @@ module Disam = struct
       ail_parser#processInstrs @@ read_file "instrs.info";
 
       let fl = ail_parser#get_funcs in
-	  print_endline "2: disassembly validates --> ";
+	  print_endline "2: disassembly validates";
 
 
       il :=
@@ -62,7 +62,7 @@ module Disam = struct
 	  let adjust_list = dis_valid#trim_results in
 	  if List.length adjust_list != 0 then
         begin
-	      print_endline "disassembly error found!";
+	      print_endline "     disassembly error found!";
           (* objdjump cannot handle multiple "gaps" *)
           let (ba,ea) = List.nth adjust_list 0 in
           disasm_skip f ba ea;
@@ -72,7 +72,7 @@ module Disam = struct
         cond := true;
     done;
 
-	print_endline "no disassembly error detects";
+	print_endline "     no disassembly error detects";
     let funcs = ail_parser#get_funcs in
     (!il, funcs, re)
 

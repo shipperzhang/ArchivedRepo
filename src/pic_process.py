@@ -13,50 +13,37 @@
 ##  _GLOBAL_OFFSET_TABLE_   ==    .got.plt
 ##  ....
 
-
-
 import os, sys
+from main_discover import check_exe
 
 sec_symb = {".got.plt":"$_GLOBAL_OFFSET_TABLE_"}
+step = 1
 
 def info_dump(f):
     os.system("readelf -S "+ f +" | awk '$2==\".got.plt\" {print $2,$4,$5,$6}' > pic_secs.info")
 
-step = 1
+
 def text_collect(f):
-    fn = f+'.temp'
+    fn = f + '.temp'
     with open(fn) as fd:
-       return fd.read().splitlines()
+        return fd.read().splitlines()
+
 
 def info_collect():
-    ls = []
     pic_map = {}
     with open("pic_secs.info") as fd:
-       ls = fd.read().splitlines()
+        ls = fd.read().splitlines()
 
-    def help(l):
+    def helpf(l):
         items = l.split()
         # name ;  begin addr; ... ; size
         pic_map[items[0]] = (int(items[1], 16), int(items[3], 16))
-    map(lambda l: help(l), ls)
+    map(lambda l: helpf(l), ls)
 
     return pic_map
 
 
-def check_exe():
-    lines = []
-    with open("elf.info") as f:
-        lines = f.readlines()
-    if "LSB shared object" in lines[0]:
-        return False
-    else:
-        return True
-
-is_exe = check_exe()
-
-
-
-#  here is the tricky thing, in unstripped binary,
+#   here is the tricky thing, in unstripped binary,
 #   we can safely identify the symbol "__i686.get_pc_thunk.bx"
 #   however, we have to pattern match __i686.get_pc_thunk.bx function
 #   manually, then get the address
@@ -143,25 +130,23 @@ def text_process_strip(f):
     return True
 
 
-if __name__ == '__main__':
-    if len(sys.argv) == 3:
-        is_32 = sys.argv[2]
-        if is_32 == "true":
-            if is_exe == True: # executable
-                binary = sys.argv[1]
-                t = text_process_strip(binary)
-                while t == False:
-                    t = text_process_strip(binary)
-            else:
-                # shared object don't translate target addrs into
-                # GLOBAL_OFFSET_TABLE, instead, dump the thunk addr for
-                # analysis in share_lib_helper.ml
-                binary = sys.argv[1]
-                addr = thunk_identify(binary).strip()
-                with open('pic_thunk.info', 'w') as f:
-                    f.write(addr+'\n')
-
+def main(filepath, is_32):
+    global step
+    step = 1
+    if is_32:
+        if check_exe(): # executable
+            t = text_process_strip(filepath)
+            while t == False:
+                t = text_process_strip(filepath)
         else:
-            pass
-    else:
-        print "usage: python pic_process.py binary is_32"
+            # shared object don't translate target addrs into
+            # GLOBAL_OFFSET_TABLE, instead, dump the thunk addr for
+            # analysis in share_lib_helper.ml
+            addr = thunk_identify(filepath).strip()
+            with open('pic_thunk.info', 'w') as f:
+                f.write(addr+'\n')
+
+
+if __name__ == '__main__':
+    if len(sys.argv) == 3: main(sys.argv[1], sys.argv[2].lower() == 'true')
+    else: print "usage: python pic_process.py binary is_32"
