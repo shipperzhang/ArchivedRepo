@@ -1,6 +1,6 @@
 import sys
-import os.path
 import shutil
+import os.path
 
 
 def do_check (addr, info_range):

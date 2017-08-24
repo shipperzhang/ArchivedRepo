@@ -29,155 +29,136 @@
 #
 #
 
-import os, sys, re
+import re
+from main_discover import check_exe
 
-def check_exe():
-    lines = []
-    with open("elf.info") as f:
+
+def task1(contents):
+    # collect symbols
+    with open('plts.info') as f:
         lines = f.readlines()
-    if "LSB shared object" in lines[0]:
-        return False
-    else:
-        return True
 
-is_exe = check_exe()
+    symbols = []
+    pat = r"<(.*)@plt>"
+    for l in lines:
+        m = re.search(pat, l)
+        if m:
+            symbols.append(m.group(1))
 
+    symbols = set(symbols)
 
-if is_exe == True: # executable
-    pass
-else:
-    contents = []
-    with open('final.s') as f:
-        contents = f.readlines()
-
-    def task1():
-        # collect symbols
-        global contents
-
-        lines = []
-        with open('plts.info') as f:
-            lines = f.readlines()
-
-        symbols = []
-        pat = r"<(.*)@plt>"
-        for l in lines:
-            m = re.search(pat, l)
-            if m:
-                symbols.append(m.group(1))
-
-        symbols = set(symbols)
-
-        # rewrite
-        pat = r"(callq|jmp)  *(.*)"
-        for i in range(len(contents)):
-            l = contents[i]
-            m = re.search(pat, l)
-            if m:
-                fn = m.group(2)
-                if fn in symbols: # we only transform these symbols
-                    l = l.replace(fn, fn+"@plt")
-
-            contents[i] = l
+    # rewrite
+    pat = r"(callq|jmp)  *(.*)"
+    for i in range(len(contents)):
+        l = contents[i]
+        m = re.search(pat, l)
+        if m:
+            fn = m.group(2)
+            if fn in symbols: # we only transform these symbols
+                l = l.replace(fn, fn+"@plt")
+        contents[i] = l
 
 
-    def task2(): 
-        global contents
+def task2(contents):
+    # passes for the reason of KISS
+    for i in range(len(contents)):
+        if '__bss_start' in contents[i]:
+            contents[i] = ""
 
-        # passes for the reason of KISS
-        for i in range(len(contents)):
-            l = contents[i]
-            if '__bss_start' in l:
-                contents[i] = ""
 
-    #  combine task3 and task4 as they both rely on symbol tables
-    def task3_4():
-        global contents
+#  combine task3 and task4 as they both rely on symbol tables
+def task3_4(contents):
+    export_sym = {}
 
-        export_sym = {}
+    with open('export_tbl.info') as f:
+        lines = f.readlines()
 
-        lines = []
-        with open('export_tbl.info') as f:
-            lines = f.readlines()
-
-#      9: 0000000000201020     4 OBJECT  GLOBAL DEFAULT   22 d
-        for l in lines:
-            items = l.split()
-            if 'NOTYPE' in items or 'LOCAL' in items or '@' in l:
+    # 9: 0000000000201020     4 OBJECT  GLOBAL DEFAULT   22 d
+    for l in lines:
+        items = l.split()
+        if 'NOTYPE' in items or 'LOCAL' in items or '@' in l:
+            pass
+        else:
+            ty = items[3]
+            nm = items[-1]
+            if nm.startswith('_'):
                 pass
             else:
-                ty = items[3]
-                nm = items[-1]
-                if nm.startswith('_'):
-                    pass
-                else:
-                    export_sym[nm] = ty
+                export_sym[nm] = ty
 
-        globls = []
-        types = []
-        for nm, ty in export_sym.items():
-            if ty == "FUNC":
-                types.append('.type   ' + nm + ', @function\n')
-            if ty == "OBJECT":
-                types.append('.type   ' + nm + ', @object\n')
+    globls = []
+    types = []
+    for nm, ty in export_sym.items():
+        if ty == "FUNC":
+            types.append('.type   ' + nm + ', @function\n')
+        if ty == "OBJECT":
+            types.append('.type   ' + nm + ', @object\n')
 
-            globls.append('.globl ' + nm + '\n')
+        globls.append('.globl ' + nm + '\n')
 
-        contents = globls + types + contents
-
-    def task5():
-        lines = []
-        with open('export_tbl.info') as f:
-            lines = f.readlines()
-
-        data_dic = {}
-        addrs = []
-        for l in lines:
-            items = l.split()
-            if "OBJECT" in items:
-                addr = int(items[1], 16)
-                data_dic[addr] = items[7]
-                addrs.append(addr)
-
-        is_text = True
-        for i in range(len(contents)):
-            l = contents[i]
-            if '.section' in l:
-                if '.text' in l:
-                    is_text = True
-                else:
-                    is_text = False
-            elif is_text == False:
-                if ':' in l and ".long" not in l:
-                    label1 = l.split(':')[0].strip()
-                    if "S_" in label1:
-                        addr = int(label1[2:], 16)
-                        if addr in addrs:
-                            name = data_dic[addr]
-                            l = l.replace(label1, name)
-
-                if ":" in l and ".long" in l:
-                    label1 = l.split(':')[0].strip()
-                    label2 = l.split('long')[1].strip()
-                    if "S_" in label1:
-                        addr = int(label1[2:], 16)
-                        if addr in addrs:
-                            name = data_dic[addr]
-                            l = l.replace(label1, name)
-                    if "S_" in label2:
-                        addr = int(label2[2:], 16)
-                        if addr in addrs:
-                            name = data_dic[addr]
-                            l = l.replace(label2, name)
-
-            contents[i] = l
+    return globls + types + contents
 
 
-    task1()
-    task2()
-    task3_4()
-  #  task5()
+def task5(contents):
+    with open('export_tbl.info') as f:
+        lines = f.readlines()
+
+    data_dic = {}
+    addrs = []
+    for l in lines:
+        items = l.split()
+        if "OBJECT" in items:
+            addr = int(items[1], 16)
+            data_dic[addr] = items[7]
+            addrs.append(addr)
+
+    is_text = True
+    for i in range(len(contents)):
+        l = contents[i]
+        if '.section' in l:
+            if '.text' in l:
+                is_text = True
+            else:
+                is_text = False
+        elif is_text == False:
+            if ':' in l and ".long" not in l:
+                label1 = l.split(':')[0].strip()
+                if "S_" in label1:
+                    addr = int(label1[2:], 16)
+                    if addr in addrs:
+                        name = data_dic[addr]
+                        l = l.replace(label1, name)
+
+            if ":" in l and ".long" in l:
+                label1 = l.split(':')[0].strip()
+                label2 = l.split('long')[1].strip()
+                if "S_" in label1:
+                    addr = int(label1[2:], 16)
+                    if addr in addrs:
+                        name = data_dic[addr]
+                        l = l.replace(label1, name)
+                if "S_" in label2:
+                    addr = int(label2[2:], 16)
+                    if addr in addrs:
+                        name = data_dic[addr]
+                        l = l.replace(label2, name)
+        contents[i] = l
 
 
-    # write back
-    with open('final.s', 'w') as f:
-        f.writelines(contents)
+def main():
+    if not check_exe():
+        with open('final.s') as f:
+            contents = f.readlines()
+
+        task1()
+        task2()
+        contents = task3_4()
+        # task5()
+
+        # write back
+        with open('final.s', 'w') as f:
+            f.writelines(contents)
+
+
+if __name__ == '__main__':
+    main()
