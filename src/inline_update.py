@@ -52,7 +52,7 @@ def main():
                 inline_region = False
                 cur_fun_index += 1
         elif inline_region == True:
-            items = l.split()
+            items = l.split()  # @UnusedVariable
             found_symbols = find_symbol(l, symbols)
             if "ret" == l:
                 l = "pop %ecx\njmp *%ecx"

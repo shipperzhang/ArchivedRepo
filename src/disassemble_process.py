@@ -1,6 +1,7 @@
 import os
 import filter_nop
 import useless_func_del
+from ail_parser import AilParser
 
 class Disam(object):
 
@@ -19,6 +20,14 @@ class Disam(object):
     @staticmethod
     def disassemble(filepath, funcs, secs):
         #TODO: stub
-        pass
+        ailpar = AilParser()
+        total = 0.0
+        cond = False
+        while not cond and total < 600.0:
+            ailpar.set_funcs(funcs)
+            ailpar.set_secs(secs)
+
+            # ailpar.processInstrs(ilist)
+            print "2: disassembly validates"
 
 
