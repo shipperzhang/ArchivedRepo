@@ -1,3 +1,8 @@
+from Parser import parse
+from pp_print import pp_print_instr
+from func_slicer import func_slicer
+from ail_utils import dec_hex, unify_funclist_by_name, unify_funclist_by_addr, int_of_string_opt
+
 
 class AilParser(object):
 
@@ -5,55 +10,82 @@ class AilParser(object):
         self.instrs = []
         self.funcs = []
         self.secs = []
-        
+
     def set_funcs(self, funcs):
         self.funcs = funcs
-    
-    def update_func_info(self, funcs):
-        #TODO: stub
-        pass
-        
+
+    def update_func_info(self, fl):
+        for i in range(len(fl)-1):
+            if fl[i].func_begin_addr == fl[i+1].func_begin_addr:
+                if 'S_0x' in fl[i].func_name:
+                    fl[i+1].func_end_addr = fl[i].func_end_addr
+                elif 'S_0x' in fl[i+1].func_name:
+                    fl[i].func_end_addr = fl[i+1].func_end_addr
+        return fl
+
     def print_f(self, funcs):
-        #TODO: stub
-        pass
-    
+        for f in funcs:
+            print ' '.join((f.func_name,
+                dec_hex(f.func_begin_addr),
+                dec_hex(f.func_end_addr),
+                str(f.is_lib).lower()
+            ))
+
     def get_funcs(self):
-        #TODO: stub
-        pass
-    
+        fl = unify_funclist_by_name(self.func_slicing())
+        fl.sort(cmp=lambda f1, f2: f1.func_begin_addr - f2.func_begin_addr)
+        fl = self.update_func_info(fl)
+        return unify_funclist_by_addr(self.filter_func(fl))
+
     def filter_func(self, funcs):
-        #TODO: stub
-        pass
-    
-    def filter_func_by_nane(self, funcs):
-        #TODO: stub
-        pass
-    
+        self.filter_func_by_secs(self.filter_func_by_name(funcs))
+
+    def filter_func_by_name(self, funcs):
+        return filter(lambda f: '.text' not in f.func_name, funcs)
+
     def filter_func_by_secs(self, funcs):
-        #TODO: stub
-        pass
-    
+        with open('text_sec.info') as f:
+            l = f.readline()
+        items = l.split()
+        addr = int(items[1], 16)
+        end = addr + int(items[3], 16)
+        def fil(f):
+            lenf = len(f.func_name)
+            if lenf < 3: return True
+            opt = int_of_string_opt(f.func_name[2:], 16)
+            return True if opt is None else (addr <= opt < end)
+        return filter(fil, funcs)
+
+
     def print_funcs(self, funcs):
-        #TODO: stub
-        pass
-    
+        self.print_f(filter(lambda f: not f.is_lib, funcs))
+
     def func_slicing(self):
-        #TODO: stub
-        pass
-    
+        fs = func_slicer(self.instrs, self.funcs)
+        fs.update_text_info()
+        fs.update_func()
+        return fs.get_funcs()
+
     def set_secs(self, secs):
         self.secs = secs
 
     def processInstrs(self, ilist):
-        #TODO: stub
-        pass
-    
+        p = parse()
+        p.set_funclist(self.funcs)
+        p.set_seclist(self.secs)
+        for i in ilist:
+            items = i.split(':')
+            if len(items) > 1:
+                loc = items[0]
+                instr = ':'.join(items[1:])
+                self.instrs.insert(0, p.parse_instr(instr, loc))
+        self.funcs = p.get_funclist()
+
     def p_instrs(self):
-        #TODO: stub
-        pass
-    
+        print '\n'.join(map(pp_print_instr, self.instrs))
+
     def get_instrs(self):
         return self.instrs[::-1]
-    
+
     def get_instrs_len(self):
         return len(self.instrs)

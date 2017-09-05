@@ -11,13 +11,13 @@ class Func(object):
         self.func_begin_addr = begin
         self.func_end_addr = end
         self.is_lib = is_lib
-        
+
 class Section(object):
     def __init__(self, name, begin, size):
         self.sec_name = name
         self.sec_begin_addr = begin
         self.sec_size = size
-        
+
 class Loc(object):
     def __init__(self, label, addr, visible):
         self.loc_label = label
@@ -33,4 +33,4 @@ class Bblock(object):
         self.bblock_head_instr = bblock_head_instr
 
 
-#TODO: find smart way to represent type system
+#TODO: find smart way to represent type system (maybe pystachio)
