@@ -1,6 +1,6 @@
 import init_sec_adjust
 from ail_utils import read_file, unify_int_list, get_loc, dec_hex
-from type import Func
+from Types import Func
 
 
 class func_slicer(object):
@@ -9,7 +9,7 @@ class func_slicer(object):
         self.instrs = instrs
         self.funcs = funcs
         self.func_set = {}
-        
+
         self.baddr = -1
         self.eaddr = -1
         self.label = ''
@@ -18,7 +18,7 @@ class func_slicer(object):
         self.addr_set = []
         self.text_b_addr = 0
         self.text_e_addr = 0
-        
+
         self.last_nop = False
         self.last_ret = False
         self.last_xchg = False

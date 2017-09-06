@@ -9,7 +9,7 @@ def get_binname():
 def main():
     with open("init_sec.info") as f:
         l = f.readline()
-    
+
     if ']' in l:
         fn = get_binname()
         os.system('readelf -SW ' + fn + ' > temp')
@@ -25,6 +25,6 @@ def main():
                 with open("init_sec.info", 'w') as f:
                     f.write(s)
 
-    
+
 if __name__ == '__main__':
     main()

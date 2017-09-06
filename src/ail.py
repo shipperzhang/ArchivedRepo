@@ -1,7 +1,7 @@
 import pre_process
 import post_process
 import post_process_lib
-from type import Func, Section
+from Types import Func, Section
 from disassemble_process import Disam
 from analysis_process import Analysis
 

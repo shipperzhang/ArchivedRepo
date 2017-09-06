@@ -3,7 +3,6 @@ from lex_new import Lloc, Lop, Lexp
 from lex_new import prefix_identify, prefix_sub, lexer
 
 
-
 class parse(object):
 
     def __init__(self):
@@ -38,8 +37,8 @@ class parse(object):
     def calldes_symb(self, s):
         s1 = s.split()[1].strip()
         if '+' in s1:
-            
-        #TODO
+            pass
+        #TODO: stub
 
     def star_jmptable_symb(self, s):
         #TODO: stub
@@ -75,19 +74,20 @@ class parse(object):
         elif self.call_des:
             return Types.CallDes(self.calldes_symb(s))
         return self.jumpdes_symb(s)
-    
+
     def reg_symb(self, s):
         r = s[1:].upper()
         return Types.RegClass(r) if r in Types.Reg else None
 
     def assist_sym(self, s):
-        return Types.AssistOpClass(s) if s in Types.AssistOp else None 
-    
+        return Types.AssistOpClass(s) if s in Types.AssistOp else None
+
     def const_symb(self, s):
         s = s.strip()
         if s[0] == '$':
             return Types.Normal(s[1:], 16)
-        return Types.Point(s, 16)
+        try: return Types.Point(s, 16)
+        except ValueError: return None
 
     def exp_symb(self, s):
         symbf = [self.ptr_symb, self.reg_symb, self.assist_sym, self.const_symb, self.symbol_symb]
@@ -95,7 +95,7 @@ class parse(object):
             res = f(s)
             if res is not None: return res
         return Types.Label(s)
-    
+
     def op_symb(self, sym):
         if sym not in Types.Op: raise Exception('Invalid operator:' + sym)
         return sym
@@ -133,7 +133,7 @@ class parse(object):
         if f is None:
             f = Types.Func(name, 0, 0, lib)
             self.func_list.insert(0, f)
-        return f 
+        return f
 
     def get_sec(self, addr):
         addr = int(addr, 16)
@@ -151,5 +151,6 @@ class parse(object):
         lexem_list = lexer(instr1, loc)
         s = []
         for l in lexem_list:
-            s.insert(0, self.push_stack(l))
+            s.append(self.push_stack(l))
+            # s.insert(0, self.push_stack(l))
         return self.reduce_stack(s, has_pre)

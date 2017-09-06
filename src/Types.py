@@ -3,11 +3,11 @@ class RecSet(frozenset):
         self.final = final
         elems = map(lambda e: e.upper() if isinstance(e, str) else e, elems)
         super(RecSet, self).__init__(elems)
-        
+
     def __new__(cls, elems, final=False):
         elems = map(lambda e: e.upper() if isinstance(e, str) else e, elems)
         return super(RecSet, cls).__new__(cls, elems)
-    
+
     def __contains__(self, item):
         if isinstance(item, str): item = item.upper()
         if super(RecSet, self).__contains__(item):
@@ -141,11 +141,11 @@ LoopOp = RecSet(['LOOP', 'LOOPE', 'LOOPNE'], True)
 FlagOp = RecSet(['CLD', 'CLTD', 'CLTQ'], True)
 # AssistOp = RecSet(['SCAS', 'CMPSB', 'STOS', 'MOVSL', 'MOVSB', 'CMPSW'], True)
 AssistOp = RecSet(['SCAS', 'MOVSL', 'MOVSB', 'CMPSW', 'CMPSB', 'MOVSQ', 'POP', 'STOS'], True)
-ControlOp = RecSet([JumpOp, LoopOp, FlagOp, 
-                    'CALL,' 'CALLQ,' 
-                    'LEAVE,' 'LEAVEQ', 
-                    'RET,' 'RETN,' 'RETQ', 
-                    'FXAM,' 'FCHS'
+ControlOp = RecSet([JumpOp, LoopOp, FlagOp,
+                    'CALL', 'CALLQ',
+                    'LEAVE', 'LEAVEQ',
+                    'RET', 'RETN', 'RETQ',
+                    'FXAM', 'FCHS'
 ])
 CommonOp = RecSet([ArithmOp, LogicOp, RolOp, AssignOp, CompareOp, SetOp, OtherOp])
 ErrorOp = RecSet(['(bad)'])
@@ -169,7 +169,7 @@ class JumpDes(int, Symbol): pass
 class CallDes(Func, Symbol): pass
 class StarDes(Exp, Symbol): pass
 
-class Const(int, Exp): pass
+class Const(long, Exp): pass
 class Point(Const): pass
 class Normal(Const): pass
 
@@ -193,19 +193,19 @@ class SegRef(tuple, Ptr): pass
 class Instr(tuple): pass
 class SingleInstr(Instr):
     def __init__(self, items):
-        if len(items) != 3: raise Exception('Invalid single') 
+        if len(items) != 3: raise Exception('Invalid single')
         super(SingleInstr, self).__init__(items)
 class DoubleInstr(Instr):
     def __init__(self, items):
-        if len(items) != 4: raise Exception('Invalid double') 
+        if len(items) != 4: raise Exception('Invalid double')
         super(DoubleInstr, self).__init__(items)
 class TripleInstr(Instr):
     def __init__(self, items):
-        if len(items) != 5: raise Exception('Invalid triple') 
+        if len(items) != 5: raise Exception('Invalid triple')
         super(TripleInstr, self).__init__(items)
 class FourInstr(Instr):
     def __init__(self, items):
-        if len(items) != 6: raise Exception('Invalid quad') 
+        if len(items) != 6: raise Exception('Invalid quad')
         super(FourInstr, self).__init__(items)
 
 
