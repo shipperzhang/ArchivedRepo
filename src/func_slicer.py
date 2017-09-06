@@ -1,25 +1,66 @@
+import init_sec_adjust
+from ail_utils import read_file, unify_int_list, get_loc, dec_hex
+from type import Func
+
 
 class func_slicer(object):
 
     def __init__(self, instrs, funcs):
         self.instrs = instrs
         self.funcs = funcs
+        self.func_set = {}
+        
+        self.baddr = -1
+        self.eaddr = -1
+        self.label = ''
+        self.funcs1 = []
+        self.func_begins = []
+        self.addr_set = []
+        self.text_b_addr = 0
+        self.text_e_addr = 0
+        
+        self.last_nop = False
+        self.last_ret = False
+        self.last_xchg = False
+        self.last_special = False
+        self.last_jmp = False
 
     def update(self):
-        #TODO: stub
-        pass
+        func = 'S_' + dec_hex(self.baddr)
+        if func in self.func_set:
+            self.func_set[func].func_begin_addr = self.baddr
+            self.func_set[func].func_end_addr = self.eaddr
+            self.func_set[func].is_lib = False
+        else:
+            f1 = Func(func, self.baddr, self.eaddr, False)
+            self.func_set[func] = f1
 
     def filter_addr_by_secs(self, bl):
-        #TODO: stub
-        pass
+        init_sec_adjust.main()
+        with open('init_sec.info') as f:
+            l = f.readline()
+        items = l.split()
+        baddr = int(items[1], 16)
+        eaddr = baddr + int(items[3], 16)
+        return filter(lambda n: n < baddr or n >= eaddr, bl)
 
     def update_text_info(self):
-        #TODO: stub  <----
-        pass
+        with open('text_sec.info') as f:
+            l = f.readline()
+        items = l.split()
+        self.text_b_addr = int(items[1], 16)
+        self.text_e_addr = int(items[3], 16)
 
     def build_func_info(self):
-        #TODO: stub
-        pass
+        self.func_begins = unify_int_list(self.func_begins)
+        self.func_begins = self.filter_addr_by_secs(self.func_begins)
+        for i in range(len(self.func_begins)-1):
+            self.baddr = self.func_begins[i]
+            self.eaddr = self.func_begins[i+1]
+            self.update()
+        self.baddr = self.func_begins[-1]
+        self.eaddr = get_loc(self.instrs[0]).loc_addr
+        self.update()
 
     def process(self):
         #TODO: stub
@@ -34,25 +75,22 @@ class func_slicer(object):
         pass
 
     def update_func(self):
-        #TODO: stub <-----
-        pass
+        for e in self.funcs:
+            self.func_set[e.func_name] = e
 
     def get_func_list(self):
-        #TODO: stub
-        pass
+        return self.func_set.values()
 
     def funcaddr_from_file(self):
-        #TODO: stub
-        pass
+        self.func_begins = map(lambda a: int(a, 16), read_file('faddr.txt'))
 
     def dump_funclist(self):
         #TODO: stub
         pass
 
     def get_funcs(self):
-        #TODO: stub <-----
-        pass
-
-
-
-
+        self.funcaddr_from_file()
+        self.build_func_info()
+        fl = self.get_func_list()
+        print '     func number', len(fl)
+        return fl

@@ -10,10 +10,18 @@ def unify_funclist_by_name(funclist):
     return {(f.func_name, f) for f in funclist}.values()
 
 def unify_funclist_by_addr(funclist):
-    #TODO: stub
-    pass
+    res = []
+    for i in range(len(funclist)-1):
+        h1 = funclist[i]
+        h2 = funclist[i+1]
+        if h1.func_begin_addr == h2.func_begin_addr:
+            if 'S_0x' in h2.func_name: funclist[i+1] = h1
+            else: res.append(h1)
+        else: res.append(h1)
+    res.append(funclist[-1])
+    return res
 
-def unif_hash_list(h):
+def unify_hash_list(h):
     #TODO: stub
     pass
 
@@ -73,11 +81,16 @@ def print_addrlist(intlist):
 # zip already exists in python :D
 
 def cat_from(strlist, v, suf):
-    return ''.join(map(lambda s: s + suf, strlist[v:]))
+    # return ''.join(map(lambda s: s + suf, strlist[v:]))
+    return suf.join(strlist[v:])
 
 def split_by_list(s, intlist):
-    #TODO: stub
-    pass
+    res = []
+    points = [0] + intlist + [len(s)]
+    for i in range(len(points)-1):
+        res.append(s[points[i]:points[i+1]])
+        points[i+1] += 1
+    return res
 
 def int_of_string_opt(s, base=10):
     try: return int(s, base)
