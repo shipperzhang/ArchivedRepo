@@ -1,3 +1,4 @@
+import Types
 
 def flip(func, x, y):
     return func(y, x)
@@ -6,31 +7,32 @@ def last_ele(collection):
     return collection[-1]
 
 def p_op(op):
-    return str(op).split()[-1].lower()
+    return str(op).lower()
 
 def p_reg1(reg):
-    return str(reg).split()[-1].lower()
+    return str(reg).lower()
 
 def p_reg(reg):
     return '%' + p_reg1(reg)
 
 def p_seg1(seg):
-    return str(seg).split()[-1].lower()
+    return str(seg).lower()
 
 def p_seg(seg):
     return '%' + p_seg1(seg)
 
 def p_typ(typ):
-    return str(typ).split()[-1].lower()
+    return str(typ)
 
 def p_assist(assist):
-    return str(assist).split()[-1].lower()
+    return str(assist).lower()
 
 def p_mathop(mathop):
-    return '+' if str(mathop).split()[-1] == 'MATHADD' else '-'
+    # not used
+    return '+' if str(mathop).upper() == 'MATHADD' else '-'
 
 def p_loc(loc):
-    return '0x%x' % loc
+    return '0x%X' % loc
 
 def p_func(func):
     return func.func_name
@@ -61,27 +63,44 @@ def p_double(p, e):
     return p_op(p) + ' ' + p_exp(e)
 
 def p_triple(p, e1, e2):
-    #TODO: stub
-    pass
+    p_str = p_op(p)
+    e1_str = p_exp(e1)
+    e2_str = p_exp(e2)
+    if e2_str.lower() == 'pop':
+        return p_str + ' ' + e2_str + ' ' + e1_str
+    return p_str + ' ' + e2_str + ',' + e1_str
 
 def p_four(p, e1, e2, e3):
-    #TODO: stub
-    pass
+    p_str = p_op(p)
+    e1_str = p_exp(e1)
+    e2_str = p_exp(e2)
+    e3_str = p_exp(e3)
+    if e3_str in Types.AssistOp:
+        return p_str + ' ' + e3_str + ' ' + e2_str + ',' + e1_str
+    return p_str + ' ' + e3_str + ',' + e2_str + ',' + e1_str
 
 def p_location(loc):
     return loc.loc_label
 
 def p_prefix(pre):
-    #TODO: stub
-    pass
+    return ' lock ' if pre else ''
 
 def get_loc(i):
-    #TODO: stub
-    pass
+    return i[-2]
 
 def pp_print_instr(i):
-    #TODO: stub
-    pass
+    loc = get_loc(i)
+    if loc.loc_visible: return p_location(loc)
+    res = p_location(loc) + p_prefix(i[-1])
+    if isinstance(i, Types.SingleInstr):
+        res += p_single(i[0])
+    elif isinstance(i, Types.DoubleInstr):
+        res += p_double(i[0], i[1])
+    elif isinstance(i, Types.TripleInstr):
+        res += p_triple(i[0], i[1], i[2])
+    elif isinstance(i, Types.FourInstr):
+        res += p_four(i[0], i[1], i[2], i[3])
+    return res
 
 def pp_print_list(ilist):
     return map(pp_print_instr, ilist)
@@ -89,4 +108,4 @@ def pp_print_list(ilist):
 def pp_print_file(ilist):
     with open('final.s', 'a') as f:
         f.write('.section .text\n')
-        for l in ilist: f.write(l + '\n')
+        f.writelines(ilist)

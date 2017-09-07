@@ -35,10 +35,11 @@ class AilParser(object):
         fl = unify_funclist_by_name(self.func_slicing())
         fl.sort(cmp=lambda f1, f2: f1.func_begin_addr - f2.func_begin_addr)
         fl = self.update_func_info(fl)
-        return unify_funclist_by_addr(self.filter_func(fl))
+        fl = self.filter_func(fl)
+        return unify_funclist_by_addr(fl)
 
     def filter_func(self, funcs):
-        self.filter_func_by_secs(self.filter_func_by_name(funcs))
+        return self.filter_func_by_secs(self.filter_func_by_name(funcs))
 
     def filter_func_by_name(self, funcs):
         return filter(lambda f: '.text' not in f.func_name, funcs)
@@ -74,12 +75,12 @@ class AilParser(object):
         p.set_funclist(self.funcs)
         p.set_seclist(self.secs)
         for i in ilist:
-            items = i.split(':')
+            items = filter(len, i.split(':'))
             if len(items) > 1:
                 loc = items[0]
                 instr = ':'.join(items[1:])
                 self.instrs.insert(0, p.parse_instr(instr, loc))
-                print self.instrs[0]
+                # print self.instrs[0]
         self.funcs = p.get_funclist()
 
     def p_instrs(self):

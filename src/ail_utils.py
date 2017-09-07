@@ -1,4 +1,5 @@
 import time
+import Types
 
 def unify_int_list(intlist):
     return sorted(set(intlist))
@@ -7,7 +8,7 @@ def unify_str_list(strlist):
     return sorted(set(strlist))
 
 def unify_funclist_by_name(funclist):
-    return {(f.func_name, f) for f in funclist}.values()
+    return {f.func_name: f for f in funclist}.values()
 
 def unify_funclist_by_addr(funclist):
     res = []
@@ -22,7 +23,7 @@ def unify_funclist_by_addr(funclist):
     return res
 
 def unify_hash_list(h):
-    #TODO: stub
+    #stub never used
     pass
 
 def string_to_int32(s):
@@ -32,12 +33,12 @@ def compare_loc(l1, l2):
     return l1.loc_addr == l2.loc_addr and l1.loc_label == l2.loc_label
 
 def get_loc(instr):
-    #TODO:stub
-    pass
+    return instr[-2]
 
 def set_loc(instr, loc):
-    #TODO:stub
-    pass
+    t = type(instr)
+    l = len(instr)
+    return t(instr[:l-2] (loc,) + instr[-1:])
 
 def get_addr(instr):
     return get_loc(instr).loc_addr
@@ -51,21 +52,19 @@ def update_label(instr, label):
     return set_loc(instr, loc)
 
 def get_op(instr):
-    #TODO: stub
-    pass
+    return instr[0]
 
 def get_cf_des(instr):
-    #TODO: stub
-    pass
+    return instr[1] if isinstance(instr, Types.DoubleInstr) else None
 
 def get_exp_1(instr):
-    #TODO: stub
-    pass
+    if isinstance(instr, Types.SingleInstr): raise Exception('No exp in single')
+    return instr[1]
 
 def read_file(filename):
     with open(filename) as f:
         lines = f.readlines()
-    return lines
+    return map(str.rstrip, lines)
 
 def dec_hex(val):
     return '0x%X' % val
@@ -97,19 +96,29 @@ def int_of_string_opt(s, base=10):
     except: return None
 
 def print_exp_type(exp):
-    #TODO: stub
-    pass
+    if isinstance(exp, Types.Const): print 'const'
+    elif isinstance(exp, Types.Symbol): print 'symbol'
+    elif isinstance(exp, Types.RegClass): print 'reg'
+    elif isinstance(exp, Types.AssistOpClass): print 'assist'
+    elif isinstance(exp, Types.Ptr): print 'ptr'
+    elif isinstance(exp, Types.Label): print 'label'
 
-def print_instr_type(inst):
-    #TODO: stub
-    pass
+def print_instr_type(instr):
+    print instr.__class__.__name__
 
 def sort_loc(loclist):
     return sorted(loclist, cmp=lambda l1,l2: l1.loc_addr - l2.loc_addr)
 
-def get_instr_byloc(instrlist):
-    #TODO: stub
-    pass
+def get_instr_byloc(instrlist, loclist):
+    res = []
+    i = 0; j = 0
+    while j < len(loclist):
+        iloc = get_loc(instrlist[i])
+        if iloc.loc_addr == loclist[j].loc_addr:
+            res.append(instrlist[i])
+            j += 1
+        i += 1
+    return res
 
 def recover_addr_from_label(lab):
     lab = lab.strip()
@@ -122,12 +131,16 @@ def get_next_bb(sn):
     return 'BB_' + str(int(sn.strip()[3:]) + 1)
 
 def memo_rec(f):
-    #TODO: stub
+    # stub not used
     pass
 
 def memo(f):
-    #TODO: stub
-    pass
+    m = {}
+    def func(x):
+        if x in m: return m[x]
+        m[x] = f(x)
+        return m[x]
+    return func
 
 def get_end_addr_sec(section):
     def addr_folder(acc, l):

@@ -16,6 +16,14 @@ class RecSet(frozenset):
             return any(map(lambda e: isinstance(e, frozenset) and item in e, self))
         return False
 
+class Container(object):
+    def __init__(self, content):
+        self.content = content
+    def __repr__(self):
+        return repr(self.content)
+    def __str__(self):
+        return str(self.content)
+
 class File(object):
     def __init__(self, name, stripped, fformat, is32):
         self.name = name
@@ -154,6 +162,7 @@ Op = RecSet([CommonOp, StackOp, ControlOp, SystemOp, ErrorOp])
 
 class Symbol(object): pass
 class Exp(object): pass
+class SegClass(str): pass
 class RegClass(str, Exp):
     def __init__(self, reg):
         if reg not in Reg: raise Exception('Not a register')
@@ -166,9 +175,11 @@ class Ptr(Exp): pass
 class Label(str, Exp): pass
 
 class JumpDes(int, Symbol): pass
-class CallDes(Func, Symbol): pass
-class StarDes(Exp, Symbol): pass
-
+class CallDes(Func, Symbol):
+    def __init__(self, func):
+        super(CallDes, self).__init__(func.func_name,
+            func.func_begin_addr, func.func_end_addr, func.is_lib)
+class StarDes(Exp, Symbol, Container): pass
 class Const(long, Exp): pass
 class Point(Const): pass
 class Normal(Const): pass

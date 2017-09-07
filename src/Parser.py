@@ -14,16 +14,99 @@ class parse(object):
         print ''.join(map(lambda e: 'item: ' + e, l)) + 'end'
 
     def conptr_symb(self, s):
-        #TODO: stub
+        # stub not used
         pass
+
+    def unptr_symb(self, s):
+        return self.reg_symb(s[1:-1])
+
+    def binptr_m_symb(self, s):
+        if ',' in s: return None
+        items = s.split('(')
+        offset = items[0]
+        if offset[0] != '-': return None
+        reg = self.reg_symb(items[1][:-1])
+        return None if reg is None else Types.BinOP_MINUS((reg, int(offset[1:], 16)))
+
+    def binptr_p_symb(self, s):
+        if ',' in s: return None
+        items = s.split('(')
+        offset = items[0]
+        reg = self.reg_symb(items[1][:-1])
+        return None if reg is None else Types.BinOP_PLUS((reg, int(offset, 16)))
+
+    def threeptr_symb(self, s):
+        if s[0] == '(' and s[-1] == ')':
+            items = s[1:-1].split(',')
+            if len(items) != 3: return None
+            reg1 = self.reg_symb(items[0])
+            reg2 = self.reg_symb(items[1])
+            return None if reg1 is None or reg2 is None \
+                else Types.ThreeOP((reg1, reg2, int(items[2])))
+        return None
+
+    def fourptr_m_symb(self, s):
+        items = s.split('(')
+        offset = items[0]
+        if offset[0] != '-': return None
+        offset = offset[1:]
+        items1 = items[1][:-1].split(',')
+        if len(items1) != 3: return None
+        reg1 = self.reg_symb(items1[0])
+        reg2 = self.reg_symb(items1[1])
+        return None if reg1 is None or reg2 is None \
+            else Types.FourOP_MINUS((reg1, reg2, int(items1[2]), int(offset, 16)))
+
+    def fourptr_p_symb(self, s):
+        items = s.split('(')
+        offset = items[0]
+        if offset[0] == '%' or offset[0] == '*': return None
+        items1 = items[1][:-1].split(',')
+        if len(items1) != 3: return None
+        reg1 = self.reg_symb(items1[0])
+        reg2 = self.reg_symb(items1[1])
+        return None if reg1 is None or reg2 is None \
+            else Types.FourOP_PLUS((reg1, reg2, int(items1[2]), int(offset, 16)))
+
+    def segref_symb(self, s):
+        if ':' not in s: return None
+        items = s.split(':')
+        se = items[0].strip()[1:]
+        if len(items) != 2 or se not in Types.Seg: return None
+        return Types.SegRef((Types.SegClass(se), self.exp_symb(items[1].strip())))
+
+    def jmptable_m_symb(self, s):
+        if '(,' not in s: return None
+        tokens = s.split(',')
+        if tokens[0][0] != '-': return None
+        addr = tokens[0][1:-1]
+        reg = self.reg_symb(tokens[1])
+        off = tokens[2][:-1]
+        return None if reg is None \
+            else Types.JmpTable_MINUS((int(addr, 16), reg, int(off)))
+
+    def jmptable_p_symb(self, s):
+        if '(,' not in s: return None
+        tokens = s.split(',')
+        addr = tokens[0][:-1]
+        reg = self.reg_symb(tokens[1])
+        off = tokens[2][:-1]
+        return None if reg is None \
+            else Types.JmpTable_PLUS((int(addr, 16), reg, int(off)))
 
     def ptraddr_symb(self, s):
-        #TODO: stub
-        pass
+        mappers = [self.unptr_symb, self.binptr_m_symb, self.binptr_p_symb,
+                   self.threeptr_symb, self.fourptr_m_symb, self.fourptr_p_symb,
+                   self.jmptable_m_symb, self.jmptable_p_symb, self.segref_symb]
+        for m in mappers:
+            res = m(s)
+            if res is not None: return res
+        return None
 
     def ptr_symb(self, s):
-        #TODO: stub
-        pass
+        if '(' in s and ')' in s:
+            return self.ptraddr_symb(s)
+        return None
 
     def jumpdes_symb_bak(self, s):
         # stub not used
@@ -32,36 +115,34 @@ class parse(object):
     def jumpdes_symb(self, s):
         if '+' in s or '-' in s:
             return Types.JumpDes(s.split()[0], 16)
-        return Types.CallDes(self.calldes_symb(s))
+        try: return Types.CallDes(self.calldes_symb(s))
+        except AttributeError: return None
 
     def calldes_symb(self, s):
-        s1 = s.split()[1].strip()
-        if '+' in s1:
-            pass
-        #TODO: stub
+        items = s.split()
+        if len(items) < 2: return None
+        s1 = items[1].strip()
+        if '+' in s1 or '-' in s1:
+            return self.get_func('S_0x' + items[0], False)
+        elif '@' in s1:
+            name = s1.split('@')[0]
+            return self.get_func(name[1:], True)
+        return self.get_func(s1[1:-1], True)
 
     def star_jmptable_symb(self, s):
-        #TODO: stub
-        pass
-
-    def jmptable_m_symb(self, s):
-        #TODO: stub
-        pass
-
-    def jmptable_p_symb(self, s):
-        #TODO: stub
+        # stub not used
         pass
 
     def calljmp_symb(self, s):
-        #TODO: stub
+        # stub not used
         pass
 
     def leades_symb(self, s):
-        #TODO: stub
+        # stub not used
         pass
 
     def callstar_symb(self, s):
-        #TODO: stub never called
+        # stub not used
         pass
 
     def stardes_symb(self, s):
@@ -98,6 +179,7 @@ class parse(object):
 
     def op_symb(self, sym):
         if sym not in Types.Op: raise Exception('Invalid operator:' + sym)
+        if sym.upper() in ['CALL', 'CALLQ']: self.call_des = True
         return sym
 
     def push_stack(self, lex):
