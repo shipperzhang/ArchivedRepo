@@ -191,7 +191,7 @@ class parse(object):
 
     def reduce_stack(self, stack, pre):
         sl = len(stack)
-        stack.append(pre)
+        stack = stack[:1] + stack[::-1][1:-1] + stack[-1:] + [pre]
         if sl == 2: return Types.SingleInstr(stack)
         elif sl == 3: return Types.DoubleInstr(stack)
         elif sl == 4: return Types.TripleInstr(stack)

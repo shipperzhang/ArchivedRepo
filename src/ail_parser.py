@@ -84,7 +84,7 @@ class AilParser(object):
         self.funcs = p.get_funclist()
 
     def p_instrs(self):
-        print '\n'.join(map(pp_print_instr, self.instrs))
+        print '\n'.join(map(pp_print_instr, self.instrs[::-1]))
 
     def get_instrs(self):
         return self.instrs[::-1]

@@ -1,5 +1,6 @@
 import Types
 
+
 def flip(func, x, y):
     return func(y, x)
 
@@ -42,16 +43,53 @@ def p_sec(sec):
     raise Exception('p sec')
 
 def p_ptraddr(addr):
-    #TODO: stub
-    pass
+    if isinstance(addr, Types.UnOP):
+        return '(' + p_reg(addr) + ')'
+    elif isinstance(addr, Types.BinOP_PLUS):
+        return p_loc(addr[1]) + '(' + p_reg(addr[0]) + ')'
+    elif isinstance(addr, Types.BinOP_PLUS_S):
+        return addr[1] + '(' + p_reg(addr[0]) + ')'
+    elif isinstance(addr, Types.BinOP_MINUS):
+        return '-' + p_loc(addr[1]) + '(' + p_reg(addr[0]) + ')'
+    elif isinstance(addr, Types.BinOP_MINUS_S):
+        return '-' + addr[1] + '(' + p_reg(addr[0]) + ')'
+    elif isinstance(addr, Types.ThreeOP):
+        return '(' + p_reg(addr[0]) + ',' + p_reg(addr[1]) + ',' + p_loc(addr[2]) + ')'
+    elif isinstance(addr, Types.FourOP_PLUS):
+        return p_loc(addr[3]) + '(' + p_reg(addr[0]) + ',' + p_reg(addr[1]) + ',' + str(addr[2]) + ')'
+    elif isinstance(addr, Types.FourOP_MINUS):
+        return '-' + p_loc(addr[3]) + '(' + p_reg(addr[0]) + ',' + p_reg(addr[1]) + ',' + str(addr[2]) + ')'
+    elif isinstance(addr, Types.FourOP_PLUS_S):
+        return addr[3] + '(' + p_reg(addr[0]) + ',' + p_reg(addr[1]) + ',' + str(addr[2]) + ')'
+    elif isinstance(addr, Types.FourOP_MINUS_S):
+        return '-' + addr[3] + '(' + p_reg(addr[0]) + ',' + p_reg(addr[1]) + ',' + str(addr[2]) + ')'
+    elif isinstance(addr, Types.JmpTable_PLUS):
+        return p_loc(addr[0]) + '(,' + p_reg(addr[1]) + ',' + p_loc(addr[2]) + ')'
+    elif isinstance(addr, Types.JmpTable_MINUS):
+        return '-' + p_loc(addr[0]) + '(,' + p_reg(addr[1]) + ',' + p_loc(addr[2]) + ')'
+    elif isinstance(addr, Types.JmpTable_PLUS_S):
+        return addr[0] + '(,' + p_reg(addr[1]) + ',' + p_loc(addr[2]) + ')'
+    elif isinstance(addr, Types.JmpTable_MINUS_S):
+        return '-' + addr[0] + '(,' + p_reg(addr[1]) + ',' + p_loc(addr[2]) + ')'
+    elif isinstance(addr, Types.SegRef):
+        return p_seg(addr[0]) + ':' + p_exp(addr[1])
 
 def p_const(const):
-    #TODO: stub
-    pass
+    if isinstance(const, Types.Normal): return '$0x%X' % const
+    elif isinstance(const, Types.Point): return '0x%X' % const
+
+def p_symbol(sym):
+    if isinstance(sym, Types.CallDes): return p_func(sym)
+    elif isinstance(sym, Types.JumpDes): return p_loc(sym)
+    elif isinstance(sym, Types.StarDes): return '*' + p_exp(sym.content)
 
 def p_exp(exp):
-    #TODO: stub
-    pass
+    if isinstance(exp, Types.Const): return p_const(exp)
+    elif isinstance(exp, Types.Symbol): return p_symbol(exp)
+    elif isinstance(exp, Types.AssistOpClass): return p_assist(exp)
+    elif isinstance(exp, Types.RegClass): return p_reg(exp)
+    elif isinstance(exp, Types.Ptr): return p_ptraddr(exp)
+    elif isinstance(exp, Types.Label): return str(exp)
 
 def dec_hex(val):
     return '0x%X' % val
@@ -90,7 +128,7 @@ def get_loc(i):
 
 def pp_print_instr(i):
     loc = get_loc(i)
-    if loc.loc_visible: return p_location(loc)
+    if not loc.loc_visible: return p_location(loc)
     res = p_location(loc) + p_prefix(i[-1])
     if isinstance(i, Types.SingleInstr):
         res += p_single(i[0])
@@ -108,4 +146,4 @@ def pp_print_list(ilist):
 def pp_print_file(ilist):
     with open('final.s', 'a') as f:
         f.write('.section .text\n')
-        f.writelines(ilist)
+        f.write('\n'.join(ilist))

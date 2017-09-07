@@ -2,7 +2,7 @@ import Types
 
 
 class stack_of_loc(object):
-    def __init__(self, params):
+    def __init__(self):
         self.loclist = []
     def push(self, x):
         return self.loclist.append(x)
