@@ -5,8 +5,9 @@ from lex_new import prefix_identify, prefix_sub, lexer
 
 class parse(object):
 
+    call_des = False
+
     def __init__(self):
-        self.call_des = False
         self.func_list = []
         self.sec_list = []
 
@@ -152,7 +153,7 @@ class parse(object):
         s = s.strip()
         if s[0] == '*':
             return Types.StarDes(self.stardes_symb(s))
-        elif self.call_des:
+        elif parse.call_des:
             return Types.CallDes(self.calldes_symb(s))
         return self.jumpdes_symb(s)
 
@@ -179,7 +180,7 @@ class parse(object):
 
     def op_symb(self, sym):
         if sym not in Types.Op: raise Exception('Invalid operator:' + sym)
-        if sym.upper() in ['CALL', 'CALLQ']: self.call_des = True
+        if sym.upper() in ['CALL', 'CALLQ']: parse.call_des = True
         return sym
 
     def push_stack(self, lex):
@@ -224,7 +225,7 @@ class parse(object):
         return s
 
     def init_process(self):
-        self.call_des = False
+        parse.call_des = False
 
     def parse_instr(self, instr, loc):
         self.init_process()

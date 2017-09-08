@@ -182,8 +182,13 @@ def remove_over_once(l):
     pass
 
 def bbn_byloc(e, ls):
-    #TODO: stub
-    pass
+    def bs(low, up):
+        if low > up: return False
+        mid = (low + up) >> 1
+        if e == ls[mid]: return True
+        elif e < ls[mid]: return bs(low, mid-1)
+        return bs(mid+1, up)
+    return bs(0, len(ls) - 1)
 
 
 class Algo(object):

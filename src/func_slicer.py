@@ -1,14 +1,15 @@
 import init_sec_adjust
-from ail_utils import read_file, unify_int_list, get_loc, dec_hex
 from Types import Func
+from ail_utils import read_file, unify_int_list, get_loc, dec_hex
 
 
 class func_slicer(object):
 
+    func_set = {}
+
     def __init__(self, instrs, funcs):
         self.instrs = instrs
         self.funcs = funcs
-        self.func_set = {}
 
         self.baddr = -1
         self.eaddr = -1
@@ -27,13 +28,13 @@ class func_slicer(object):
 
     def update(self):
         func = 'S_' + dec_hex(self.baddr)
-        if func in self.func_set:
-            self.func_set[func].func_begin_addr = self.baddr
-            self.func_set[func].func_end_addr = self.eaddr
-            self.func_set[func].is_lib = False
+        if func in func_slicer.func_set:
+            func_slicer.func_set[func].func_begin_addr = self.baddr
+            func_slicer.func_set[func].func_end_addr = self.eaddr
+            func_slicer.func_set[func].is_lib = False
         else:
             f1 = Func(func, self.baddr, self.eaddr, False)
-            self.func_set[func] = f1
+            func_slicer.func_set[func] = f1
 
     def filter_addr_by_secs(self, bl):
         init_sec_adjust.main()
@@ -76,10 +77,10 @@ class func_slicer(object):
 
     def update_func(self):
         for e in self.funcs:
-            self.func_set[e.func_name] = e
+            func_slicer.func_set[e.func_name] = e
 
     def get_func_list(self):
-        return self.func_set.values()
+        return func_slicer.func_set.values()
 
     def funcaddr_from_file(self):
         self.func_begins = map(lambda a: int(a, 16), read_file('faddr.txt'))
