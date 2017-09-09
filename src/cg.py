@@ -2,10 +2,9 @@ from visit import ailVisitor
 
 
 class cg(ailVisitor):
-
-    def __init__(self):
-        # TODO: stub
-        pass
+    
+    cg_tbl = {}
+    cfi_tbl = {}
 
     def update_cgtbl(self, l, func):
         # TODO: stub
@@ -28,8 +27,7 @@ class cg(ailVisitor):
         pass
 
     def visit(self, instrs):
-        # TODO: stub
-        pass
+        return self.vinst_tail(instrs)
 
     def cfi_specified_tbl(self):
         # TODO: stub

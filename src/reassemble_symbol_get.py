@@ -2,7 +2,8 @@ import Types
 import parse_init_array
 import exception_process
 from visit import ailVisitor
-from ail_utils import get_loc, read_file, ELF_utils, dec_hex, set_loc
+from ail_utils import get_loc, read_file, ELF_utils, dec_hex, set_loc,\
+    unify_int_list
 
 def rev_map(f, l):
     return map(f, l)[::-1]
@@ -192,22 +193,34 @@ class instrhandler(object):
         pass
 
     def clean_sort(self, ll):
-        #TODO: stub
-        pass
+        ll = map(lambda l: int(l[3:] if '$' in l else l[2:], 16), ll)
+        ll = filter(lambda e: e != 0, ll)
+        return unify_int_list(ll)
 
     def clean_sort_bdf(self, ll):
-        #TODO: stub
+        #stub not used
         pass
 
     def process(self):
+        # here dec_hex is 'S_' + dec_hex(v)
         do_update = lambda s,n: s if n in s else s + '\n' + n
         des1 = self.clean_sort(self.des)
-        res = [], i = 0; j = 0
+        i = 0; j = 0
         while True:
-            if j == len(des1):
-                res += self.locs[i:]
-        #TODO: stub <---
-        return res
+            if j == len(des1) or i == len(self.locs):
+                break
+            # if i == len(self.locs)-1 and j == len(des1)-1:
+            #    raise Exception("undefined des list")
+            lh = self.locs[i]
+            dh = des1[j]
+            if dh == lh.loc_addr:
+                lhs = 'S_' + dec_hex(lh.loc_addr)
+                label = do_update(lh.loc_label, lhs + ' : ')
+                self.locs[i].loc_label = label
+                j += 1
+            elif dh < lh.loc_addr: 
+                j += 1
+            i += 1
 
     def insert_dummy(self):
         #TODO: stub
@@ -369,7 +382,7 @@ class reassemble(ailVisitor):
         return l in reassemble.text_set
 
     def v_exp2(self, exp, instr, f, chk):
-        # TODO: create subfunction to simplify this mess
+        # TODO: create subfunctions to simplify this mess
         # check_test_condition = lambda l,c: not (isinstance(l, Types.Normal) and c)
         if isinstance(exp, Types.Const):
             if isinstance(exp, Types.Normal) and chk: return exp
@@ -548,8 +561,10 @@ class reassemble(ailVisitor):
         return p.get_instr_list()
 
     def adjust_jmpref(self, instr_list):
-        #TODO: stub
-        pass
+        p = instrhandler(instr_list, self.jmpreflist)
+        p.set_instr_list()
+        p.process()
+        return p.get_instr_list()
 
     def adjust_funclabel(self, u_funcs, instr_list):
         #TODO: stub
@@ -600,8 +615,22 @@ class reassemble(ailVisitor):
         pass
 
     def add_func_label(self, ufuncs, instrs):
-        #TODO: stub
-        pass
+        i = 0; j = 0
+        while True:
+            if i == len(ufuncs) or j == len(instrs):
+                break
+            hf = ufuncs[i]
+            hi = instrs[j]
+            iloc = get_loc(hi)
+            if hf.func_begin_addr == iloc.loc_addr:
+                iloc.loc_label = '\n' + hf.func_name + ' : ' + iloc.loc_label
+                instrs[j] = set_loc(hi, iloc)
+                i += 1
+                j -= 1
+            elif hf.func_begin_addr < iloc.loc_addr:
+                i += 1
+            j += 1
+        return instrs
 
     def add_bblock_label(self, bbl, instrs):
         #TODO: stub

@@ -6,6 +6,7 @@ from reassemble_symbol_get import reassemble
 from disassemble_validator import dis_validator
 from ail_utils import Time_Record as TR, read_file
 
+
 class Disam(object):
 
     @staticmethod

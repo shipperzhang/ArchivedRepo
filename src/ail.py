@@ -4,6 +4,7 @@ import post_process_lib
 from Types import Func, Section
 from disassemble_process import Disam
 from analysis_process import Analysis
+from pp_print import pp_print_list
 
 
 
@@ -78,9 +79,9 @@ class Ail(object):
 
     def instrProcess_2(self):
         self.pre_process()
-        _il, _fl, _re = Disam.disassemble(self.file, self.funcs, self.secs)
+        il, fl, re = Disam.disassemble(self.file, self.funcs, self.secs)
         print '3: analysis'
-        fbl, bbl, cfg_t, cg, _il, _re = Analysis.analyze_one(_il, _fl, _re)  # @UnusedVariable
+        fbl, bbl, cfg_t, cg, il, re = Analysis.analyze_one(il, fl, re)  # @UnusedVariable
         print '5: post processing'
-        Analysis.post_analyze(_il, _re)
+        Analysis.post_analyze(il, re)
         self.post_process()

@@ -22,7 +22,7 @@ class Analysis(object):
         _cfg.set_funcs(fl)
         u_fl = filter(lambda f: f.is_lib, fl)
         print '     user defined func number', len(u_fl)
-        _il = _cg.vinst(il)
+        _il = _cg.visit(il)
         _il = re.visit_type_infer_analysis([], _il)
         _il = re.share_lib_processing(_il)
         _il = re.adjust_loclabel(_il)

@@ -38,7 +38,7 @@ def get_loc(instr):
 def set_loc(instr, loc):
     t = type(instr)
     l = len(instr)
-    return t(instr[:l-2] (loc,) + instr[-1:])
+    return t(instr[:l-2] + (loc,) + instr[-1:])
 
 def get_addr(instr):
     return get_loc(instr).loc_addr

@@ -1,11 +1,22 @@
 from visit import ailVisitor
+import Types
 
 
 class cfg(ailVisitor):
+    
+    cfg_table = {}
+    cfg_bdiv_table = {}
+    counter = 0
 
     def __init__(self):
-        # TODO: stub
-        pass
+        self.found_entry = False
+        self.skip_entry = False
+        self.entry_loc = Types.Loc('', 0, True)
+        self.last_loc = Types.Loc('', 0, True)
+        self.entry_instr = Types.SingleInstr(('NOP', Types.Loc('', 0, True), None))
+        self.bb_list = []
+        self.bl = []
+        self.bl_sort = []
 
     def cfg_exp(self, e, l):
         # TODO: stub

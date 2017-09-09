@@ -33,7 +33,7 @@ def p_mathop(mathop):
     return '+' if str(mathop).upper() == 'MATHADD' else '-'
 
 def p_loc(loc):
-    return '0x%X' % loc
+    return '0x%x' % loc
 
 def p_func(func):
     return func.func_name
@@ -87,8 +87,8 @@ def p_exp(exp):
     if isinstance(exp, Types.Const): return p_const(exp)
     elif isinstance(exp, Types.Symbol): return p_symbol(exp)
     elif isinstance(exp, Types.AssistOpClass): return p_assist(exp)
-    elif isinstance(exp, Types.RegClass): return p_reg(exp)
     elif isinstance(exp, Types.Ptr): return p_ptraddr(exp)
+    elif isinstance(exp, Types.RegClass): return p_reg(exp)
     elif isinstance(exp, Types.Label): return str(exp)
 
 def dec_hex(val):

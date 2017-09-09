@@ -19,7 +19,8 @@ class parse(object):
         pass
 
     def unptr_symb(self, s):
-        return self.reg_symb(s[1:-1])
+        r = self.reg_symb(s[1:-1])
+        return Types.UnOP(r) if r is not None else None
 
     def binptr_m_symb(self, s):
         if ',' in s: return None
