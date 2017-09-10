@@ -1,5 +1,10 @@
 from visit import ailVisitor
 import Types
+from ail_utils import get_loc
+
+class tb(object):
+    def __init__(self, bn, baddr, eaddr):
+        self.bn = bn; self.baddr = baddr; self.eaddr = eaddr
 
 
 class cfg(ailVisitor):
@@ -19,11 +24,13 @@ class cfg(ailVisitor):
         self.bl_sort = []
 
     def cfg_exp(self, e, l):
-        # TODO: stub
-        pass
+        if isinstance(e, Types.JumpDes):
+            cfg.cfg_table[l.loc_addr] = e
+        elif isinstance(e, Types.CallDes) and not e.is_lib:
+            cfg.cfg_table[l.loc_addr] = e.func_begin_addr
 
     def vinst1(self, i):
-        # TODO: stub
+        # stub not used
         pass
 
     def vinst(self, i):
@@ -31,26 +38,29 @@ class cfg(ailVisitor):
         return ailVisitor.vinst(self, i)
 
     def visit(self, instrs):
-        # TODO: stub
-        return ailVisitor.visit(self, instrs)
+        self.end_loc = get_loc(instrs[-1])
+        il1 = map(self.vinst, instrs)
+        self.update_bl()
+        self.fb_list(self.bl)
+        self.bl_sort = sorted(self.bl, cmp=lambda b1,b2: b1.bblock_begin_loc.loc_addr - b2.bblock_begin_loc.loc_addr)
+        self.bl_sort = map(lambda b: tb(b.bblock_name, b.bblock_begin_loc.loc_addr, b.bblock_end_loc.loc_addr), self.bl_sort)
+        return il1
 
     def get_fbl(self):
-        # TODO: stub
-        pass
-
-    def print_fbl(self):
-        # TODO: stub
-        pass
+        return cfg.cfg_bdiv_table
 
     def get_bbl(self):
-        # TODO: stub
-        pass
+        return self.bl
 
     def fb_list(self, bl):
-        # TODO: stub
-        pass
+        for b in bl:
+            fn = b.bf_name
+            e = cfg.cfg_bdiv_table.get(fn, [])
+            e.append(b)
+            cfg.cfg_bdiv_table[fn] = e 
 
     def update_bl(self):
+        # update in place (no return)
         # TODO: stub
         pass
 
@@ -63,5 +73,5 @@ class cfg(ailVisitor):
         pass
 
     def get_cfg_table(self, instr_list):
-        # TODO: stub
-        pass
+        self.instrs = instr_list
+        return self.recover_cfg()

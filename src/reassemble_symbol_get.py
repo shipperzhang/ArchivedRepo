@@ -4,6 +4,9 @@ import exception_process
 from visit import ailVisitor
 from ail_utils import get_loc, read_file, ELF_utils, dec_hex, set_loc,\
     unify_int_list
+from share_lib_helper import lib32_helper
+import spliter
+import os
 
 def rev_map(f, l):
     return map(f, l)[::-1]
@@ -35,8 +38,8 @@ class datahandler:
 
         self.data_list = []
         self.rodata_list = []
-        self.got_array = []
-        self.bss_array = []
+        self.got_list = []
+        self.bss_list = []
 
         self.text_sec = (0, 0)
         self.locations = []
@@ -54,12 +57,32 @@ class datahandler:
         self.assumption_three = False
 
     def set_datas(self, funcs):
-        #TODO: stub
-        pass
+        self.section_collect()
+        self.data_collect()
+        
+        self.data_list = self.data_trans(self.data)
+        self.rodata_list = self.data_trans(self.rodata)
+        self.got_list = self.data_trans(self.got)
+        self.bss_list = self.data_trans(self.bss)
+        self.locations = self.label_locate()
+        
+        fl = sorted(funcs, cmp=lambda f1,f2: f1.func_begin_addr - f2.func_begin_addr)
+        self.fl_sort = map(lambda f: ft(f.func_name, f.func_begin_addr, f.func_end_addr), fl)
+
+        self.text_mem_addrs = map(lambda a: int(a.strip().rstrip(':'), 16), read_file('text_mem.info'))
+        self.text_mem_arr = self.text_mem_addrs
+        
+        self.label_mem_arr = sorted(self.label_mem_addrs)
+        self.set_assumption_flag()
+        
+        if ELF_utils.elf_32(): self.data_refer_solve(funcs)
+        else: self.data_refer_solve_64(funcs)
 
     def set_assumption_flag(self):
-        #TODO: stub
-        pass
+        with open('assumption_set.info') as f:
+            l = f.readline()
+            self.assumption_two = '2' in l
+            self.assumption_three = '3' in l 
 
     def set_datas_1(self):
         #TODO: stub
@@ -70,8 +93,9 @@ class datahandler:
         pass
 
     def text_sec_collect(self):
-        #TODO: stub
-        pass
+        with open('text_sec.info') as f:
+            items = f.readline().split()
+            self.text_sec = (int(items[1], 16), int(items[3], 16))
 
     def check_text(self, addr):
         #TODO: stub
@@ -90,11 +114,14 @@ class datahandler:
         pass
 
     def data_refer_solve_64(self, funcs):
-        #TODO: stub
+        begin_addrs = map(lambda f: f.func_begin_addr, funcs)
+        self.add_data_label()
+        #TODO: stub <------
         pass
 
     def data_refer_solve(self, funcs):
-        #TODO: stub
+        begin_addrs = map(lambda f: f.func_begin_addr, funcs)
+        # TODO: stub <-----
         pass
 
     def check_jmptable_1(self, addrs):
@@ -114,48 +141,64 @@ class datahandler:
         pass
 
     def section_collect(self):
-        #TODO: stub
-        pass
+        with open('sections.info') as f:
+            for l in f:
+                items = l.split()
+                addr = int(items[1], 16)
+                size = int(items[3], 16)
+                self.sec.insert(0, Types.Section(items[0], addr, size))
 
     def section_offset(self, name, addr):
-        #TODO: stub
-        pass
+        for h in self.sec:
+            if h.sec_name == name:
+                return addr - h.sec_begin_addr
+        raise Exception('failed to find section offset')
 
     def section_addr(self, name):
-        #TODO: stub
-        pass
+        for h in self.sec:
+            if h.sec_name == name:
+                return h.sec_begin_addr
+        raise Exception('failed to find section')
 
     def data_collect(self):
-        #TODO: stub
-        pass
+        spliter.main()
+        self.data = self.collect('data_split.info')
+        self.rodata = self.collect('rodata_split.info')
+        if not ELF_utils.elf_32():
+            self.got = self.collect('got_split.info')
+            self.bss = self.collect('bss.info')
 
     def sec_transform(self, s):
-        #TODO: stub
-        pass
+        if s == '.got': return '.got'
+        elif s == 'bss': return '.bss'
+        return '.rodata'
 
     def check_sec(self, addr):
-        #TODO: stub
-        pass
+        for h in self.sec:
+            b = h.sec_begin_addr
+            e = b + h.sec_size
+            if b <= addr < e: return h
+        return None
 
     def data_transform(self, data_str):
-        #TODO: stub
+        # not used stub
         pass
 
     def data_trans(self, data_list):
-        #TODO: stub
-        pass
+        return map(lambda l: ('', l), data_list)
 
     def label_locate(self):
-        #TODO: stub
-        pass
+        return map(lambda l: (l[0], self.section_offset(l[0], l[1])), self.label)
 
     def add_data_label(self):
-        #TODO: stub
-        pass
-
-    def process(self, lbs):
-        #TODO: stub
-        pass
+        for e in self.locations:
+            n, l = e
+            if n == '.data':
+                off = l - self.section_addr('.data')
+                self.data_list[off] = (dec_hex(l), self.data_list[off][1])
+            elif n == '.rodata':
+                off = l - self.section_addr('.rodata')
+                self.rodata_list[off] = (dec_hex(l), self.rodata_list[off][1])
 
     def data_output(self):
         #TODO: stub
@@ -166,12 +209,9 @@ class datahandler:
         pass
 
     def collect(self, name):
-        #TODO: stub
-        pass
-
-    def collect_bss(self, name):
-        #TODO: stub
-        pass
+        if os.path.isfile(name):
+            return map(str.strip, read_file(name))
+        return []
 
 
 class instrhandler(object):
@@ -523,12 +563,19 @@ class reassemble(ailVisitor):
         return tl
 
     def visit_type_infer_analysis(self, bbl, instrs):
-        #TODO: stub
-        pass
+        self.instr_list = instrs
+        f = lambda: True
+        return map(lambda i: self.vinst2(f, i), instrs)
 
     def share_lib_processing(self, instrs):
-        #TODO: stub
-        pass
+        if ELF_utils.elf_lib() and ELF_utils.elf_32():
+            helper = lib32_helper(instrs)
+            for addr in helper.traverse():
+                s = self.check_sec(addr)
+                if s is None: raise Exception('unsupported section info')
+                self.label.insert(0, (s.sec_name, addr))
+            return helper.get_instrs()
+        return instrs
 
     def check_bss(self, addr):
         #TODO: stub
@@ -575,8 +622,12 @@ class reassemble(ailVisitor):
         pass
 
     def data_dump(self, funcs):
-        #TODO: stub
-        pass
+        t = self.label + self.export_data_dump()
+        p = datahandler(t)
+        p.text_sec_collect()
+        p.set_datas(funcs)
+        self.jmpreflist = map(lambda l: 'S_' + dec_hex(l), p.get_textlabel())
+        return p.data_output()
 
     def data_dump_1(self):
         #TODO: stub
@@ -607,8 +658,8 @@ class reassemble(ailVisitor):
         pass
 
     def reassemble_dump(self, u_funcs):
-        #TODO: stub
-        pass
+        self.data_dump(u_funcs)
+        self.init_array_dump()
 
     def reassemble_dump_1(self):
         #TODO: stub
