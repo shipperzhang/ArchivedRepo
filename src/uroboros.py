@@ -141,7 +141,9 @@ def set_assumption (assumptions):
 
 
 def main():
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    workdir = os.path.dirname(os.path.abspath(__file__)) + '/workdir'
+    if not os.path.isdir(workdir): os.mkdir(workdir)
+    os.chdir(workdir)
     p = ArgumentParser(formatter_class=RawTextHelpFormatter)
     p.add_argument("binary",
                    help="path to the input binary")
