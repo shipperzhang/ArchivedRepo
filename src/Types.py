@@ -201,6 +201,10 @@ class JmpTable_PLUS_S(tuple, Ptr): pass
 class JmpTable_MINUS_S(tuple, Ptr): pass
 class SegRef(tuple, Ptr): pass
 
+class control(object): pass
+class J(control): pass
+class F(control): pass
+
 class Instr(tuple): pass
 class SingleInstr(Instr):
     def __init__(self, items):
@@ -218,11 +222,3 @@ class FourInstr(Instr):
     def __init__(self, items):
         if len(items) != 6: raise Exception('Invalid quad')
         super(FourInstr, self).__init__(items)
-
-
-
-
-
-
-
-#TODO: find smart way to represent type system

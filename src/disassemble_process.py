@@ -52,5 +52,5 @@ class Disam(object):
             else:
                 cond = True
 
-        print "     no disassembly error detects"
+        print "     no disassembly error detected"
         return (il, fl, re)

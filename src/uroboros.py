@@ -1,5 +1,6 @@
 import os
 import glob
+import init
 import time
 import shutil
 import datetime
@@ -12,6 +13,7 @@ import post_process_data
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from main_discover import check_exe, check_strip
+import traceback
 
 
 f_dic = ''
@@ -33,7 +35,8 @@ def process(filepath, iter_curr, iter_num, keep):
         os.system('strip ' + filepath)
         main_discover.main_discover(filepath)
 
-        os.system("./init.native " + filepath)
+        # os.system("./init.native " + filepath)
+        init.main(filepath)
         if not os.path.isfile("final.s"): return False
 
         post_process_data.post_process_data()
@@ -64,7 +67,7 @@ def process(filepath, iter_curr, iter_num, keep):
             shutil.copy('a.out', f_dic + "/" + filepath + "." + str(iter_curr + 1))
             shutil.move('final.s.' + str(iter_curr), f_dic)
     except Exception as e:
-        print(e)
+        print e
         return False
     else:
         if os.path.isfile('faddr_old.txt.' + str(iter_curr)):

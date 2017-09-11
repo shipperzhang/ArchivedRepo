@@ -18,7 +18,7 @@ class Init(object):
         self.is_32 = check_32()
 
     def disassemble(self):
-        print '1: linearly disassemble\n'
+        print '1: linearly disassemble'
         ret = os.system('objdump -Dr -j .text ' + self.file + ' > ' + self.file + '.temp')
         self.checkret(ret, self.file + '.temp')
 
@@ -108,8 +108,7 @@ def clear_code():
 
 
 def main(filepath):
-    # TODO: I don't see why we would only like stripped bynaries, ignore it for now
-    if (check_strip() or 1) and check_exe():
+    if check_strip() and check_exe():
         clear_code()
         init = Init(filepath)
         init.disassemble()

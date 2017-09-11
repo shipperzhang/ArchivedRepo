@@ -249,58 +249,49 @@ class Opcode_utils(object):
 
     @staticmethod
     def is_func(e):
-        #TODO: stub
-        pass
+        return isinstance(e, Types.CallDes)
 
     @staticmethod
     def is_jmp(op):
-        #TODO: stub
-        pass
+        return op.upper() == 'JMP'
 
     @staticmethod
     def is_cond_jmp(op):
-        #TODO: stub
-        pass
+        return op.upper() != 'JMP' and op in Types.JumpOp
 
     @staticmethod
     def is_assign(op):
-        #TODO: stub
-        pass
+        return op in Types.AssignOp
 
     @staticmethod
-    def is_mem_exp(op):
-        #TODO: stub
-        pass
+    def is_mem_exp(e):
+        if isinstance(e, Types.StarDes):
+            return Opcode_utils.is_mem_exp(e.content)
+        return isinstance(e, Types.Ptr)
 
     @staticmethod
     def is_push(op):
-        #TODO: stub
-        pass
+        return op.upper() == 'PUSH'
 
     @staticmethod
     def is_stack_op(op):
-        #TODO: stub
-        pass
+        return op in Types.StackOp
 
     @staticmethod
     def is_mov(op):
-        #TODO: stub
-        pass
+        return op.upper() in ['MOV', 'MOVL']
 
     @staticmethod
     def is_call(op):
-        #TODO: stub
-        pass
+        return op.upper() in ['CALL', 'CALLQ']
 
     @staticmethod
     def is_ret(op):
-        #TODO: stub
-        pass
+        return op.upper() in ['RET', 'RETN']
 
     @staticmethod
-    def is_indirect(op):
-        #TODO: stub
-        pass
+    def is_indirect(s):
+        return isinstance(s, Types.StarDes)
 
     @staticmethod
     def is_control_transfer_op(op):
@@ -311,8 +302,7 @@ class Opcode_utils(object):
 
     @staticmethod
     def is_cmp_op(op):
-        #TODO: stub
-        pass
+        return op in Types.CompareOp
 
 
 class Exp_utils(object):

@@ -3,10 +3,11 @@ import parse_init_array
 import exception_process
 from visit import ailVisitor
 from ail_utils import get_loc, read_file, ELF_utils, dec_hex, set_loc,\
-    unify_int_list
+    unify_int_list, bbn_byloc
 from share_lib_helper import lib32_helper
 import spliter
 import os
+import export_data
 
 def rev_map(f, l):
     return map(f, l)[::-1]
@@ -75,6 +76,7 @@ class datahandler:
         self.label_mem_arr = sorted(self.label_mem_addrs)
         self.set_assumption_flag()
         
+        self.begin_addrs = map(lambda f: f.func_begin_addr, funcs)
         if ELF_utils.elf_32(): self.data_refer_solve(funcs)
         else: self.data_refer_solve_64(funcs)
 
@@ -85,12 +87,12 @@ class datahandler:
             self.assumption_three = '3' in l 
 
     def set_datas_1(self):
-        #TODO: stub
+        # stub not used
         pass
 
     def get_textlabel(self):
-        #TODO: stub
-        pass
+        self.dump_d2c_labels(self.text_labels_reloc)
+        return self.text_labels
 
     def text_sec_collect(self):
         with open('text_sec.info') as f:
@@ -98,8 +100,10 @@ class datahandler:
             self.text_sec = (int(items[1], 16), int(items[3], 16))
 
     def check_text(self, addr):
-        #TODO: stub
-        pass
+        if addr == 0xffff: return False
+        b = self.text_sec[0]
+        e = b + self.text_sec[1]
+        return b <= addr < e and bbn_byloc(addr, self.text_mem_arr) 
 
     def dump_c2d_labels(self, dl):
         #TODO: stub
@@ -110,35 +114,108 @@ class datahandler:
         pass
 
     def dump_d2c_labels(self, dl):
-        #TODO: stub
-        pass
+        with open('final_d2c_label.txt', 'a') as f:
+            f.write('\n'.join(map(dec_hex, dl)))
+            f.write('\n')
+
+    def traverse64(self, l, addr):
+        i = 0
+        while i < len(l) - 7:
+            val = int(''.join(map(lambda e: e[1][8:10], reversed(l[i:i+8]))), 16)
+            s = self.check_sec(val)
+            if s is not None:
+                if self.assumption_two:
+                    self.in_jmptable = False
+                else:
+                    self.data_labels.insert(0, (s.sec_name, val))
+                    self.data_labels_reloc.insert(0, addr)
+                    l[i] = (l[i][0], '.long S0x%X' % val)
+                    l[i+1:i+8] = ('', '') * 7
+            else:
+                if self.check_text(val):
+                    c = bbn_byloc(val, self.begin_addrs) if self.assumption_three else True
+                    if (not c and self.check_jmptable(l[i][0], val)) or \
+                       (c and self.check_jmptable_1(l[i][0])):
+                        self.in_jmptable = True
+                        self.cur_func_name = self.fn_byloc(val)
+                        self.text_labels.insert(0, val)
+                        self.text_labels_reloc.insert(0, addr)
+                        l[i] = (l[i][0], '.long S0x%X' % val)
+                        l[i+1:i+8] = ('', '') * 7
+                    else: self.in_jmptable = False
+                else: self.in_jmptable = False
+            i += 8
+            addr += 8
 
     def data_refer_solve_64(self, funcs):
-        begin_addrs = map(lambda f: f.func_begin_addr, funcs)
         self.add_data_label()
-        #TODO: stub <------
-        pass
+        self.traverse64(self.data_list, 0x080500c4)
+        self.traverse64(self.rodata_list, 0x0804cc60)
+        self.traverse64(self.got_list, 0x0)
+
+    def traverse32(self, l, addr):
+        i = 0
+        while i < len(l) - 3:
+            val = int(''.join(map(lambda e: e[1][8:10], reversed(l[i:i+4]))), 16)
+            s = self.check_sec(val)
+            if s is not None:
+                if self.assumption_two:
+                    self.in_jmptable = False
+                else:
+                    self.data_labels.insert(0, (s.sec_name, val))
+                    self.data_labels_reloc.insert(0, addr)
+                    l[i] = (l[i][0], '.long S0x%X' % val)
+                    l[i+1:i+4] = ('', '') * 3
+            else:
+                if self.check_text(val):
+                    c = bbn_byloc(val, self.begin_addrs) if self.assumption_three else True
+                    if (not c and self.check_jmptable(l[i][0], val)) or \
+                       (c and self.check_jmptable_1(val)):
+                        self.in_jmptable = True
+                        self.cur_func_name = self.fn_byloc(val)
+                        self.text_labels.insert(0, val)
+                        self.text_labels_reloc.insert(0, addr)
+                        l[i] = (l[i][0], '.long S0x%X' % val)
+                        l[i+1:i+4] = ('', '') * 3
+                    else: self.in_jmptable = False 
+                else: self.in_jmptable = False
+            i += 4
+            addr += 4
 
     def data_refer_solve(self, funcs):
-        begin_addrs = map(lambda f: f.func_begin_addr, funcs)
-        # TODO: stub <-----
-        pass
+        self.add_data_label()
+        self.traverse32(self.data_list, 0x082f3110)
+        self.traverse32(self.rodata_list, 0x08288680)
 
     def check_jmptable_1(self, addrs):
-        #TODO: stub
-        pass
+        try: return int(addrs, 16) in self.label_set
+        except: return False
 
     def data_refer_solve1(self):
-        #TODO: stub
+        # stub not used
         pass
 
     def fn_byloc(self, addr):
-        #TODO: stub
-        pass
+        l = 0; r = len(self.fl_sort)-1
+        while l <= r:
+            mid = l + (r - l) / 2
+            fmid = self.fl_sort[mid]
+            if fmid.fbaddr <= addr <= fmid.feaddr:
+                return fmid.fn
+            elif fmid.fbaddr < addr:
+                l = mid + 1
+            else: r = mid - 1
+        raise Exception('failed to find funcname')
 
     def check_jmptable(self, addrs, v):
-        #TODO: stub
-        pass
+        if self.in_jmptable and self.fn_byloc(v) == self.cur_func_name:
+            return True
+        try:
+            if bbn_byloc(int(addrs, 16), self.label_arr):
+                self.in_jmptable = True
+                return True
+            return False
+        except: return False
 
     def section_collect(self):
         with open('sections.info') as f:
@@ -185,28 +262,50 @@ class datahandler:
         pass
 
     def data_trans(self, data_list):
-        return map(lambda l: ('', l), data_list)
+        return map(lambda l: ('', l), data_list)[::-1]
 
     def label_locate(self):
         return map(lambda l: (l[0], self.section_offset(l[0], l[1])), self.label)
 
     def add_data_label(self):
+        dataoff = self.section_addr('.data')
+        rodataoff = self.section_addr('.rodata')
         for e in self.locations:
             n, l = e
             if n == '.data':
-                off = l - self.section_addr('.data')
-                self.data_list[off] = (dec_hex(l), self.data_list[off][1])
+                self.data_list[l] = (dec_hex(l+dataoff), self.data_list[l][1])
             elif n == '.rodata':
-                off = l - self.section_addr('.rodata')
-                self.rodata_list[off] = (dec_hex(l), self.rodata_list[off][1])
+                self.rodata_list[l] = (dec_hex(l+rodataoff), self.rodata_list[l][1])
+
+    def process(self, lbs, withoff=False):
+        ds = {'.data': self.data_list, '.rodata': self.rodata_list,
+              '.got': self.got_list, '.bss': self.bss_list}
+        for i in xrange(len(lbs)):
+            n, l = lbs[i]
+            if n in ds:
+                if withoff:
+                    off = l - self.section_addr(n)
+                else:
+                    off = l
+                    l += self.section_addr(n)
+                ds[n][off] = ('S_' + dec_hex(l) + ': ', ds[n][off][1])
 
     def data_output(self):
-        #TODO: stub
-        pass
-
-    def collect_ocaml(self, name):
-        #TODO: stub
-        pass
+        self.process(self.locations)
+        self.process(self.data_labels, True)
+        if len(self.rodata_list) != 0:
+            l, s = self.rodata_list[0]
+            self.rodata_list[0] = ('s_dummy:\n' + l, s)
+        self.rodata_list.insert(0, ('.section .rodata', ''))
+        self.got_list.insert(0, ('.section .got', ''))
+        self.data_list.insert(0, ('.section .data', ''))
+        self.bss_list.insert(0, ('.section .bss', ''))
+        with open('final_data.s', 'a') as f:
+            func = lambda e: e[0] + e[1]  
+            f.write('\n'.join(map(func, self.rodata_list)) + '\n')
+            f.write('\n' + '\n'.join(map(func, self.data_list)) + '\n')
+            f.write('\n' + '\n'.join(map(func, self.got_list)) + '\n')
+            f.write('\n' + '\n'.join(map(func, self.bss_list)))
 
     def collect(self, name):
         if os.path.isfile(name):
@@ -618,8 +717,19 @@ class reassemble(ailVisitor):
         pass
 
     def adjust_globallabel(self, g_bss, instr_list):
-        #TODO: stub
-        pass
+        g_bss = filter(lambda e: '@' in e[1], g_bss)
+        labels = map(lambda e: e[0], g_bss)
+        gbss_hs = {}
+        for e in g_bss:
+            addr = 'S_0x' + e[0]
+            gbss_hs[addr] = e[1].split('@')[0] if '@' in e[1] else e[1]
+        def mapper(l):
+            r = next((lab for lab in labels if lab in l), None)
+            if r is not None:
+                key = 'S_0x' + r
+                return l.replace(key, gbss_hs[key], 1) 
+            return l
+        return map(mapper, instr_list)
 
     def data_dump(self, funcs):
         t = self.label + self.export_data_dump()
@@ -627,7 +737,7 @@ class reassemble(ailVisitor):
         p.text_sec_collect()
         p.set_datas(funcs)
         self.jmpreflist = map(lambda l: 'S_' + dec_hex(l), p.get_textlabel())
-        return p.data_output()
+        p.data_output()
 
     def data_dump_1(self):
         #TODO: stub
@@ -642,12 +752,19 @@ class reassemble(ailVisitor):
         pass
 
     def init_array_dump(self):
-        #TODO: stub
-        pass
+        if len(self.init_array_list) != 0:
+            with open('final_data.s', 'a') as f:
+                f.write('\n\n.section        .ctors,\"aw\",@progbits\n.align 4\n')
+                f.write('\n'.join(map(lambda s: '.long ' + s.strip(), self.init_array_list)))
+                f.write('\n')
 
     def export_data_dump(self):
-        #TODO: stub
-        pass
+        def mapper(l):
+            i = int(l.strip(), 16)
+            s = self.check_sec(i)
+            if s is None: raise Exception('unsupported export data')
+            return (s.sec_name, i)
+        return map(mapper, export_data.main())
 
     def ehframe_dump(self):
         #TODO: stub
@@ -662,7 +779,7 @@ class reassemble(ailVisitor):
         self.init_array_dump()
 
     def reassemble_dump_1(self):
-        #TODO: stub
+        # stub not used
         pass
 
     def add_func_label(self, ufuncs, instrs):
@@ -684,26 +801,33 @@ class reassemble(ailVisitor):
         return instrs
 
     def add_bblock_label(self, bbl, instrs):
-        #TODO: stub
-        pass
+        bbl1 = sorted(bbl, lambda b1,b2: b1.bblock_begin_loc.loc_addr - b2.bblock_begin_loc.loc_addr)
+        i = 0; j = 0
+        while True:
+            if i == len(instrs) and j < len(bbl1):
+                raise Exception('failed to add block label')
+            if j == len(bbl1): break
+            hi = instrs[i]
+            hb = bbl1[j]
+            iloc = get_loc(hi)
+            bloc = hb.bblock_begin_loc
+            if bloc.loc_addr == iloc.loc_addr:
+                iloc = Types.Loc(hb.bblock_name + ': ' + iloc.loc_label, iloc.loc_addr, iloc.loc_visible)
+                instrs[i] = set_loc(instrs[i], iloc)
+                j += 1
+            i += 1
+        return instrs
 
     def unify_loc1(self, instrs):
-        #TODO: stub
-        pass
-
-    def update_instrs(self, instrs):
-        #TODO: stub
-        pass
-
-    def set_list(self, instrs):
-        #TODO: stub
+        # stub not used
         pass
 
     def unify_loc(self, instrs):
-        #TODO: stub
-        pass
-
-    def unify_instrs(self, instrs):
-        #TODO: stub
-        pass
-
+        last_label = ''
+        for i in xrange(len(instrs)):
+            lo = get_loc(instrs[i])
+            if lo.loc_label != '' and lo.loc_label == last_label:
+                instrs[i] = set_loc(instrs[i], Types.Loc('', lo.loc_addr, True))
+            else:
+                last_label = lo.loc_label
+        return instrs

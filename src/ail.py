@@ -4,8 +4,6 @@ import post_process_lib
 from Types import Func, Section
 from disassemble_process import Disam
 from analysis_process import Analysis
-from pp_print import pp_print_list
-
 
 
 class Ail(object):
