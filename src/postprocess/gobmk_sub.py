@@ -44,7 +44,7 @@ def gobmk_sub():
 
     with open ("final.s") as f:
         lines = f.readlines()
-    
+
     for i in range(len(lines)):
         l = lines[i]
         if "S_0x80E0400(" in l: # we found it
@@ -62,6 +62,6 @@ def gobmk_sub():
                 lines[i+1] = ".byte 0x00\n"
                 lines[i+2] = ".byte 0x0C\n"
                 lines[i+3] = ".byte 0x08\n"
-    
+
     with open('final.s', 'w') as f:
         f.writelines(lines)

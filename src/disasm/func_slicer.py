@@ -1,6 +1,7 @@
+import Types
 import init_sec_adjust
 from Types import Func
-from ail_utils import read_file, unify_int_list, get_loc, dec_hex
+from utils.ail_utils import read_file, unify_int_list, get_loc, dec_hex
 
 
 class func_slicer(object):
@@ -63,17 +64,11 @@ class func_slicer(object):
         self.eaddr = get_loc(self.instrs[0]).loc_addr
         self.update()
 
-    def process(self):
-        #TODO: stub
-        pass
-
     def check_text(self, e):
-        #TODO: stub
-        pass
-
-    def process2(self):
-        #TODO: stub
-        pass
+        if isinstance(e, Types.CallDes) and not e.is_lib:
+            n = int(e.func_name[2:], 16)
+            return self.text_b_addr <= n < self.text_e_addr
+        return False
 
     def update_func(self):
         for e in self.funcs:
@@ -84,10 +79,6 @@ class func_slicer(object):
 
     def funcaddr_from_file(self):
         self.func_begins = map(lambda a: int(a, 16), read_file('faddr.txt'))
-
-    def dump_funclist(self):
-        #TODO: stub
-        pass
 
     def get_funcs(self):
         self.funcaddr_from_file()

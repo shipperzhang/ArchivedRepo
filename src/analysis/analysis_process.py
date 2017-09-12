@@ -1,7 +1,7 @@
 from cg import cg
 from cfg import cfg
-from ail_utils import read_file
-from pp_print import pp_print_list, pp_print_file
+from utils.ail_utils import read_file
+from utils.pp_print import pp_print_list, pp_print_file
 
 class Analysis(object):
 

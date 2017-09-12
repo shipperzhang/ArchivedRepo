@@ -184,7 +184,6 @@ class Const(long, Exp): pass
 class Point(Const): pass
 class Normal(Const): pass
 
-# TODO: type checks
 class UnOP(RegClass, Ptr): pass
 class BinOP_PLUS(tuple, Ptr): pass
 class BinOP_PLUS_S(tuple, Ptr): pass

@@ -1,9 +1,8 @@
-import pre_process
-import post_process
-import post_process_lib
-from Types import Func, Section
-from disassemble_process import Disam
-from analysis_process import Analysis
+from disasm import pre_process
+from disasm.Types import Func, Section
+from disasm.disassemble_process import Disam
+from analysis.analysis_process import Analysis
+from postprocess import post_process, post_process_lib
 
 
 class Ail(object):

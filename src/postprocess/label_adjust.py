@@ -23,12 +23,12 @@ import re
 def label_adjust():
     with open('faddr.txt') as f:
         funcs = map(lambda l:int(l,16), f.readlines())
-    
+
     with open('final.s') as f:
         lines = f.readlines()
-    
+
     regex = re.compile(r'S_(0x[0-9A-F]{7}):', re.I)
-    
+
     is_text = False
     for i in range(len(lines)):
         l = lines[i]
@@ -43,11 +43,11 @@ def label_adjust():
                 #    lines[i] = pl
                 #    lines[i-1] = l
                 lines[i] = ".globl S_"+ d + "\n" + l
-    
+
         elif ".section" in l and is_text == False:
             is_text = True
         elif ".section" in l and is_text == True:
             break
-    
+
     with open('final.s', 'w') as f:
         f.writelines(lines)

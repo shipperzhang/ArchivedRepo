@@ -1,5 +1,4 @@
-import Types
-
+from disasm import Types
 
 def flip(func, x, y):
     return func(y, x)

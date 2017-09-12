@@ -1,8 +1,9 @@
+from disasm import Types
 from visit import ailVisitor
-import Types
-from ail_utils import get_loc, Opcode_utils, sort_loc, get_instr_byloc,\
-    get_next_bb, recover_addr_from_label
-from pp_print import p_exp
+from utils.pp_print import p_exp
+from utils.ail_utils import get_loc, Opcode_utils, sort_loc, get_instr_byloc,\
+                            get_next_bb, recover_addr_from_label
+
 
 class tb(object):
     def __init__(self, bn, baddr, eaddr):
@@ -10,7 +11,7 @@ class tb(object):
 
 
 class cfg(ailVisitor):
-    
+
     cfg_table = {}
     cfg_bdiv_table = {}
     counter = 0
@@ -37,7 +38,7 @@ class cfg(ailVisitor):
 
     def bb_entry(self, i):
         return ':' in get_loc(i).loc_label
-    
+
     def help_entry(self, i):
         if self.found_entry:
             bn = 'BB_' + str(cfg.counter)
@@ -49,7 +50,7 @@ class cfg(ailVisitor):
         self.entry_loc = get_loc(i)
         self.last_loc = self.entry_loc
         return i
-    
+
     def help_exit(self, i):
         loc = get_loc(i)
         if self.found_entry:
@@ -66,12 +67,8 @@ class cfg(ailVisitor):
             b = Types.Bblock('', bn, loc, loc, i)
             self.bb_list.insert(0, b)
         else:
-            self.last_loc = loc 
+            self.last_loc = loc
         return i
-    
-    def vinst1(self, i):
-        # stub never used
-        pass
 
     def vinst(self, i):
         loc = get_loc(i)
@@ -96,7 +93,7 @@ class cfg(ailVisitor):
         elif isinstance(i, (Types.DoubleInstr, Types.SingleInstr)) and self.bb_exit(i[0]):
             return self.help_exit(i)
         self.last_loc = loc
-        return i 
+        return i
 
     def visit(self, instrs):
         self.end_loc = get_loc(instrs[-1])
@@ -118,7 +115,7 @@ class cfg(ailVisitor):
             fn = b.bf_name
             e = cfg.cfg_bdiv_table.get(fn, [])
             e.append(b)
-            cfg.cfg_bdiv_table[fn] = e 
+            cfg.cfg_bdiv_table[fn] = e
 
     def update_bl(self):
         self.bl = []
@@ -153,7 +150,7 @@ class cfg(ailVisitor):
     def next_bb(self, bnl, bn):
         bn1 = get_next_bb(bn)
         return bn1 if bn1 in bnl else 'INTER'
-    
+
     def recover_cfg(self):
         def aux(bnl, acc, i):
             if isinstance(i, Types.SingleInstr) and Opcode_utils.is_ret(i[0]):
@@ -174,7 +171,7 @@ class cfg(ailVisitor):
                         acc.insert(0, (bn, (Types.J(), 'INTER')))
                     else:
                         en = recover_addr_from_label(p_exp(i[1]))
-                        if en == -1: 
+                        if en == -1:
                             acc.insert(0, (bn, (Types.J(), 'T')))
                         else:
                             dn = self.bbn_byloc(en)
@@ -201,7 +198,7 @@ class cfg(ailVisitor):
         return res
 
     def print_cfg_graph(self, cfg_t):
-        # TODO: stub
+        # stub not used
         pass
 
     def get_cfg_table(self, instr_list):

@@ -30,8 +30,6 @@
 # But it only has very low possiblity to fail
 #
 
-import sys, os
-
 
 lines = []
 with open('final_data.s') as f:

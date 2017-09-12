@@ -1,7 +1,7 @@
 from Parser import parse
-from pp_print import pp_print_instr
 from func_slicer import func_slicer
-from ail_utils import dec_hex, unify_funclist_by_name, unify_funclist_by_addr, int_of_string_opt
+from utils.pp_print import pp_print_instr
+from utils.ail_utils import dec_hex, unify_funclist_by_name, unify_funclist_by_addr, int_of_string_opt
 
 
 class AilParser(object):

@@ -1,6 +1,6 @@
 import os
 import inline_update
-from main_discover import check_32, check_exe
+from disasm.main_discover import check_32, check_exe
 
 
 def main():

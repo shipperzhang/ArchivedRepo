@@ -1,9 +1,9 @@
 import os
 from sets import Set
-from main_discover import check_32
+from disasm.main_discover import check_32
 
 def reassemble(saveerr=False):
-    os.system('gcc final.s -lm -lrt -lpthread -lcrypt' 
+    os.system('gcc final.s -lm -lrt -lpthread -lcrypt'
               + (' -m32' if check_32() else '')
               + (' 2> final.error' if saveerr else ''))
 

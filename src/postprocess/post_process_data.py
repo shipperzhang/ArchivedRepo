@@ -1,4 +1,4 @@
-from main_discover import check_32, check_exe
+from disasm.main_discover import check_32, check_exe
 
 
 def post_process_data():
@@ -9,7 +9,7 @@ def post_process_data():
             with open("final_data.s") as f:
                 lines = f.readlines()
             ll = len(lines)
-    
+
             for i in range(ll - 1):
                 l = lines[i]
                 if ".data" in l or ".bss" in l or ".rodata" in l:
@@ -23,11 +23,11 @@ def post_process_data():
         if check_exe():
             with open("final_data.s") as f:
                 lines = f.readlines()
-    
+
             ll = len(lines)
             in_rodata = False
             in_data = False
-    
+
             #if ".section .rodata" in l:
             #    for j in range(i+1, i+10):
             #          lines[j] = ""
@@ -36,7 +36,7 @@ def post_process_data():
             #          lines[j] = ""
 
             # this variable is used by basic block flattern diverisfy
-    
+
             #        lines[i+1] = "global_des:\n"
             #        lines[i+2] = ".byte 0x00\n"
             #        lines[i+3] = ".byte 0x00\n"
@@ -47,7 +47,7 @@ def post_process_data():
             #        lines[i+8] = ".byte 0x00\n"
             #        lines[i+9] = ".byte 0x00\n"
             #        lines[i+10] = ".byte 0x00\n"
-    
+
             for i in range(ll):
                 l = lines[i]
                 if in_data == False and ".data" in l:
@@ -71,9 +71,9 @@ def post_process_data():
             #        lines[i+7] = ".byte 0x00\n"
             #        lines[i+8] = ".byte 0x00\n"
             #        lines[i+9] = ".byte 0x00\n"
-    
+
                 elif in_rodata == False and ".rodata" in l:
-                    # add two instructions 
+                    # add two instructions
                     # branch_routine :pop global_des
                     # jmp *branch_des
                     in_rodata = True
@@ -90,12 +90,12 @@ def post_process_data():
                     #for j in range(i+2,i+44+2):
                     #    lines[j] = ""
                     break
-    
-    
+
+
             with open('final_data.s', 'w') as f:
                 f.writelines(lines)
-    
-    
+
+
 # solve export symbol issue : rename certain S_0xaddr into its corresponding
 # export symbol name
 def solve():

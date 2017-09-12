@@ -30,7 +30,7 @@
 #
 
 import re
-from main_discover import check_exe
+from disasm.main_discover import check_exe
 
 
 def task1(contents):

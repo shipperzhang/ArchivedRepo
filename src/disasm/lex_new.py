@@ -1,6 +1,6 @@
 import sys
 import Types
-from ail_utils import cat_from, split_by_list
+from utils.ail_utils import cat_from, split_by_list
 
 class Lop(str): pass
 class Lexp(str): pass
@@ -32,7 +32,7 @@ def char_collect_all(s, c):
     return res
 
 def bracket_collect(s):
-    return zip(char_collect_all(s, '('), 
+    return zip(char_collect_all(s, '('),
                char_collect_all(s, ')'))
 
 def comma_collect(s):
@@ -53,8 +53,8 @@ def triple_instr(op, el, l):
     return (Lop(op), Lexp(el[0].strip()), Lexp(el[1].strip()), Lloc(l))
 
 def fourth_instr(op, el, l):
-    return (Lop(op), Lexp(el[0].strip()), Lexp(el[1].strip()), Lexp(el[2].strip()), Lloc(l)) 
-    
+    return (Lop(op), Lexp(el[0].strip()), Lexp(el[1].strip()), Lexp(el[2].strip()), Lloc(l))
+
 def do_exp(e, op, l):
     cl = comma_in_brackets(e)
     cl_len = len(cl)

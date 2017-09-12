@@ -1,5 +1,5 @@
-import Types
-from ail_utils import bbn_byloc, read_file, get_loc, get_op, get_cf_des
+from disasm import Types
+from utils.ail_utils import bbn_byloc, read_file, get_loc, get_op, get_cf_des
 
 
 class stack_of_loc(object):

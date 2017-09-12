@@ -2,9 +2,9 @@ import os
 import filter_nop
 import useless_func_del
 from ail_parser import AilParser
-from reassemble_symbol_get import reassemble
-from disassemble_validator import dis_validator
-from ail_utils import Time_Record as TR, read_file
+from analysis.reassemble_symbol_get import reassemble
+from analysis.disassemble_validator import dis_validator
+from utils.ail_utils import Time_Record as TR, read_file
 
 
 class Disam(object):

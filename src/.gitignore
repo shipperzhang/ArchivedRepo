@@ -1,12 +1,3 @@
-*.native
-_build/*
-*.info
-*.txt
-*.s
-a.out
-*.error
-*.disassemble
-*.temp
 *.pyc
+*/*.pyc
 workdir/
-fl

@@ -3,7 +3,7 @@ def main():
 
     with open('rodata.info') as f:
         lines = f.readlines()
-    
+
     s = []
     for l in (lines):
         items = l.split()
@@ -18,10 +18,10 @@ def main():
     s = '\n'.join(reversed(s))
     with open('rodata_split.info', 'w') as f:
         f.write(s+'\n')
-    
+
     with open('data.info') as f:
         lines = f.readlines()
-    
+
     s = []
     for l in (lines):
         items = l.split()
@@ -36,10 +36,10 @@ def main():
     s = '\n'.join(reversed(s))
     with open('data_split.info', 'w') as f:
         f.write(s+'\n')
-    
+
     with open('got.info') as f:
         lines = f.readlines()
-    
+
     s = []
     for l in (lines):
         items = l.split()
@@ -51,14 +51,14 @@ def main():
                 # s.append(".byte 0x"+item[4:6])
                 # s.append(".byte 0x"+item[2:4])
                 # s.append(".byte 0x"+item[0:2])
-    
+
     s = '\n'.join(reversed(s))
     with open('got_split.info', 'w') as f:
         f.write(s+'\n')
-    
+
     with open('eh_frame.info') as f:
         lines = f.readlines()
-    
+
     s = []
     for l in (lines):
         items = l.split()
@@ -73,11 +73,11 @@ def main():
     s = '\n'.join(reversed(s))
     with open('eh_frame_split.info', 'w') as f:
         f.write(s+'\n')
-    
-    
+
+
     with open('eh_frame_hdr.info') as f:
         lines = f.readlines()
-    
+
     s = []
     for l in (lines):
         items = l.split()

@@ -1,5 +1,5 @@
 import time
-import Types
+from disasm import Types
 
 def unify_int_list(intlist):
     return sorted(set(intlist))
@@ -165,12 +165,16 @@ def f_instr(func, instrs):
     return filter(lambda i: beg <= get_loc(i).loc_addr < end, instrs)
 
 def bb_successors(cfg, b):
-    #TODO: stub
-    pass
+    res = []
+    for e in cfg:
+        if e[0] == b: res.insert(0, e[1][1])
+    return unify_str_list(res)
 
 def bb_predecessors(cfg, b):
-    #TODO: stub
-    pass
+    res = []
+    for e in cfg:
+        if e[1][1] == b: res.insert(0, e[0])
+    return unify_str_list(res)
 
 def bb_instrs(block, instrs):
     beg = block.bblock_begin_loc.loc_addr
@@ -178,8 +182,10 @@ def bb_instrs(block, instrs):
     return filter(lambda i: beg <= get_loc(i).loc_addr <= end, instrs)
 
 def remove_over_once(l):
-    #TODO: stub
-    pass
+    m = {}
+    for ele in l:
+        m[ele] = m.get(ele, 0) + 1
+    return filter(lambda e: m[e] <= 1, l)
 
 def bbn_byloc(e, ls):
     def bs(low, up):
@@ -189,19 +195,6 @@ def bbn_byloc(e, ls):
         elif e < ls[mid]: return bs(low, mid-1)
         return bs(mid+1, up)
     return bs(0, len(ls) - 1)
-
-
-class Algo(object):
-
-    @staticmethod
-    def sort_uniq(comp, l):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def b_search(e, ls, comp):
-        #TODO: stub
-        pass
 
 
 class ELF_utils(object):
@@ -309,18 +302,15 @@ class Exp_utils(object):
 
     @staticmethod
     def is_reg(e):
-        #TODO: stub
-        pass
+        return isinstance(e, Types.RegClass)
 
     @staticmethod
     def is_const(e):
-        #TODO: stub
-        pass
+        return isinstance(e, Types.Const)
 
     @staticmethod
     def is_mem(e):
-        #TODO: stub
-        pass
+        return isinstance(e, Types.Ptr)
 
 
 class Instr_utils(object):

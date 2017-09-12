@@ -1,14 +1,8 @@
 import os
 import sys
 import ail
-import bss_creator
-import pic_process
-import pic_process64
-import useless_func_del
-import extern_symbol_process64
-from main_discover import check_strip, check_exe, check_32
-import filter_nop
-
+from disasm.main_discover import check_strip, check_exe, check_32
+from disasm import bss_creator, pic_process, pic_process64, useless_func_del, extern_symbol_process64, filter_nop
 
 
 class Init(object):

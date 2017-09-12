@@ -1,13 +1,13 @@
-import Types
-import parse_init_array
-import exception_process
-from visit import ailVisitor
-from ail_utils import get_loc, read_file, ELF_utils, dec_hex, set_loc,\
-    unify_int_list, bbn_byloc
-from share_lib_helper import lib32_helper
-import spliter
 import os
+import spliter
 import export_data
+import parse_init_array
+from visit import ailVisitor
+from share_lib_helper import lib32_helper
+from disasm import Types, exception_process
+from utils.ail_utils import get_loc, read_file, ELF_utils, dec_hex, set_loc,\
+                            unify_int_list, bbn_byloc
+
 
 def rev_map(f, l):
     return map(f, l)[::-1]
@@ -60,22 +60,22 @@ class datahandler:
     def set_datas(self, funcs):
         self.section_collect()
         self.data_collect()
-        
+
         self.data_list = self.data_trans(self.data)
         self.rodata_list = self.data_trans(self.rodata)
         self.got_list = self.data_trans(self.got)
         self.bss_list = self.data_trans(self.bss)
         self.locations = self.label_locate()
-        
+
         fl = sorted(funcs, cmp=lambda f1,f2: f1.func_begin_addr - f2.func_begin_addr)
         self.fl_sort = map(lambda f: ft(f.func_name, f.func_begin_addr, f.func_end_addr), fl)
 
         self.text_mem_addrs = map(lambda a: int(a.strip().rstrip(':'), 16), read_file('text_mem.info'))
         self.text_mem_arr = self.text_mem_addrs
-        
+
         self.label_mem_arr = sorted(self.label_mem_addrs)
         self.set_assumption_flag()
-        
+
         self.begin_addrs = map(lambda f: f.func_begin_addr, funcs)
         if ELF_utils.elf_32(): self.data_refer_solve(funcs)
         else: self.data_refer_solve_64(funcs)
@@ -84,11 +84,7 @@ class datahandler:
         with open('assumption_set.info') as f:
             l = f.readline()
             self.assumption_two = '2' in l
-            self.assumption_three = '3' in l 
-
-    def set_datas_1(self):
-        # stub not used
-        pass
+            self.assumption_three = '3' in l
 
     def get_textlabel(self):
         self.dump_d2c_labels(self.text_labels_reloc)
@@ -103,15 +99,17 @@ class datahandler:
         if addr == 0xffff: return False
         b = self.text_sec[0]
         e = b + self.text_sec[1]
-        return b <= addr < e and bbn_byloc(addr, self.text_mem_arr) 
+        return b <= addr < e and bbn_byloc(addr, self.text_mem_arr)
 
     def dump_c2d_labels(self, dl):
-        #TODO: stub
-        pass
+        with open('final_c2d_label.txt', 'a') as f:
+            f.write('\n'.join(map(lambda e: e[0] + ' : ' + dec_hex(e[1]), dl)))
+            f.write('\n')
 
     def dump_d2d_labels(self, dl):
-        #TODO: stub
-        pass
+        with open('final_d2d_label.txt', 'a') as f:
+            f.write('\n'.join(map(dec_hex, dl)))
+            f.write('\n')
 
     def dump_d2c_labels(self, dl):
         with open('final_d2c_label.txt', 'a') as f:
@@ -177,7 +175,7 @@ class datahandler:
                         self.text_labels_reloc.insert(0, addr)
                         l[i] = (l[i][0], '.long S0x%X' % val)
                         l[i+1:i+4] = ('', '') * 3
-                    else: self.in_jmptable = False 
+                    else: self.in_jmptable = False
                 else: self.in_jmptable = False
             i += 4
             addr += 4
@@ -301,7 +299,7 @@ class datahandler:
         self.data_list.insert(0, ('.section .data', ''))
         self.bss_list.insert(0, ('.section .bss', ''))
         with open('final_data.s', 'a') as f:
-            func = lambda e: e[0] + e[1]  
+            func = lambda e: e[0] + e[1]
             f.write('\n'.join(map(func, self.rodata_list)) + '\n')
             f.write('\n' + '\n'.join(map(func, self.data_list)) + '\n')
             f.write('\n' + '\n'.join(map(func, self.got_list)) + '\n')
@@ -357,55 +355,16 @@ class instrhandler(object):
                 label = do_update(lh.loc_label, lhs + ' : ')
                 self.locs[i].loc_label = label
                 j += 1
-            elif dh < lh.loc_addr: 
+            elif dh < lh.loc_addr:
                 j += 1
             i += 1
 
     def insert_dummy(self):
-        #TODO: stub
+        # stub not used
         pass
 
     def update_loc(self, locs, d):
-        #TODO: stub
-        pass
-
-
-class funchandler(object):
-
-    def __init__(self, instr_list, u_funcs):
-        #TODO: stub
-        pass
-
-    def print_loclist(self):
-        #TODO: stub
-        pass
-
-    def get_instr_list(self):
-        #TODO: stub
-        pass
-
-    def set_instr_list(self):
-        #TODO: stub
-        pass
-
-    def process(self):
-        #TODO: stub
-        pass
-
-    def func_sort(self, ll):
-        #TODO: stub
-        pass
-
-    def process2(self):
-        #TODO: stub
-        pass
-
-    def insert_dummy(self):
-        #TODO: stub
-        pass
-
-    def update_loc(self, locs, d):
-        #TODO: stub
+        # stub not used
         pass
 
 
@@ -677,7 +636,7 @@ class reassemble(ailVisitor):
         return instrs
 
     def check_bss(self, addr):
-        #TODO: stub
+        # stub not used
         pass
 
     def update_deslist_with_initarray(self):
@@ -712,10 +671,6 @@ class reassemble(ailVisitor):
         p.process()
         return p.get_instr_list()
 
-    def adjust_funclabel(self, u_funcs, instr_list):
-        #TODO: stub
-        pass
-
     def adjust_globallabel(self, g_bss, instr_list):
         g_bss = filter(lambda e: '@' in e[1], g_bss)
         labels = map(lambda e: e[0], g_bss)
@@ -727,7 +682,7 @@ class reassemble(ailVisitor):
             r = next((lab for lab in labels if lab in l), None)
             if r is not None:
                 key = 'S_0x' + r
-                return l.replace(key, gbss_hs[key], 1) 
+                return l.replace(key, gbss_hs[key], 1)
             return l
         return map(mapper, instr_list)
 
@@ -738,18 +693,6 @@ class reassemble(ailVisitor):
         p.set_datas(funcs)
         self.jmpreflist = map(lambda l: 'S_' + dec_hex(l), p.get_textlabel())
         p.data_output()
-
-    def data_dump_1(self):
-        #TODO: stub
-        pass
-
-    def dump_funclist(self, bs, fn):
-        #TODO: stub
-        pass
-
-    def unify_funclist(self, sl1, sl2):
-        #TODO: stub
-        pass
 
     def init_array_dump(self):
         if len(self.init_array_list) != 0:
@@ -766,21 +709,9 @@ class reassemble(ailVisitor):
             return (s.sec_name, i)
         return map(mapper, export_data.main())
 
-    def ehframe_dump(self):
-        #TODO: stub
-        pass
-
-    def excpt_tbl_dump(self):
-        #TODO: stub
-        pass
-
     def reassemble_dump(self, u_funcs):
         self.data_dump(u_funcs)
         self.init_array_dump()
-
-    def reassemble_dump_1(self):
-        # stub not used
-        pass
 
     def add_func_label(self, ufuncs, instrs):
         i = 0; j = 0
@@ -817,10 +748,6 @@ class reassemble(ailVisitor):
                 j += 1
             i += 1
         return instrs
-
-    def unify_loc1(self, instrs):
-        # stub not used
-        pass
 
     def unify_loc(self, instrs):
         last_label = ''

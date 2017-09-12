@@ -1,11 +1,11 @@
-from visit import ailVisitor
-import Types
-from ail_utils import dec_hex
 import sys
+from disasm import Types
+from visit import ailVisitor
+from utils.ail_utils import dec_hex
 
 
 class cg(ailVisitor):
-    
+
     cg_tbl = {}
     cfi_tbl = {}
 
@@ -22,7 +22,7 @@ class cg(ailVisitor):
     def func_info(self, l):
         for h in self.funcs:
             if h.func_begin_addr <= l.loc_addr < h.func_end_addr:
-                return h 
+                return h
         raise Exception(dec_hex(l.loc_addr) + ': cannot find corresponding function')
 
     def cg_process(self, e, l):
@@ -31,7 +31,7 @@ class cg(ailVisitor):
             if not (f.func_begin_addr <= e < f.func_end_addr):
                 self.update_cgtbl(l, f)
         elif isinstance(e, Types.CallDes):
-            if not e.is_lib: self.update_cgtbl(l, e) 
+            if not e.is_lib: self.update_cgtbl(l, e)
 
     def vinst_tail(self, instrs):
         for h in instrs:
