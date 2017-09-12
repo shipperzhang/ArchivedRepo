@@ -233,6 +233,14 @@ class ELF_utils(object):
     def elf_lib():
         return ELF_utils.elf_check('LSB shared object')
 
+    @staticmethod
+    def elf_exe():
+        return not ELF_utils.elf_lib()
+
+    @staticmethod
+    def elf_arm():
+        return ELF_utils.elf_check('executable, ARM')
+
 
 class Opcode_utils(object):
 

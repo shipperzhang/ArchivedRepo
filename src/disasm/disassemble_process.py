@@ -1,4 +1,5 @@
 import os
+import config
 import filter_nop
 import useless_func_del
 from ail_parser import AilParser
@@ -11,7 +12,7 @@ class Disam(object):
 
     @staticmethod
     def disasm_skip(filepath, ba, ea):
-        os.system("objdump -Dr -j .text " + filepath + " --start-address=" + str(ba) + " --stop-address=" + str(ea) + " > " + filepath + ".temp")
+        os.system(config.objdump + " -Dr -j .text " + filepath + " --start-address=" + str(ba) + " --stop-address=" + str(ea) + " > " + filepath + ".temp")
         useless_func_del.main(filepath)
         os.system("cat " + filepath + ".disassemble | grep \"^ \" | cut -f1,3 > instrs.info")
         filter_nop.main()

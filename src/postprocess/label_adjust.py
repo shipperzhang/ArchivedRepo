@@ -27,7 +27,7 @@ def label_adjust():
     with open('final.s') as f:
         lines = f.readlines()
 
-    regex = re.compile(r'S_(0x[0-9A-F]{7}):', re.I)
+    regex = re.compile(r'S_(0x[0-9A-F]{7})\s*:', re.I)
 
     is_text = False
     for i in range(len(lines)):

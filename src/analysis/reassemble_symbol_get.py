@@ -239,9 +239,9 @@ class datahandler:
         spliter.main()
         self.data = self.collect('data_split.info')
         self.rodata = self.collect('rodata_split.info')
-        if not ELF_utils.elf_32():
-            self.got = self.collect('got_split.info')
-            self.bss = self.collect('bss.info')
+        # if not ELF_utils.elf_32():
+        self.got = self.collect('got_split.info')
+        self.bss = self.collect('bss.info')
 
     def sec_transform(self, s):
         if s == '.got': return '.got'

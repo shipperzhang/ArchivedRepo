@@ -9,7 +9,3 @@ def main():
     strs = ".byte 0x00\n" * size
     with open("bss.info", 'w') as f:
         f.write(strs)
-
-
-if __name__ == '__main__':
-    main()

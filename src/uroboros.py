@@ -2,10 +2,12 @@ import os
 import glob
 import init
 import shutil
+import config
 from disasm import main_discover, func_addr
-from disasm.main_discover import check_exe, check_strip
+from utils.ail_utils import ELF_utils
 from argparse import ArgumentParser, RawTextHelpFormatter
 from postprocess import compile_process, post_process_data, gobmk_sub, label_adjust
+import traceback
 
 
 f_dic = ''
@@ -25,8 +27,9 @@ def process(filepath):
         # if iter_curr > 0: func_addr.useless_func_discover(filepath)
 
         # with open('count.txt', 'w') as f: f.write(str(iter_curr))
-        os.system('strip ' + filepath)
+        os.system(config.strip + ' ' + filepath)
         main_discover.main_discover(filepath)
+        # exit()
 
         # os.system("./init.native " + filepath)
         init.main(filepath)
@@ -51,6 +54,7 @@ def process(filepath):
 
     except Exception as e:
         print e
+        traceback.print_exc()
         return False
 
     return True
@@ -67,12 +71,14 @@ def check(filepath, assumptions):
         shutil.copy(filepath, '.')
 
     os.system('file ' + filepath + ' > elf.info')
-    if not check_exe():
+    if not ELF_utils.elf_exe():
         print "Uroboros doesn't support shared library"
         return False
 
+    config.setup(filepath)
+
     # if assumption three is utilized, then input binary must be unstripped.
-    if '3' in assumptions and not check_strip():
+    if '3' in assumptions and ELF_utils.elf_strip():
         print 'Uroboros does not support stripped binaries when using assumption three'
         return False
 

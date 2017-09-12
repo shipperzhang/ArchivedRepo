@@ -11,44 +11,35 @@
 # and it is handled in reassemble.ml
 #
 
-import sys, re
-from main_discover import check_32
+import re
 
 
 def main(filepath):
     # no need in 32 bit binaries
-    if not check_32():
-        lines = []
+    with open(filepath + '.temp') as f:
+        lines = f.readlines()
 
-        with open(filepath + '.temp') as f:
-            lines = f.readlines()
+    # symbols = []
 
-        # symbols = []
+    pat_d = r'0x[0-9a-f]+\(%rip\)'
+    pat_s = r'<(.*)>'
 
-        pat_d = r'0x[0-9a-f]+\(%rip\)'
-        pat_s = r'<(.*)>'
+    for i in range(len(lines)):
+        l = lines[i]
+        if "#" in l and not "+" in l:
+            m_s = re.search(pat_s, l)
+            m_d = re.search(pat_d, l)
+            try:
+                src = m_s.group(1) # let it crash it not
+                des = m_d.group(0) # let it crash it not
+                l = l.split('#')[0]
+                l = l.replace(des, src)
+                lines[i] = l+"\n"
+            except Exception:
+                print "exception in external symbols processing of 64-bit ELF"
+                print l
+    with open(filepath + '.temp', 'w') as f:
+        f.writelines(lines)
 
-        for i in range(len(lines)):
-            l = lines[i]
-            if "#" in l and not "+" in l:
-                m_s = re.search(pat_s, l)
-                m_d = re.search(pat_d, l)
-                try:
-                    src = m_s.group(1) # let it crash it not
-                    des = m_d.group(0) # let it crash it not
-                    l = l.split('#')[0]
-                    l = l.replace(des, src)
-                    lines[i] = l+"\n"
-                except Exception:
-                    print "exception in external symbols processing of 64-bit ELF"
-                    print l
-        with open(filepath + '.temp', 'w') as f:
-            f.writelines(lines)
-
-        #with open('rip_symbols.txt', 'w') as f:
-        #    f.writelines(sorted(set(symbols)))
-
-
-if __name__ == '__main__':
-    if len(sys.argv) == 2: main(sys.argv[1])
-    else: sys.stderr.write('Usage: pyton extern_symbol_process64 binfile\n')
+    #with open('rip_symbols.txt', 'w') as f:
+    #    f.writelines(sorted(set(symbols)))

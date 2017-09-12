@@ -38,6 +38,3 @@ def main():
     with open("init_array_new.info", 'w') as f:
         f.writelines(ctors)
     return ctors
-
-if __name__ == '__main__':
-    main()

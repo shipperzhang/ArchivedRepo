@@ -1,4 +1,3 @@
-import sys
 import shutil
 import os.path
 
@@ -59,8 +58,3 @@ def main(filepath):
     #    lines = f.readlines()
     #c = lines[0].strip()
     #os.system("cp " + fn + ".disassemble " + fn + ".disassemble."+c)
-
-
-if __name__ == '__main__':
-    if len(sys.argv) == 2: main(sys.argv[1])
-    else: sys.stderr.write('Usage: python useless_func_del binfile\n')

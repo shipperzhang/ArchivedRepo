@@ -68,7 +68,3 @@ def main():
 
     with open('final.s', 'w') as f:
         f.writelines(lines)
-
-
-if __name__ == '__main__':
-    main()

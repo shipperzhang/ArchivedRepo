@@ -30,7 +30,7 @@
 #
 
 import re
-from disasm.main_discover import check_exe
+from utils.ail_utils import ELF_utils
 
 
 def task1(contents):
@@ -146,7 +146,7 @@ def task5(contents):
 
 
 def main():
-    if not check_exe():
+    if ELF_utils.elf_lib():
         with open('final.s') as f:
             contents = f.readlines()
 
@@ -158,7 +158,3 @@ def main():
         # write back
         with open('final.s', 'w') as f:
             f.writelines(contents)
-
-
-if __name__ == '__main__':
-    main()

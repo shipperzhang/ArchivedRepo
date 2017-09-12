@@ -1,11 +1,11 @@
-from disasm.main_discover import check_32, check_exe
+from utils.ail_utils import ELF_utils
 
 
 def post_process_data():
 
-    if not check_32():
+    if not ELF_utils.elf_32():
         # for 64-bit binaries, remember to align data sections with 16.
-        if check_exe():
+        if ELF_utils.elf_exe():
             with open("final_data.s") as f:
                 lines = f.readlines()
             ll = len(lines)
@@ -20,7 +20,7 @@ def post_process_data():
             with open('final_data.s', 'w') as f:
                 f.writelines(lines)
     else:
-        if check_exe():
+        if ELF_utils.elf_exe():
             with open("final_data.s") as f:
                 lines = f.readlines()
 

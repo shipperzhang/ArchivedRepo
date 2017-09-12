@@ -13,10 +13,10 @@
 ##  _GLOBAL_OFFSET_TABLE_   ==    .got.plt
 ##  ....
 
-import os, sys
-from main_discover import check_exe
+import os
+from utils.ail_utils import ELF_utils
 
-sec_symb = {".got.plt":"$_GLOBAL_OFFSET_TABLE_"}
+sec_symb = {".got.plt": "$_GLOBAL_OFFSET_TABLE_"}
 step = 1
 
 def info_dump(f):
@@ -130,23 +130,17 @@ def text_process_strip(f):
     return True
 
 
-def main(filepath, is_32):
+def main(filepath):
     global step
     step = 1
-    if is_32:
-        if check_exe(): # executable
+    if ELF_utils.elf_exe(): # executable
+        t = text_process_strip(filepath)
+        while t == False:
             t = text_process_strip(filepath)
-            while t == False:
-                t = text_process_strip(filepath)
-        else:
-            # shared object don't translate target addrs into
-            # GLOBAL_OFFSET_TABLE, instead, dump the thunk addr for
-            # analysis in share_lib_helper.ml
-            addr = thunk_identify(filepath).strip()
-            with open('pic_thunk.info', 'w') as f:
-                f.write(addr+'\n')
-
-
-if __name__ == '__main__':
-    if len(sys.argv) == 3: main(sys.argv[1], sys.argv[2].lower() == 'true')
-    else: print "usage: python pic_process.py binary is_32"
+    else:
+        # shared object don't translate target addrs into
+        # GLOBAL_OFFSET_TABLE, instead, dump the thunk addr for
+        # analysis in share_lib_helper.ml
+        addr = thunk_identify(filepath).strip()
+        with open('pic_thunk.info', 'w') as f:
+            f.write(addr+'\n')

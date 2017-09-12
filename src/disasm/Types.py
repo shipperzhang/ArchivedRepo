@@ -71,7 +71,8 @@ SpecialReg = RecSet([
     'R8D', 'R9D', 'R10D', 'R11D', 'R12D', 'R13D', 'R14D', 'R15D',
     'R8W', 'R9W', 'R10W', 'R11W', 'R12W', 'R13W', 'R14W', 'R15W',
     'R8B', 'R9B', 'R10B', 'R11B', 'R12B', 'R13B', 'R14B', 'R15B',
-    'XMM0', 'XMM1'
+    'XMM0', 'XMM1', 'XMM2', 'XMM3', 'XMM4', 'XMM5', 'XMM6', 'XMM7'
+    'ST0', 'ST1', 'ST2', 'ST3', 'ST4', 'ST5', 'ST6', 'ST7'
 ], True)
 StackReg = RecSet(['RBP', 'RSP', 'ESP', 'EBP'], True)
 PCReg = RecSet(['EIP', 'RIP'], True)
@@ -147,7 +148,6 @@ JumpOp = RecSet(['JMP', 'JNE', 'JE', 'JB', 'JNAE', 'JNP',
 ], True)
 LoopOp = RecSet(['LOOP', 'LOOPE', 'LOOPNE'], True)
 FlagOp = RecSet(['CLD', 'CLTD', 'CLTQ'], True)
-# AssistOp = RecSet(['SCAS', 'CMPSB', 'STOS', 'MOVSL', 'MOVSB', 'CMPSW'], True)
 AssistOp = RecSet(['SCAS', 'MOVSL', 'MOVSB', 'CMPSW', 'CMPSB', 'MOVSQ', 'POP', 'STOS'], True)
 ControlOp = RecSet([JumpOp, LoopOp, FlagOp,
                     'CALL', 'CALLQ',

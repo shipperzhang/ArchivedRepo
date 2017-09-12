@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import config
 
 
 def func_addr(filename, count):
@@ -8,7 +9,7 @@ def func_addr(filename, count):
     #fn = sys.argv[1]
     #c = int(sys.argv[2])
 
-    os.system('objdump -Dr -j .text ' + filename + ' > dump.s')
+    os.system(config.objdump + ' -Dr -j .text ' + filename + ' > dump.s')
     os.system('grep ">:" dump.s > fl')
 
     with open('fl') as f: fnl = f.readlines()
@@ -68,7 +69,7 @@ def useless_func_discover(filename):
 
     black_list = ('_start', '__do_global_dtors_aux', 'frame_dummy', '__do_global_ctors_aux', '__i686.get_pc_thunk.bx', '__libc_csu_fini', '__libc_csu_init')
 
-    os.system('objdump -Dr -j .text ' + filename + ' > ' + filename + '.temp')
+    os.system(config.objdump + ' -Dr -j .text ' + filename + ' > ' + filename + '.temp')
 
     with open(filename + '.temp') as f:
         lines = f.readlines()

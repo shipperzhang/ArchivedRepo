@@ -167,9 +167,9 @@ class parse(object):
 
     def const_symb(self, s):
         s = s.strip()
-        if s[0] == '$':
-            return Types.Normal(s[1:], 16)
-        try: return Types.Point(s, 16)
+        try:
+            if s[0] == '$': return Types.Normal(s[1:], 16)
+            return Types.Point(s, 16)
         except ValueError: return None
 
     def exp_symb(self, s):

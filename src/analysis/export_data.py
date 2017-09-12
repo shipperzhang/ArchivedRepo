@@ -19,7 +19,3 @@ def main():
         f.writelines(datas)
 
     return datas
-
-
-if __name__ == '__main__':
-    main()

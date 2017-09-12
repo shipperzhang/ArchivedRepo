@@ -92,7 +92,3 @@ def main():
     s = '\n'.join(reversed(s))
     with open('eh_frame_hdr_split.info', 'w') as f:
         f.write(s+'\n')
-
-
-if __name__ == '__main__':
-    main()

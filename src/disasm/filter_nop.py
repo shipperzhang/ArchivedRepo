@@ -1,8 +1,8 @@
-from main_discover import check_32
+from utils.ail_utils import ELF_utils
 
 
 def main():
-    if not check_32():
+    if not ELF_utils.elf_32():
         lines = []
         with open('instrs.info') as f:
             lines = f.readlines()
@@ -19,7 +19,3 @@ def main():
 
         with open('instrs.info', 'w') as f:
             f.writelines(lines)
-
-
-if __name__ == '__main__':
-    main()

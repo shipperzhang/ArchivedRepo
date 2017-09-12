@@ -1,13 +1,13 @@
 import os
 import inline_update
-from disasm.main_discover import check_32, check_exe
+from utils.ail_utils import ELF_utils
 
 
 def main():
     with open("final.s") as f:
         lines = f.readlines()
 
-    is_32 = check_32()
+    is_32 = ELF_utils.elf_32()
     ll = len(lines)
     main_symbol = ""
 
@@ -80,7 +80,7 @@ def main():
         ##    ....
 
 
-    if check_exe():
+    if ELF_utils.elf_exe():
         mains = []
         main_symbol1 = ""
 
@@ -112,7 +112,3 @@ def main():
 
     if os.path.isfile('inline_symbols.txt'):
         inline_update.main()
-
-
-if __name__ == '__main__':
-    main()

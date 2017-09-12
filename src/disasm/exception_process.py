@@ -1,4 +1,4 @@
-import re, sys
+import re
 
 def main(fn):
     with open(fn) as f:
@@ -151,6 +151,3 @@ def main(fn):
         f.writelines(set(text_labels))
 
     return list(set(text_labels))
-
-if __name__ == '__main__':
-    main(sys.argv[1])

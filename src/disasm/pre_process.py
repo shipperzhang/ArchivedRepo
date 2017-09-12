@@ -1,5 +1,4 @@
 
-
 def main():
     with open("instrs.info") as f:
         lines = f.readlines()
@@ -23,7 +22,3 @@ def main():
 
     with open("instrs.info", 'w') as f:
         f.writelines(lines)
-
-
-if __name__ == '__main__':
-    main()

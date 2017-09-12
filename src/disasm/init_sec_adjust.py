@@ -12,7 +12,7 @@ def main():
 
     if ']' in l:
         fn = get_binname()
-        os.system('readelf -SW ' + fn + ' > temp')
+        os.system('readelf -SW ' + fn + ' | grep init > temp')
         with open("temp") as f:
             lines = f.readlines()
         for l in lines:
@@ -24,7 +24,3 @@ def main():
                 lines = []
                 with open("init_sec.info", 'w') as f:
                     f.write(s)
-
-
-if __name__ == '__main__':
-    main()

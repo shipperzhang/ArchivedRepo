@@ -1,10 +1,12 @@
 import os
+import config
 from sets import Set
-from disasm.main_discover import check_32
+from utils.ail_utils import ELF_utils
 
-def reassemble(saveerr=False):
-    os.system('gcc final.s -lm -lrt -lpthread -lcrypt'
-              + (' -m32' if check_32() else '')
+
+def reassemble(saveerr=False, libs=[]):
+    os.system(config.compiler + ' final.s ' + ' '.join(libs)
+              + (' -m32' if ELF_utils.elf_32() else '')
               + (' 2> final.error' if saveerr else ''))
 
 
@@ -36,12 +38,7 @@ def modify(errors):
 
 def main():
     print "     modify final.s to adjust redundant symbols"
-    #os.system('gcc final.s -lm 2> final.error')
-    #os.system('gcc final.s -lm -m32 2> final.error')
     reassemble(True)
     errors = parse_error()
     modify(errors)
     print "     modify finished"
-
-if __name__ == '__main__':
-    main()
