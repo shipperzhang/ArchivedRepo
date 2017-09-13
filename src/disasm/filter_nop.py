@@ -2,7 +2,7 @@ from utils.ail_utils import ELF_utils
 
 
 def main():
-    if not ELF_utils.elf_32():
+    if ELF_utils.elf_32():
         lines = []
         with open('instrs.info') as f:
             lines = f.readlines()

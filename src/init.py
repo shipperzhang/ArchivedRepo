@@ -20,8 +20,7 @@ class Init(object):
         self.checkret(ret, self.file + '.temp')
 
         if self.is_32:
-            if self.is_arm: arm_process.pcrel_process(self.file)
-            else: pic_process.main(self.file)
+            if not self.is_arm: pic_process.main(self.file)
         else:
             extern_symbol_process64.main(self.file)
             pic_process64.main(self.file)
@@ -35,13 +34,12 @@ class Init(object):
         os.system(config.objdump + " -s -j .got " + self.file + " | grep \"^ \" | cut -d \" \" -f3,4,5,6 > got.info")
 
     def process(self):
+        self.pltProcess()
         self.textProcess()
-        if self.is_32: self.sectionProcess32()
-        else: self.sectionProcess64()
+        self.sectionProcess()
         self.bssHandler()
         self.externDataProcess()
         self.export_tbl_dump()
-        self.pltProcess()
         self.userFuncProcess()
 
     def bssHandler(self):
@@ -50,27 +48,22 @@ class Init(object):
 
     def textProcess(self):
         useless_func_del.main(self.file)
-        os.system("cat " + self.file + ".disassemble | grep \"^ \" | cut -f1,3 > instrs.info")
-        filter_nop.main()
+        if self.is_arm: arm_process.pcrel_process(self.file)
+        else: os.system("cat " + self.file + ".disassemble | grep \"^ \" | cut -f1,3 > instrs.info")
+        # filter_nop.main()
         os.system("cut -f 1 instrs.info > text_mem.info")
 
     def userFuncProcess(self):
         os.system("cat " + self.file + ".disassemble | grep \"<\" | grep \">:\" > userfuncs.info")
+        os.system("cat fl >> userfuncs.info")
 
-    def sectionProcess32(self):
-        os.system("readelf -S " + self.file + " | awk \'/data|bss|got/ {print $2,$4,$5,$6} \' | awk \ '$1 != \".got.plt\" {print $1,$2,$3,$4}\' > sections.info")
-        os.system("readelf -S " + self.file + " | awk \'/text/ {print $2,$4,$5,$6} \' > text_sec.info")
-        os.system("readelf -S " + self.file + " | awk \'/init/ {print $2,$4,$5,$6} \' | awk \'$1 != \".init_array\" {print $1,$2,$3,$4}\' > init_sec.info")
-        os.system("rm init_array.info")
-        os.system(config.objdump + " -s -j .init_array " + self.file + " >> init_array.info 2>&1")
-        os.system("readelf -S " + self.file + " | awk '$2==\".plt\" {print $2,$4,$5,$6}' > plt_sec.info")
-
-    def sectionProcess64(self):
-        os.system("readelf -SW " + self.file + " | awk \'/data|bss|got/ {print $2,$4,$5,$6} \' | awk \ '$1 != \".data.rel.ro\" {print $1,$2,$3,$4}\' > sections.info")
+    def sectionProcess(self):
+        badsec = '.got.plt' if self.is_32 else'.data.rel.ro'
+        os.system("readelf -SW " + self.file + " | awk \'/data|bss|got/ {print $2,$4,$5,$6} \' | awk \ '$1 != \"" + badsec + "\" {print $1,$2,$3,$4}\' > sections.info")
         os.system("readelf -SW " + self.file + " | awk \'/text/ {print $2,$4,$5,$6} \' > text_sec.info")
         os.system("readelf -SW " + self.file + " | awk \'/init/ {print $2,$4,$5,$6} \' | awk \'$1 != \".init_array\" {print $1,$2,$3,$4}\' > init_sec.info")
-        os.system("rm init_array.info")
-        os.system(config.objdump + " -s -j .init_array " + self.file + " >>init_array.info 2>&1")
+        if os.path.isfile('init_array.info'): os.remove('init_array.info')
+        os.system(config.objdump + " -s -j .init_array " + self.file + " >> init_array.info 2>&1")
         os.system("readelf -SW " + self.file + " | awk '$2==\".plt\" {print $2,$4,$5,$6}' > plt_sec.info")
 
     def externFuncProcess(self):
@@ -84,7 +77,7 @@ class Init(object):
         os.system("readelf -s " + self.file + " | grep GLOBAL > export_tbl.info")
 
     def pltProcess(self):
-        os.system(config.objdump + " -j .plt -Dr " + self.file + " | grep \">:\" > plts.info")
+        os.system(config.toolprefix + "objdump -j .plt -Dr " + self.file + " | grep \">:\" > plts.info")
 
     def externDataProcess(self):
         os.system("readelf -r " + self.file + " | awk \'/GLOB_DAT/ {print $5} \' > externdatas.info")
@@ -102,14 +95,8 @@ class Init(object):
             os.remove(path)
 
 
-def clear_code():
-    if os.path.isfile('final.s'): os.remove('final.s')
-    if os.path.isfile('inline_symbols.txt'): os.remove('inline_symbols.txt')
-
-
 def main(filepath):
     if ELF_utils.elf_strip() and ELF_utils.elf_exe():
-        clear_code()
         init = Init(filepath)
         init.disassemble()
         init.process()

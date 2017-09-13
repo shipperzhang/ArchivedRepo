@@ -16,13 +16,8 @@ def process(filepath):
     print "Start to process binary: " + filepath
 
     try:
-        for f in glob.glob('final_*.txt'): os.remove(f)
-
         # suppose we use this method to obtain function information
         func_addr.func_addr(filepath, 0)
-
-        if os.path.isfile('final_data.s'): os.remove('final_data.s')
-        if os.path.isfile('useless_func.info'): os.remove('useless_func.info')
 
         # if iter_curr > 0: func_addr.useless_func_discover(filepath)
 
@@ -67,6 +62,8 @@ def check(filepath, assumptions):
         print "cannot find input binary"
         return False
 
+    for f in glob.glob('*'): os.remove(f)
+
     if os.path.dirname(filepath) != os.getcwd():
         shutil.copy(filepath, '.')
 
@@ -107,26 +104,29 @@ def set_assumption (assumptions):
 
 
 def main():
-    workdir = os.path.dirname(os.path.abspath(__file__)) + '/workdir'
-    if not os.path.isdir(workdir): os.mkdir(workdir)
-    os.chdir(workdir)
     p = ArgumentParser(formatter_class=RawTextHelpFormatter)
-    p.add_argument("binary",
-                   help="path to the input binary")
+    p.add_argument("binary", help="path to the input binary")
+    p.add_argument("-o", "--output", help="destination output file")
     p.add_argument("-a", "--assumption", action="append",
                    help='''this option configures three addtional assumption,
 note that two basic assumptions and addtional assumption one
 (n-byte alignment) are set by default,
 while assumption two and three need to be configured. For example, setting
 assumption two and three: -a 2 -a 3''')
-    p.add_argument('--version', action='version', version='Uroboros 0.11')
+    p.add_argument('--version', action='version', version='Uroboros 0.2b')
 
     args = p.parse_args()
-    binfile = args.binary
+    filepath = os.path.realpath(args.binary)
+    outpath = os.path.realpath(args.output) if args.output is not None else None
 
-    filepath = os.path.realpath(binfile)
+    workdir = os.path.dirname(os.path.abspath(__file__)) + '/workdir'
+    if not os.path.isdir(workdir): os.mkdir(workdir)
+    os.chdir(workdir)
+
     if check(filepath, args.assumption) and set_assumption(args.assumption):
-        if process(os.path.basename(filepath)): print "Processing succeeded"
+        if process(os.path.basename(filepath)):
+            print "Processing succeeded"
+            if outpath is not None: shutil.copy('a.out', outpath)
         else: print "Exception, processing failed"
 
 

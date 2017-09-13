@@ -236,5 +236,4 @@ class parse(object):
         s = []
         for l in lexem_list:
             s.append(self.push_stack(l))
-            # s.insert(0, self.push_stack(l))
         return self.reduce_stack(s, has_pre)
