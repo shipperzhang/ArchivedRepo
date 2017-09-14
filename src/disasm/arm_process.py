@@ -41,7 +41,7 @@ def pcrel_process(filename):
     while curr_off < textsec.size:
         for e in dis.disasm_lite(textraw[curr_off:], textsec.addr + curr_off):
             curr_off += e[1]
-            instr = ('%x' % e[0]).rjust(8) + ':\t' + e[2].ljust(7) + ' ' + e[3].replace(' ', '')
+            instr = ('%x' % e[0]).rjust(8) + ':\t' + e[2].ljust(7) + ' ' + e[3].replace(', ', ',').replace(' ', '|')
             m = pcrelre.search(instr)
             if m:
                 dest = (e[0] & 0xFFFFFFFC) + int(m.group(1), 16) + 4
@@ -51,7 +51,8 @@ def pcrel_process(filename):
                 instr += plts.get(int(e[3][1:], 16), '')
             f.write(instr + '\n')
             if curr_off + textsec.addr in inlinedata: break
-        else: curr_off += 2
+        else:
+            if curr_off < textsec.size: inlinedata[curr_off + textsec.addr] = 2
         while curr_off + textsec.addr in inlinedata:
             pc = curr_off + textsec.addr
             size = inlinedata.pop(pc)

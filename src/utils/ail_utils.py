@@ -1,4 +1,5 @@
 import time
+import config
 from disasm import Types
 
 def unify_int_list(intlist):
@@ -207,19 +208,19 @@ class ELF_utils(object):
 
     @staticmethod
     def elf_32():
-        return ELF_utils.elf_check('ELF 32-bit')
+        return config.is_32
 
     @staticmethod
     def elf_64():
-        return ELF_utils.elf_check('ELF 64-bit')
+        return not config.is_32
 
     @staticmethod
     def elf_dynamic():
-        return ELF_utils.elf_check('dynamically linked')
+        return config.is_dynamic
 
     @staticmethod
     def elf_static():
-        return not ELF_utils.elf_dynamic()
+        return not config.is_dynamic
 
     @staticmethod
     def elf_unstrip():
@@ -231,15 +232,15 @@ class ELF_utils(object):
 
     @staticmethod
     def elf_lib():
-        return ELF_utils.elf_check('LSB shared object')
+        return config.is_lib
 
     @staticmethod
     def elf_exe():
-        return not ELF_utils.elf_lib()
+        return not config.is_lib
 
     @staticmethod
     def elf_arm():
-        return ELF_utils.elf_check('executable, ARM')
+        return config.arch == config.ARCH_ARMT
 
 
 class Opcode_utils(object):

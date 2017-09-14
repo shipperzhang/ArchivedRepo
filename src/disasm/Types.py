@@ -60,6 +60,67 @@ class Bblock(object):
         self.bblock_end_loc = bblock_end_loc
         self.bblock_head_instr = bblock_head_instr
 
+class control(object): pass
+class J(control): pass
+class F(control): pass
+
+class Instr(tuple): pass
+class SingleInstr(Instr):
+    def __init__(self, items):
+        if len(items) != 3: raise Exception('Invalid single')
+        super(SingleInstr, self).__init__(items)
+class DoubleInstr(Instr):
+    def __init__(self, items):
+        if len(items) != 4: raise Exception('Invalid double')
+        super(DoubleInstr, self).__init__(items)
+class TripleInstr(Instr):
+    def __init__(self, items):
+        if len(items) != 5: raise Exception('Invalid triple')
+        super(TripleInstr, self).__init__(items)
+class FourInstr(Instr):
+    def __init__(self, items):
+        if len(items) != 6: raise Exception('Invalid quad')
+        super(FourInstr, self).__init__(items)
+
+class Symbol(object): pass
+class Exp(object): pass
+class SegClass(str): pass
+class Ptr(Exp): pass
+class Label(str, Exp): pass
+
+class JumpDes(int, Symbol): pass
+class CallDes(Func, Symbol):
+    def __init__(self, func):
+        super(CallDes, self).__init__(func.func_name,
+            func.func_begin_addr, func.func_end_addr, func.is_lib)
+class StarDes(Exp, Symbol, Container): pass
+class Const(long, Exp): pass
+class Point(Const): pass
+class Normal(Const): pass
+
+class BinOP_Generic(tuple, Ptr):
+    def __init__(self, items, preind=False):
+        self.preind = preind
+        super(BinOP_Generic, self).__init__(items)
+    def __new__(cls, items, preind=False):
+        return super(BinOP_Generic, cls).__new__(cls, items)
+    def __repr__(self):
+        return super(BinOP_Generic, self).__repr__() + ('!' if self.preind else '')
+class BinOP_PLUS(BinOP_Generic): pass
+class BinOP_PLUS_S(BinOP_Generic): pass
+class BinOP_MINUS(BinOP_Generic): pass
+class BinOP_MINUS_S(BinOP_Generic): pass
+class ThreeOP(tuple, Ptr): pass
+class FourOP_PLUS(tuple, Ptr): pass
+class FourOP_MINUS(tuple, Ptr): pass
+class FourOP_PLUS_S(tuple, Ptr): pass
+class FourOP_MINUS_S(tuple, Ptr): pass
+class JmpTable_PLUS(tuple, Ptr): pass
+class JmpTable_MINUS(tuple, Ptr): pass
+class JmpTable_PLUS_S(tuple, Ptr): pass
+class JmpTable_MINUS_S(tuple, Ptr): pass
+class SegRef(tuple, Ptr): pass
+
 
 if config.arch == config.ARCH_X86:
     ###################################################
@@ -179,8 +240,8 @@ elif config.arch == config.ARCH_ARMT:
                          'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S23',
                          'S24', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31'
     ], True)
-    StackReg = RecSet(['R13', 'SP'], True)
-    LinkReg = RecSet(['R14', 'LR'], True)
+    StackReg = RecSet(['R13', 'SP', 'FP', 'SB'], True)
+    LinkReg = RecSet(['R14', 'LR', 'IP'], True)
     PCReg = RecSet(['R15', 'PC'], True)
     Reg = RecSet([CommonReg, SpecialReg, StackReg, PCReg, LinkReg])
 
@@ -208,7 +269,7 @@ elif config.arch == config.ARCH_ARMT:
                        'USAX', 'USUB16', 'USUB8', 'UXTAB', 'UXTAB16', 'UXTAH',
                        'UXTB', 'UXTB16', 'UXTH', 'VMUL', 'VNMUL', 'VMLA', 'VMLS',
                        'VNMLS', 'VNMLA', 'VADD', 'VSUB', 'VDIV', 'VABS', 'VNEG',
-                       'VSQRT'
+                       'VSQRT', 'VRHADD'
     ], True)
     LogicOp = RecSet(['BIC', 'BICS', 'EOR', 'EORS', 'ORN', 'ORNS', 'ORR', 'ORRS',
                       'PKHBT', 'PKHTB', 'RBIT', 'REV', 'REV16', 'REVSH', 'SBFX',
@@ -229,72 +290,35 @@ elif config.arch == config.ARCH_ARMT:
     OtherOp = RecSet(['CDP', 'CDP2', 'LDC', 'LDCL', 'LDC2', 'LDC2L', 'MCR', 'MCR2',
                       'MCRR', 'MCRR2', 'MRC', 'MRC2', 'MRRC', 'MRRC2', 'NOP', 'SETEND',
                       'STC', 'STC2', 'STCL', 'STC2L'], True)
+    AssistOp = RecSet([], True)
     ControlOp = RecSet(['B', 'BL', 'BLX', 'BX', 'BXJ', 'CBNZ', 'CBZ', 'SUBS', 'TBB', 'TBH'], True)
     CondSuff = RecSet(['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC',
                        'HI', 'LS', 'GE', 'LT', 'GT', 'LE', 'AL'], True)
-    OpQualifier = RecSet(['W', 'N', 'F32', 'F64'])
+    OpQualifier = RecSet(['W', 'N', 'F32', 'F64', 'U8', 'U16', 'U32', 'S8', 'S16', 'S32'])
     CommonOp = RecSet([ArithmOp, LogicOp, RolOp, AssignOp, CompareOp])
     Op = RecSet([CommonOp, StackOp, ControlOp, SystemOp, OtherOp])
+    DataTypes = RecSet(['.word', '.short', '.byte'], True)
 
 
-class Symbol(object): pass
-class Exp(object): pass
-class SegClass(str): pass
+    class RegList(tuple): pass
+    class InlineData(str): pass
+    class ShiftExp(Exp):
+        def __init__(self, op, val):
+            self.op = op; self.val = val
+    class FiveInstr(Instr):
+        def __init__(self, items):
+            if len(items) != 7: raise Exception('Invalid five')
+            super(FiveInstr, self).__init__(items)
+
+
 class RegClass(str, Exp):
     def __init__(self, reg):
-        if reg not in Reg: raise Exception('Not a register')
+        if reg not in Reg: raise Exception('Not a register: ' + reg)
         super(RegClass, self).__init__(reg)
 class AssistOpClass(str, Exp):
     def __init__(self, op):
-        if op not in AssistOp: raise Exception('No assist op')
+        if op not in AssistOp: raise Exception('No assist op: ' + op)
         super(AssistOpClass, self).__init__(op)
-class Ptr(Exp): pass
-class Label(str, Exp): pass
-
-class JumpDes(int, Symbol): pass
-class CallDes(Func, Symbol):
-    def __init__(self, func):
-        super(CallDes, self).__init__(func.func_name,
-            func.func_begin_addr, func.func_end_addr, func.is_lib)
-class StarDes(Exp, Symbol, Container): pass
-class Const(long, Exp): pass
-class Point(Const): pass
-class Normal(Const): pass
 
 class UnOP(RegClass, Ptr): pass
-class BinOP_PLUS(tuple, Ptr): pass
-class BinOP_PLUS_S(tuple, Ptr): pass
-class BinOP_MINUS(tuple, Ptr): pass
-class BinOP_MINUS_S(tuple, Ptr): pass
-class ThreeOP(tuple, Ptr): pass
-class FourOP_PLUS(tuple, Ptr): pass
-class FourOP_MINUS(tuple, Ptr): pass
-class FourOP_PLUS_S(tuple, Ptr): pass
-class FourOP_MINUS_S(tuple, Ptr): pass
-class JmpTable_PLUS(tuple, Ptr): pass
-class JmpTable_MINUS(tuple, Ptr): pass
-class JmpTable_PLUS_S(tuple, Ptr): pass
-class JmpTable_MINUS_S(tuple, Ptr): pass
-class SegRef(tuple, Ptr): pass
 
-class control(object): pass
-class J(control): pass
-class F(control): pass
-
-class Instr(tuple): pass
-class SingleInstr(Instr):
-    def __init__(self, items):
-        if len(items) != 3: raise Exception('Invalid single')
-        super(SingleInstr, self).__init__(items)
-class DoubleInstr(Instr):
-    def __init__(self, items):
-        if len(items) != 4: raise Exception('Invalid double')
-        super(DoubleInstr, self).__init__(items)
-class TripleInstr(Instr):
-    def __init__(self, items):
-        if len(items) != 5: raise Exception('Invalid triple')
-        super(TripleInstr, self).__init__(items)
-class FourInstr(Instr):
-    def __init__(self, items):
-        if len(items) != 6: raise Exception('Invalid quad')
-        super(FourInstr, self).__init__(items)

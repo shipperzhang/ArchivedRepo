@@ -1,22 +1,41 @@
+import re
 import Types
-from lex_new import Lloc, Lop, Lexp
-from lex_new import prefix_identify, prefix_sub, lexer
+import config
+from lex_new import Lloc, Lop, Lexp, prefix_sub, lexer
 
 
-class parse(object):
-
-    call_des = False
+class base_parser(object):
 
     def __init__(self):
         self.func_list = []
         self.sec_list = []
+        self.call_des = False
+        self.jmp_des = False
 
-    def pp_print(self, l):
-        print ''.join(map(lambda e: 'item: ' + e, l)) + 'end'
+    def set_funclist(self, l):
+        self.func_list = l
 
-    def conptr_symb(self, s):
-        # stub not used
-        pass
+    def get_funclist(self):
+        return self.func_list
+
+    def set_seclist(self, l):
+        self.sec_list = l
+
+    def get_func(self, name, lib):
+        f = next((e for e in self.func_list if e.func_name == name), None)
+        if f is None:
+            f = Types.Func(name, 0, 0, lib)
+            self.func_list.insert(0, f)
+        return f
+
+    def get_sec(self, addr):
+        addr = int(addr, 16)
+        s = next((h for h in self.sec_list if h.sec_begin_addr <= addr < h.sec_begin_addr + h.sec_size), None)
+        if s is None: raise Exception("Error in get_sec")
+        return s
+
+
+class parseX86(base_parser):
 
     def unptr_symb(self, s):
         r = self.reg_symb(s[1:-1])
@@ -110,10 +129,6 @@ class parse(object):
             return self.ptraddr_symb(s)
         return None
 
-    def jumpdes_symb_bak(self, s):
-        # stub not used
-        pass
-
     def jumpdes_symb(self, s):
         if '+' in s or '-' in s:
             return Types.JumpDes(s.split()[0], 16)
@@ -131,22 +146,6 @@ class parse(object):
             return self.get_func(name[1:], True)
         return self.get_func(s1[1:-1], True)
 
-    def star_jmptable_symb(self, s):
-        # stub not used
-        pass
-
-    def calljmp_symb(self, s):
-        # stub not used
-        pass
-
-    def leades_symb(self, s):
-        # stub not used
-        pass
-
-    def callstar_symb(self, s):
-        # stub not used
-        pass
-
     def stardes_symb(self, s):
         return self.exp_symb(s[1:])
 
@@ -154,7 +153,7 @@ class parse(object):
         s = s.strip()
         if s[0] == '*':
             return Types.StarDes(self.stardes_symb(s))
-        elif parse.call_des:
+        elif self.call_des:
             return Types.CallDes(self.calldes_symb(s))
         return self.jumpdes_symb(s)
 
@@ -179,10 +178,118 @@ class parse(object):
             if res is not None: return res
         return Types.Label(s)
 
+    call_patt = re.compile('^callq?$', re.I)
     def op_symb(self, sym):
-        if sym not in Types.Op: raise Exception('Invalid operator:' + sym)
-        if sym.upper() in ['CALL', 'CALLQ']: parse.call_des = True
+        if sym not in Types.Op: raise Exception('Invalid operator: ' + sym)
+        if parseX86.call_patt.match(sym): self.call_des = True
         return sym
+
+    def prefix_identify(self, instr):
+        return 'lock ' in instr
+
+
+class parseARM(base_parser):
+
+    def reg_symb(self, sym):
+        if sym in Types.Reg:
+            return Types.StarDes(Types.RegClass(sym)) if self.call_des else Types.RegClass(sym)
+        return None
+
+    def const_symb(self, sym):
+        if self.jmp_des: return None
+        try:
+            if sym[0] == '#': return Types.Normal(sym[1:], 16)
+            return Types.Point(sym, 16)
+        except ValueError: return None
+
+    def unptr_symb(self, sym):
+        # LDR R0, [R1]
+        r = self.reg_symb(sym[1:-1])
+        return Types.UnOP(r) if r is not None else None
+
+    def binptr_symb(self, sym):
+        # LDR R0, [R1, #0x10]
+        preind = sym[-1] == '!'
+        items = sym[1:(-2 if preind else -1)].split(',')
+        if len(items) == 2:
+            off = int(items[1][1:], 16)
+            return Types.BinOP_PLUS((self.reg_symb(items[0]), off), preind) if off >= 0 else \
+                   Types.BinOP_MINUS((self.reg_symb(items[0]), -off), preind)
+        return None
+
+    def threeptr_symb(self, sym):
+        # LDR R0, [R1, R2, LSL #1]
+        items = sym[1:-1].split(',')
+        if len(items) == 2: items.append('lsl|#0')
+        return Types.ThreeOP((self.reg_symb(items[0]), self.reg_symb(items[1]), self.shift_symb(items[2])))
+
+    def ptr_symb(self, sym):
+        if sym[0] != '[': return None
+        mappers = [self.unptr_symb, self.binptr_symb, self.threeptr_symb]
+        for m in mappers:
+            res = m(sym)
+            if res is not None: return res
+        return None
+
+    def shift_symb(self, sym):
+        # ADD R0, R1, R2, LSL #8
+        if '|' in sym:
+            items = sym.split('|')
+            return Types.ShiftExp(items[0], int(items[1][1:]))
+        return None
+
+    def jmpdes_symb(self, sym):
+        # B #0x1010
+        if sym[0] == '#': return Types.JumpDes(sym[1:], 16)
+        try: return Types.CallDes(self.calldes_symb(sym))
+        except: return None
+
+    def calldes_symb(self, sym):
+        # BLX #0x10338 <abort@plt>
+        items = sym.split()
+        if (len(items) < 2 and items[0][0] == '#') or \
+           ('+' in items[1] or '-' in items[1]):
+            return self.get_func('S_' + items[0][1:], False)
+        if '@' in items[1]:
+            name = items[1].split('@')[0]
+            return self.get_func(name[1:], True)
+        return None
+
+    def symbol_symb(self, sym):
+        return Types.CallDes(self.calldes_symb(sym)) if self.call_des else self.jmpdes_symb(sym)
+
+    def reg_list(self, sym):
+        # POP {R1, R2}
+        if sym[0] == '{':
+            return Types.RegList(map(Types.RegClass, sym[1:-1].split(',')))
+        return None
+
+    def exp_symb(self, s):
+        symbf = [self.reg_list, self.shift_symb, self.ptr_symb,
+                 self.reg_symb, self.const_symb, self.symbol_symb]
+        for f in symbf:
+            res = f(s)
+            if res is not None: return res
+        return Types.Label(s)
+
+    call_patt = re.compile('^blx?([a-z]{2})?$', re.I)
+    def op_symb(self, sym):
+        if sym in Types.DataTypes: return Types.InlineData(sym)
+        parts = sym.split('.')
+        if (parts[0] in Types.Op or
+           (parts[0][-2:] in Types.CondSuff and parts[0][:-2] in Types.Op)) and \
+           all(map(lambda e: e in Types.OpQualifier, parts[1:])):
+            self.jmp_des = parts[0] in Types.ControlOp or \
+                           (parts[0][-2:] in Types.CondSuff and parts[0][:-2] in Types.ControlOp)
+            self.call_des = parseARM.call_patt.match(parts[0]) is not None
+            return sym
+        raise Exception('Invalid operator: ' + sym)
+
+    def prefix_identify(self, instr):
+        return False
+
+
+class parse(parseARM if (config.arch == config.ARCH_ARMT) else parseX86):
 
     def push_stack(self, lex):
         lext = lex.__class__
@@ -193,47 +300,24 @@ class parse(object):
 
     def reduce_stack(self, stack, pre):
         sl = len(stack)
-        stack = stack[:1] + stack[::-1][1:-1] + stack[-1:] + [pre]
+        stack = stack[:1] + \
+                (stack[::-1][1:-1] if isinstance(self, parseX86) else stack[1:-1]) + \
+                stack[-1:] + [pre]
         if sl == 2: return Types.SingleInstr(stack)
         elif sl == 3: return Types.DoubleInstr(stack)
         elif sl == 4: return Types.TripleInstr(stack)
         elif sl == 5: return Types.FourInstr(stack)
+        elif sl == 6: return Types.FiveInstr(stack)
         raise Exception('Parsing error')
 
-#    def print_f(self, fl):
-#        pass
-
-    def set_funclist(self, l):
-        self.func_list = l
-
-    def get_funclist(self):
-        return self.func_list
-
-    def set_seclist(self, l):
-        self.sec_list = l
-
-    def get_func(self, name, lib):
-        f = next((e for e in self.func_list if e.func_name == name), None)
-        if f is None:
-            f = Types.Func(name, 0, 0, lib)
-            self.func_list.insert(0, f)
-        return f
-
-    def get_sec(self, addr):
-        addr = int(addr, 16)
-        s = next((h for h in self.sec_list if h.sec_begin_addr <= addr < h.sec_begin_addr + h.sec_size), None)
-        if s is None: raise Exception("Error in get_sec")
-        return s
-
-    def init_process(self):
-        parse.call_des = False
-
     def parse_instr(self, instr, loc):
-        self.init_process()
-        has_pre = prefix_identify(instr)
-        instr1 = prefix_sub(instr)
-        lexem_list = lexer(instr1, loc)
-        s = []
-        for l in lexem_list:
-            s.append(self.push_stack(l))
+        self.call_des = False
+        self.jmp_des = False
+        has_pre = self.prefix_identify(instr)
+        if has_pre: instr = prefix_sub(instr)
+        lexem_list = lexer(instr, loc)
+        s = map(self.push_stack, lexem_list)
+        print s
         return self.reduce_stack(s, has_pre)
+
+

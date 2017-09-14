@@ -4,7 +4,7 @@ import ail
 import config
 from utils.ail_utils import ELF_utils
 from disasm import bss_creator, pic_process, pic_process64, useless_func_del,\
-                   extern_symbol_process64, filter_nop, arm_process
+                   extern_symbol_process64, arm_process
 
 
 class Init(object):

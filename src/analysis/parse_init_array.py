@@ -6,11 +6,11 @@ def not_hex(d):
         return True
 
 def parse(item):
-    h1 = item[7:8].upper()
-    h2 = item[4:6].upper()
-    h3 = item[2:4].upper()
-    h4 = item[0:2].upper()
-    return "S_0x"+h1+h2+h3+h4
+    h1 = item[7:8]
+    h2 = item[4:6]
+    h3 = item[2:4]
+    h4 = item[0:2]
+    return "S_0x%X" % int(h1+h2+h3+h4, 16)
 
 def main():
     with open("init_array.info") as f:

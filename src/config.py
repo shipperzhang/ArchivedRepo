@@ -6,6 +6,10 @@ X86_TOOL = ''
 ARM_TOOL = 'arm-linux-gnueabihf-'
 
 # Defaults
+is_32 = False
+is_lib = False
+is_dynamic = True
+is_unstrip = False
 arch = ARCH_X86
 objdump = 'objdump'
 toolprefix = ''
@@ -14,18 +18,27 @@ compiler = 'gcc'
 
 
 def setup(filepath):
-    global arch
-    global strip
-    global objdump
-    global compiler
-    global toolprefix
-    if 'executable, ARM' in check_output('file ' + filepath, shell=True):
+    global is_32
+    global is_lib
+    global is_dynamic
+    global is_unstrip
+    with open('elf.info') as f: elf_info = f.readline()
+    is_32 = 'ELF 32-bit' in elf_info
+    is_lib = 'LSB shared object' in elf_info
+    is_dynamic = 'dynamically linked' in elf_info
+    is_unstrip = 'not stripped' in elf_info
+    if ', ARM' in elf_info:
+        global arch
+        global strip
+        global objdump
+        global compiler
+        global toolprefix
         entry = check_output('readelf -h ' + filepath + ' | grep Entry', shell=True)
         entry = int(entry.split()[3], 16)
         if entry & 1: print 'Thumb binary detected'
         else: raise Exception('Only thumb supported')
         arch = ARCH_ARMT
-        objdump = ARM_TOOL + objdump + ' --disassembler-options=force-thumb'
         toolprefix = ARM_TOOL
+        objdump = ARM_TOOL + objdump + ' --disassembler-options=force-thumb'
         strip = ARM_TOOL + strip
         compiler = ARM_TOOL + compiler

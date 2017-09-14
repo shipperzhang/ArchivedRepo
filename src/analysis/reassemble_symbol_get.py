@@ -1,4 +1,5 @@
 import os
+import config
 import spliter
 import export_data
 import parse_init_array
@@ -459,18 +460,19 @@ class reassemble(ailVisitor):
         if isinstance(c, Types.Const): return c
         raise Exception("Not a constant")
 
+    normal_char = '#' if config.arch == config.ARCH_ARMT else '$'
     def build_symbol(self, c):
         if isinstance(c, Types.Point):
             return 'S_' + dec_hex(c)
         elif isinstance(c, Types.Normal):
-            return '$S_' + dec_hex(c)
+            return reassemble.normal_char + 'S_' + dec_hex(c)
 
     def build_plt_symbol(self, c):
         n = reassemble.plt_hash[c]
         if isinstance(c, Types.Point):
             return n
         elif isinstance(c, Types.Normal):
-            return '$' + n
+            return reassemble.normal_char + n
         raise Exception("Failed plt symbol")
 
     def has_data(self, l):
@@ -608,15 +610,46 @@ class reassemble(ailVisitor):
             return Types.FourInstr((instr[0], instr[1], self.v_exp2(instr[2], instr, f, False),
                                     instr[3], instr[4], instr[5]))
 
+    def v_exp2ARM(self, exp, instr):
+        if isinstance(exp, Types.Const):
+            s = self.check_sec(exp)
+            if s is not None:
+                s_label = self.build_symbol(exp)
+                loc1 = get_loc(instr)
+                if not self.has_data(exp):
+                    reassemble.data_set[exp] = ''
+                    self.label.insert(0, (s.sec_name, exp))
+                self.c2d_addr.insert(0, loc1.loc_addr)
+                return Types.Label(s_label)
+            if self.check_text(exp):
+                s_label = self.build_symbol(exp)
+                loc1 = get_loc(instr)
+                if not self.has_text(exp):
+                    reassemble.text_set[exp] = ''
+                    self.deslist.insert(0, s_label)
+                self.deslist_reloc.insert(0, loc1.loc_addr)
+                return Types.Label(s_label)
+            if self.check_plt(exp):
+                return Types.Label(self.build_plt_symbol(exp))
+
+        #TODO: stub
+        return exp
+
+    def vinst2ARM(self, instr):
+        if isinstance(instr, Types.DoubleInstr):
+            return Types.DoubleInstr((instr[0], self.v_exp2ARM(instr[1], instr),
+                                      instr[2], instr[3]))
+        if isinstance(instr, Types.TripleInstr):
+            return Types.TripleInstr((instr[0], instr[1], self.v_exp2ARM(instr[2], instr),
+                                      instr[3], instr[4]))
+        return instr
+
     def visit_heuristic_analysis(self, instrs):
         func = lambda i: self.check_text(get_loc(i).loc_addr)
         self.instr_list = instrs
-        tl = map(lambda i: self.vinst2(func, i), instrs)
-        is_32 = 1 if ELF_utils.elf_32() else 0
-        def desmapper(l):
-            try: return int(l[2:10+is_32], 16)
-            except: return int(l[3:11+is_32], 16)
-        tl1 = map(desmapper, self.deslist)
+        tl = map(lambda i: self.vinst2ARM(i), instrs) if ELF_utils.elf_arm() \
+             else map(lambda i: self.vinst2(func, i), instrs)
+        tl1 = map(lambda l: int(l.split('x')[1], 16), self.deslist)
         self.symbol_list = tl1 + self.symbol_list
         return tl
 

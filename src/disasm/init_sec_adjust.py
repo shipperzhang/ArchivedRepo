@@ -24,3 +24,4 @@ def main():
                 lines = []
                 with open("init_sec.info", 'w') as f:
                     f.write(s)
+                break

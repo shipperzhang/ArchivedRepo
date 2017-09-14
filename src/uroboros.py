@@ -1,20 +1,17 @@
 import os
 import glob
-import init
 import shutil
 import config
-from disasm import main_discover, func_addr
-from utils.ail_utils import ELF_utils
 from argparse import ArgumentParser, RawTextHelpFormatter
-from postprocess import compile_process, post_process_data, gobmk_sub, label_adjust
-import traceback
 
-
-f_dic = ''
 
 def process(filepath):
-    print "Start to process binary: " + filepath
+    import init
+    import traceback
+    from disasm import main_discover, func_addr
+    from postprocess import compile_process, post_process_data, gobmk_sub, label_adjust
 
+    print "Start to process binary: " + filepath
     try:
         # suppose we use this method to obtain function information
         func_addr.func_addr(filepath, 0)
@@ -68,14 +65,14 @@ def check(filepath, assumptions):
         shutil.copy(filepath, '.')
 
     os.system('file ' + filepath + ' > elf.info')
-    if not ELF_utils.elf_exe():
+    config.setup(filepath)
+
+    if config.is_lib:
         print "Uroboros doesn't support shared library"
         return False
 
-    config.setup(filepath)
-
     # if assumption three is utilized, then input binary must be unstripped.
-    if '3' in assumptions and ELF_utils.elf_strip():
+    if '3' in assumptions and config.is_unstrip:
         print 'Uroboros does not support stripped binaries when using assumption three'
         return False
 
