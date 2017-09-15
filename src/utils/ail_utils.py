@@ -1,3 +1,4 @@
+import re
 import time
 import config
 from disasm import Types
@@ -245,6 +246,68 @@ class ELF_utils(object):
 
 class Opcode_utils(object):
 
+    if config.arch == config.ARCH_ARMT:
+
+        call_patt = re.compile('^blx?([a-z]{2})?$', re.I)
+
+        @staticmethod
+        def is_cp(op):
+            parts = op.split('.')
+            return parts[0] in Types.ControlOp or (parts[0][-2:] in Types.CondSuff and parts[0][:-2] in Types.ControlOp)
+
+        @staticmethod
+        def is_jmp(op):
+            return op.split('.')[0].upper() in ['B', 'BX']
+
+        @staticmethod
+        def is_cond_jmp(op):
+            parts = op.split('.')
+            return parts[0][-2:] in Types.CondSuff and parts[0][:-2] in Types.ControlOp
+
+        @staticmethod
+        def is_mov(op):
+            return op.split('.')[0].upper() in ['MOV', 'MOVS', 'MOVW', 'MOVT']
+
+        @staticmethod
+        def is_call(op):
+            return Opcode_utils.call_patt.match(op) is not None
+
+        @staticmethod
+        def is_ret(op, exp1):
+            if op.upper().startswith('POP') and isinstance(exp1, Types.RegList):
+                return 'PC' in map(str.upper, exp1)
+            elif Opcode_utils.is_cp(op) and isinstance(Types.RegClass, exp1):
+                return exp1.upper() == 'LR'
+            return False
+
+    else:
+
+        call_patt = re.compile('^callq?$', re.I)
+
+        @staticmethod
+        def is_cp(op):
+            return op in Types.JumpOp or op.upper().startswith('CALL')
+
+        @staticmethod
+        def is_jmp(op):
+            return op.upper() == 'JMP'
+
+        @staticmethod
+        def is_cond_jmp(op):
+            return op.upper() != 'JMP' and op in Types.JumpOp
+
+        @staticmethod
+        def is_mov(op):
+            return op.upper() in ['MOV', 'MOVL']
+
+        @staticmethod
+        def is_call(op):
+            return op.upper() in ['CALL', 'CALLQ']
+
+        @staticmethod
+        def is_ret(op, exp1):
+            return op.upper() in ['RET', 'RETN']
+
     @staticmethod
     def is_control_des(i):
         return ':' in get_label(i)
@@ -252,14 +315,6 @@ class Opcode_utils(object):
     @staticmethod
     def is_func(e):
         return isinstance(e, Types.CallDes)
-
-    @staticmethod
-    def is_jmp(op):
-        return op.upper() == 'JMP'
-
-    @staticmethod
-    def is_cond_jmp(op):
-        return op.upper() != 'JMP' and op in Types.JumpOp
 
     @staticmethod
     def is_assign(op):
@@ -273,34 +328,22 @@ class Opcode_utils(object):
 
     @staticmethod
     def is_push(op):
-        return op.upper() == 'PUSH'
+        return op.upper().startswith('PUSH')
 
     @staticmethod
     def is_stack_op(op):
         return op in Types.StackOp
 
     @staticmethod
-    def is_mov(op):
-        return op.upper() in ['MOV', 'MOVL']
-
-    @staticmethod
-    def is_call(op):
-        return op.upper() in ['CALL', 'CALLQ']
-
-    @staticmethod
-    def is_ret(op):
-        return op.upper() in ['RET', 'RETN']
-
-    @staticmethod
     def is_indirect(s):
         return isinstance(s, Types.StarDes)
 
     @staticmethod
-    def is_control_transfer_op(op):
+    def is_control_transfer_op(op, exp1):
         return Opcode_utils.is_call(op) \
             or Opcode_utils.is_jmp(op) \
             or Opcode_utils.is_cond_jmp(op) \
-            or Opcode_utils.is_ret(op)
+            or Opcode_utils.is_ret(op, exp1)
 
     @staticmethod
     def is_cmp_op(op):

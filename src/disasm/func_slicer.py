@@ -11,7 +11,6 @@ class func_slicer(object):
     def __init__(self, instrs, funcs):
         self.instrs = instrs
         self.funcs = funcs
-
         self.baddr = -1
         self.eaddr = -1
         self.label = ''
@@ -20,12 +19,6 @@ class func_slicer(object):
         self.addr_set = []
         self.text_b_addr = 0
         self.text_e_addr = 0
-
-        self.last_nop = False
-        self.last_ret = False
-        self.last_xchg = False
-        self.last_special = False
-        self.last_jmp = False
 
     def update(self):
         func = 'S_' + dec_hex(self.baddr)

@@ -13,26 +13,21 @@ def process(filepath):
 
     print "Start to process binary: " + filepath
     try:
-        # suppose we use this method to obtain function information
         func_addr.func_addr(filepath, 0)
 
-        # if iter_curr > 0: func_addr.useless_func_discover(filepath)
-
-        # with open('count.txt', 'w') as f: f.write(str(iter_curr))
         os.system(config.strip + ' ' + filepath)
         main_discover.main_discover(filepath)
-        # exit()
 
-        # os.system("./init.native " + filepath)
         init.main(filepath)
+        # exit()
         if not os.path.isfile("final.s"): return False
 
         post_process_data.post_process_data()
 
         with open('final_data.s', 'a') as f:
-            f.write('.section .eh_frame\n')
+            f.write('\n.section .eh_frame\n')
             with open('eh_frame_split.info') as eh: f.write(eh.read())
-            f.write('.section .eh_frame_hdr\n')
+            f.write('\n.section .eh_frame_hdr\n')
             with open('eh_frame_hdr_split.info') as eh: f.write(eh.read())
         with open('final.s', 'a') as f:
             with open('final_data.s', 'r') as fd: f.write(fd.read())

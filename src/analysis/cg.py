@@ -1,7 +1,7 @@
 import sys
 from disasm import Types
 from visit import ailVisitor
-from utils.ail_utils import dec_hex
+from utils.ail_utils import dec_hex, Opcode_utils
 
 
 class cg(ailVisitor):
@@ -37,8 +37,7 @@ class cg(ailVisitor):
         for h in instrs:
             if isinstance(h, Types.DoubleInstr):
                 p, e, l, _ = h
-                if (p in Types.JumpOp or p.upper().startswith('CALL')) and \
-                        isinstance(e, (Types.JumpDes, Types.CallDes)):
+                if Opcode_utils.is_cp(p) and isinstance(e, (Types.JumpDes, Types.CallDes)):
                     self.cg_process(e, l)
         return instrs
 

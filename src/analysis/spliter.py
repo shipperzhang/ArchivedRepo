@@ -75,8 +75,9 @@ def main():
         f.write(s+'\n')
 
 
-    with open('eh_frame_hdr.info') as f:
-        lines = f.readlines()
+    try:
+        with open('eh_frame_hdr.info') as f: lines = f.readlines()
+    except: lines = []
 
     s = []
     for l in (lines):

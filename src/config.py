@@ -42,3 +42,7 @@ def setup(filepath):
         objdump = ARM_TOOL + objdump + ' --disassembler-options=force-thumb'
         strip = ARM_TOOL + strip
         compiler = ARM_TOOL + compiler
+    elif 'x86-64' in elf_info or 'Intel 80386' in elf_info:
+        print ('32 bit' if is_32 else '64 bit') + ' x86 binary detected'
+    else:
+        raise Exception("Unkwown architecture type")

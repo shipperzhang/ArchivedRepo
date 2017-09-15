@@ -19,7 +19,7 @@ def post_process_data():
                         lines[i+1] = ".align 16\n" + ln
             with open('final_data.s', 'w') as f:
                 f.writelines(lines)
-    else:
+    """else:
         if ELF_utils.elf_exe():
             with open("final_data.s") as f:
                 lines = f.readlines()
@@ -93,7 +93,7 @@ def post_process_data():
 
 
             with open('final_data.s', 'w') as f:
-                f.writelines(lines)
+                f.writelines(lines)"""
 
 
 # solve export symbol issue : rename certain S_0xaddr into its corresponding

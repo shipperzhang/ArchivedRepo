@@ -1,124 +1,61 @@
-Uroboros: Infrastructure for Reassembleable Disassembling and Transformation
-(v 0.11)
+# Uroboros
+### Infrastructure for Reassembleable Disassembling and Transformation
 
-## Fork motivation
+### Fork motivation
 
-This fork is made with the idea of extending this technique to ARM executables. In such process, the OCaml core will be probably rewritten in Python (if possible).
+This fork is made with the idea of extending this technique to ARM executables. In such process, the OCaml core has been rewritten in Python.
 
-# Installation
+## Installation
 
 Uroboros uses the following utilities:
 (Version numbers indicate the versions that we use in our development.)
 
-  objdump 2.22
-  readelf 2.22
-  awk     3.18
+| Tool        | Version |
+|-------------|--------:|
+| objdump     | ≥2.22   |
+| readelf     | ≥2.22   |
+| awk         | ≥3.18   |
+| libcapstone | 3.0.4   |
 
-Uroboros can be built by the OCaml compiler (version 4.01.0 or later),
-with the following libraries:
+## Build
 
-  deriving 0.7
-  ocamlfind 1.5.5
-  parmap 1.0-rc6
-  batteries 2.3.1
-  ocamlbuild 4.01.0
+Uroboros is now completely written in Python on the `allpy` branch. You don't need to build anything.
 
-We recommend to use the utilities distributed with 64-bit Ubuntu 12.0.4.
-The OCaml compiler and libraries can be obtained through
-[opam](https://opam.ocaml.org/).
+## Usage: Disassembling
 
-# Build
+Uroboros supports 64-bit and 32-bit ELF x86 executables and, experimentally, also Thumb2 ARM binaries.
+To use Uroboros for disassembling:
 
-To build Uroboros, run the command below at the src folder.
+```bash
+ $> python uroboros.py path_to_bin
+```
 
-    ./build
+The disassembled output can be found in the `workdir` directory, named `final.s`. Uroboros will also assemble it back into an executable, `a.out`.
 
-# Usage: Disassembling
+The Python script uroboros.py provides the following options:
 
-Uroboros can take 64-bit and 32-bit ELF executable binaries as the
-input.  To use Uroboros for disassembling:
+1. `-o (output)`
 
-    python uroboros.py bzip
+    This option allows to specify an output path for the reassembled binary.
 
-The disassembled output can be found at current directory, named
-**final.s**. Uroboros will also assemble it back into an executable,
-**a.out**.
+2. `-a (assumption)`
 
-Python script uroboros.py provides multiple options to manipulate the
-disassembling process.
+    This option configures the three symbolization assumptions proposed in
+    the original Uroboros paper [1]. Note that in the current version, the
+    first assumption (**n-byte alignment**) are set by default. The other
+    two assumptions can be set by users.
 
-1. -i (iteration):
+    Assumption two reqires to put data sections (.data, .rodata and .bss)
+    to its original starting addresses. Linker scripts can be used during
+    reassembling (`gcc -T ld_script.sty final.s`). Users may write their
+    own linker script, some examples are given at `ld_script` folder.
 
-The disassemble-reassemble process can be iterated for
-multiple times. For example.
+    Assumption three requires to know the function starting addresses. To
+    obtain this information, Uroboros can take unstripped binaries
+    as input. The function starting address information is obtained from
+    the input, which is then stripped before disassembling.
 
-    python uroboros.py bzip -i 500
-
-2. -k (keep):
-
-This option will create a folder to store the assembly code and binary
-generated from each iteration.  This is only effective together with -i.
-
-    python uroboros.py bzip -i 500 -k
-
-A subfolder will be created in ./src folder, with input binary name and
-timestamp. For example:
-
-    test_fold_bzip_2015-08-31_11:11:50
-
-3. -a (assumption):
-
-This option configures the three symbolization assumptions proposed in
-the original Uroboros paper [1]. Note that in the current version, the
-first assumption (**n-byte alignment**) are set by default. The other
-two assumptions can be set by users.
-
-Assumption two:
-
-    python uroboros.py bzip -a 2
-
-Note that by accepting this assumption, we need to put data sections (.data,
-.rodata and .bss) to its original starting addresses. Linker scripts can be
-used during reassembling. For example:
-
-    gcc -Tld_gobmk.sty final.s
-
-Users may write their own linker script, some examples are given at
-*./src/ld_script* folder.
-
-
-Assumption three:
-
-    python uroboros.py bzip -a 3
-
-
-This assumption requires to know the function starting addresses. To
-obtain this information, Uroboros can take unstripped binaries
-as input. The function starting address information is obtained from
-the input, which is then stripped before disassembling.
-
-
-These assumptions can be used together.
-
-    python uroboros.py bzip -a 3 -a 2
-
-
-# Usage: Use Uroboros to instrument binaries
-
-Instrumentation tools process the internal data structure of
-Uroboros. Some examples are shown in the *./src/plugins* folder. You
-may start with **mem_write.ml**, which instruments every memory write
-operation.
-
-In order to register instrumentation code, users need to add some
-code at *./src/ail.ml*, starting from line 138. For example, in order to
-register the "mem_write" tool, three lines of code need to be added as follows:
-
-    let open Mem_write in
-    let module MW = Mem_write in
-    let il' = MW.process il in
-
-We will provide a better way in our next release.
+    These assumptions can also be used at the same time (`python uroboros.py path_to_bin -a 3 -a 2`)
 
 
 [1] Reassembleable Disassembling, by Shuai Wang, Pei Wang, and Dinghao Wu. In

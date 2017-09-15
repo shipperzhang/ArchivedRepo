@@ -34,12 +34,10 @@ class AilParser(object):
     def get_funcs(self):
         fl = unify_funclist_by_name(self.func_slicing())
         fl.sort(cmp=lambda f1, f2: f1.func_begin_addr - f2.func_begin_addr)
+        fl = self.filter_func_by_name(fl)
         fl = self.update_func_info(fl)
-        fl = self.filter_func(fl)
+        fl = self.filter_func_by_secs(fl)
         return unify_funclist_by_addr(fl)
-
-    def filter_func(self, funcs):
-        return self.filter_func_by_secs(self.filter_func_by_name(funcs))
 
     def filter_func_by_name(self, funcs):
         return filter(lambda f: '.text' not in f.func_name, funcs)

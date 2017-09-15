@@ -1,4 +1,5 @@
 import os
+import re
 import config
 from sets import Set
 from utils.ail_utils import ELF_utils
@@ -22,6 +23,7 @@ def parse_error():
 
 
 def modify(errors):
+    if len(errors) == 0: return
     with open("final.s") as f:
         lines = f.readlines()
     def help_err(l):
@@ -35,10 +37,28 @@ def modify(errors):
     with open("final.s", 'w') as f:
         f.writelines(lines)
 
+def modifyARM():
+    # final.s:36: Error: selected processor does not support `XXX' in Thumb mode
+    if not os.path.isfile('final.error'): return
+    with open('final.error') as f:
+        bad = filter(lambda l: 'processor does not support' in l, f)
+    if len(bad) == 0: return
+    patt = re.compile("final\.s\:([0-9]+)\:[^`]+`([^']+)'", re.I)
+    bad = map(lambda l: patt.match(l).groups(), bad)
+    with open('final.s') as f:
+        lines = f.readlines()
+    for b in bad:
+        i = int(b[0]) - 1
+        lines[i] = lines[i].replace(b[1], '')
+    with open("final.s", 'w') as f:
+        f.writelines(lines)
+
 
 def main():
-    print "     modify final.s to adjust redundant symbols"
+    print "     modifying final.s to adjust redundant symbols"
+    if ELF_utils.elf_arm():
+        reassemble(True)
+        modifyARM()
     reassemble(True)
     errors = parse_error()
     modify(errors)
-    print "     modify finished"

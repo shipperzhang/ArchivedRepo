@@ -40,18 +40,18 @@ class Disam(object):
             print "2: disassembly validates"
 
             il = re.visit_heuristic_analysis(ailpar.get_instrs())
-            il = re.adjust_loclabel(il)
-            il = re.adjust_jmpref(il)
+            # il = re.adjust_loclabel(il)
+            # il = re.adjust_jmpref(il)
             il = re.add_func_label(Disam.get_userfuncs(fl), il)
             il = dis_valid.visit(il)
 
             adjust_list = dis_valid.trim_results()
             if len(adjust_list) != 0:
                 print "     disassembly error found!"
+                if config.arch == config.ARCH_ARMT: exit('Not implemented')
                 Disam.disasm_skip(filepath, adjust_list[0][0], adjust_list[0][1])
                 total += TR.elapsed(once)
             else:
                 cond = True
 
-        print "     no disassembly error detected"
         return (il, fl, re)

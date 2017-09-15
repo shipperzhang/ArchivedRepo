@@ -1,7 +1,7 @@
 import config
 from disasm import Types
 from disasm.Parser import parse
-from utils.ail_utils import get_loc, get_op, get_cf_des
+from utils.ail_utils import get_loc, get_op, get_cf_des, Opcode_utils
 
 
 class stack_of_loc(object):
@@ -36,14 +36,6 @@ def is_des(e):
         except: return None
     return None
 
-if config.arch == config.ARCH_ARMT:
-    def is_cp(op):
-        parts = op.split('.')
-        return parts[0] in Types.ControlOp or (parts[0][-2:] in Types.CondSuff and parts[0][:-2] in Types.ControlOp)
-else:
-    def is_cp(op):
-        return op in Types.JumpOp or op.upper().startswith('CALL')
-
 
 class dis_validator(object):
 
@@ -72,7 +64,7 @@ class dis_validator(object):
 
     def invalid_transfer(self, instr):
         is_outside = lambda d: all(map(lambda e: d < e[0] or d >= e[0] + e[1], self.text_secs))
-        if isinstance(instr, Types.DoubleInstr) and is_cp(instr[0]):
+        if isinstance(instr, Types.DoubleInstr) and Opcode_utils.is_cp(instr[0]):
             res = is_des(instr[1])
             return False if res is None else is_outside(res)
         return False
@@ -81,7 +73,12 @@ class dis_validator(object):
         self.text_sec_collect()
         self.locs = filter(lambda i: self.invalid_opcode(i) or self.invalid_transfer(i), instrlist)
         self.locs = map(lambda i: get_loc(i).loc_addr, self.locs)
-        if len(self.locs) != 0: self.validate(instrlist)
+        if len(self.locs) != 0:
+            if config.arch == config.ARCH_ARMT:
+                print '     Warning: instructions at this locations were probably misinterpreted:'
+                print '     ' + str(map(hex, self.locs))
+            else:
+                self.validate(instrlist)
         return instrlist
 
     def trim_results(self):
@@ -125,7 +122,7 @@ class dis_validator(object):
                     self.update_cft_track(i)
                 else:
                     p = get_op(i); e = get_cf_des(i)
-                    if parse.call_patt.match(p):  # @UndefinedVariable
+                    if Opcode_utils.call_patt.match(p):  # @UndefinedVariable
                         print "detected call instruction in disassembly validator"
                         self.update_cfd(index + 1, instrlist)
                         if self.is_icf(p, e): self.update_cft_stack(i)

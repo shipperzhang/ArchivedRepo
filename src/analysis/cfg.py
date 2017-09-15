@@ -33,8 +33,8 @@ class cfg(ailVisitor):
             cfg.cfg_table[l.loc_addr] = e.func_begin_addr
 
     exit_op = Types.RecSet(('CALL', 'RET', 'RETN'), True)
-    def bb_exit(self, op):
-        return op in Types.JumpOp or op in cfg.exit_op
+    def bb_exit(self, op, exp1):
+        return Opcode_utils.is_cp(op) or Opcode_utils.is_ret(op, exp1)
 
     def bb_entry(self, i):
         return ':' in get_loc(i).loc_label
@@ -84,13 +84,13 @@ class cfg(ailVisitor):
                 self.found_entry = True
                 self.skip_entry = False
                 self.last_loc = loc
-                return self.help_exit(i) if Opcode_utils.is_control_transfer_op(i[0]) else i
+                return self.help_exit(i) if Opcode_utils.is_control_transfer_op(i[0], i[1]) else i
         elif loc.loc_addr == self.end_loc.loc_addr:
             return self.help_exit(i)
         elif self.bb_entry(i):
             self.help_entry(i)
-            return self.help_exit(i) if Opcode_utils.is_control_transfer_op(i[0]) else i
-        elif isinstance(i, (Types.DoubleInstr, Types.SingleInstr)) and self.bb_exit(i[0]):
+            return self.help_exit(i) if Opcode_utils.is_control_transfer_op(i[0], i[1]) else i
+        elif isinstance(i, (Types.DoubleInstr, Types.SingleInstr)) and self.bb_exit(i[0], i[1]):
             return self.help_exit(i)
         self.last_loc = loc
         return i
@@ -124,8 +124,11 @@ class cfg(ailVisitor):
         i = 0; j = 0
         while True:
             if i == len(funcs1) and j < len(bls1):
+                print funcs1
+                print bls1[j]
+                print i, j
                 raise Exception('Bad things')
-            if j == len(bls1): break
+            if j == len(bls1) or i == len(funcs1): break
             hf = funcs1[i]
             hb = bls1[j]
             if hf.func_begin_addr <= hb.bblock_begin_loc.loc_addr <= hf.func_end_addr:
@@ -153,7 +156,7 @@ class cfg(ailVisitor):
 
     def recover_cfg(self):
         def aux(bnl, acc, i):
-            if isinstance(i, Types.SingleInstr) and Opcode_utils.is_ret(i[0]):
+            if isinstance(i, Types.SingleInstr) and Opcode_utils.is_ret(i[0], i[1]):
                 bn = self.bbn_byloc(get_loc(i).loc_addr)
                 acc.insert(0, (bn, (Types.J(), 'RET')))
             elif isinstance(i, Types.DoubleInstr):

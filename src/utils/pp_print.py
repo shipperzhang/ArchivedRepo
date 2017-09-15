@@ -1,5 +1,6 @@
 import config
 from disasm import Types
+from utils.ail_utils import ELF_utils
 
 def flip(func, x, y):
     return func(y, x)
@@ -199,4 +200,6 @@ def pp_print_list(ilist):
 def pp_print_file(ilist):
     with open('final.s', 'a') as f:
         f.write('.section .text\n')
+        if ELF_utils.elf_arm(): f.write('.syntax unified\n.align 2\n.thumb\n')
         f.write('\n'.join(ilist))
+        f.write('\n\n')

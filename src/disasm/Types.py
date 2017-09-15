@@ -39,18 +39,24 @@ class Func(object):
         self.func_begin_addr = begin
         self.func_end_addr = end
         self.is_lib = is_lib
+    def __repr__(self):
+        return self.func_name + '@0x%X-0x%X' % (self.func_begin_addr, self.func_end_addr)
 
 class Section(object):
     def __init__(self, name, begin, size):
         self.sec_name = name
         self.sec_begin_addr = begin
         self.sec_size = size
+    def __repr__(self):
+        return 'section(' + self.sec_name + ':0x%X-0x%X)' % (self.sec_begin_addr, self.sec_begin_addr+self.sec_size)
 
 class Loc(object):
     def __init__(self, label, addr, visible):
         self.loc_label = label
         self.loc_addr = addr
         self.loc_visible = visible
+    def __repr__(self):
+        return 'LOC:' + self.loc_label.replace('\n', ' ') + '@0x%X' % self.loc_addr
 
 class Bblock(object):
     def __init__(self, bf_name, bblock_name, bblock_begin_loc, bblock_end_loc, bblock_head_instr):
@@ -59,6 +65,9 @@ class Bblock(object):
         self.bblock_begin_loc = bblock_begin_loc
         self.bblock_end_loc = bblock_end_loc
         self.bblock_head_instr = bblock_head_instr
+    def __repr__(self):
+        return 'BBLOC:' + self.bblock_name + '(' + str(self.bblock_begin_loc) + \
+               ', ' + str(self.bblock_end_loc) + ')'
 
 class control(object): pass
 class J(control): pass
@@ -120,7 +129,7 @@ class JmpTable_MINUS(tuple, Ptr): pass
 class JmpTable_PLUS_S(tuple, Ptr): pass
 class JmpTable_MINUS_S(tuple, Ptr): pass
 class SegRef(tuple, Ptr): pass
-
+ErrorOp = RecSet(['(bad)'])
 
 if config.arch == config.ARCH_X86:
     ###################################################
@@ -223,7 +232,6 @@ if config.arch == config.ARCH_X86:
                         'FXAM', 'FCHS'
     ])
     CommonOp = RecSet([ArithmOp, LogicOp, RolOp, AssignOp, CompareOp, SetOp, OtherOp])
-    ErrorOp = RecSet(['(bad)'])
     Op = RecSet([CommonOp, StackOp, ControlOp, SystemOp, ErrorOp])
 
 elif config.arch == config.ARCH_ARMT:
@@ -235,10 +243,14 @@ elif config.arch == config.ARCH_ARMT:
                         'R7',  'R8',  'R9', 'R10', 'R11', 'R12'], True)
     SpecialReg = RecSet([ 'D0',  'D1',  'D2',  'D3',  'D4',  'D5',  'D6',  'D7',
                           'D8',  'D9', 'D10', 'D11', 'D12', 'D13', 'D14', 'D15',
+                         'D16', 'D17', 'D18', 'D19', 'D20', 'D21', 'D22', 'D23',
+                         'D24', 'D25', 'D26', 'D27', 'D28', 'D29', 'D30', 'D31',
                           'S0',  'S1',  'S2',  'S3',  'S4',  'S5',  'S6',  'S7',
                           'S8',  'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15',
                          'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S23',
-                         'S24', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31'
+                         'S24', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31',
+                          'Q0',  'Q1',  'Q2',  'Q3',  'Q4',  'Q5',  'Q6',  'Q7',
+                          'Q8',  'Q9',  'Q10', 'Q11', 'Q12', 'Q13', 'Q14', 'Q15'
     ], True)
     StackReg = RecSet(['R13', 'SP', 'FP', 'SB'], True)
     LinkReg = RecSet(['R14', 'LR', 'IP'], True)

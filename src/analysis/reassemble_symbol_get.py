@@ -128,7 +128,7 @@ class datahandler:
                 else:
                     self.data_labels.insert(0, (s.sec_name, val))
                     self.data_labels_reloc.insert(0, addr)
-                    l[i] = (l[i][0], '.long S0x%X' % val)
+                    l[i] = (l[i][0], '.long S_0x%X' % val)
                     l[i+1:i+8] = ('', '') * 7
             else:
                 if self.check_text(val):
@@ -139,7 +139,7 @@ class datahandler:
                         self.cur_func_name = self.fn_byloc(val)
                         self.text_labels.insert(0, val)
                         self.text_labels_reloc.insert(0, addr)
-                        l[i] = (l[i][0], '.long S0x%X' % val)
+                        l[i] = (l[i][0], '.long S_0x%X' % val)
                         l[i+1:i+8] = ('', '') * 7
                     else: self.in_jmptable = False
                 else: self.in_jmptable = False
@@ -163,7 +163,7 @@ class datahandler:
                 else:
                     self.data_labels.insert(0, (s.sec_name, val))
                     self.data_labels_reloc.insert(0, addr)
-                    l[i] = (l[i][0], '.long S0x%X' % val)
+                    l[i] = (l[i][0], '.long S_0x%X' % val)
                     l[i+1:i+4] = ('', '') * 3
             else:
                 if self.check_text(val):
@@ -174,7 +174,7 @@ class datahandler:
                         self.cur_func_name = self.fn_byloc(val)
                         self.text_labels.insert(0, val)
                         self.text_labels_reloc.insert(0, addr)
-                        l[i] = (l[i][0], '.long S0x%X' % val)
+                        l[i] = (l[i][0], '.long S_0x%X' % val)
                         l[i+1:i+4] = ('', '') * 3
                     else: self.in_jmptable = False
                 else: self.in_jmptable = False
@@ -353,6 +353,8 @@ class instrhandler(object):
             dh = des1[j]
             if dh == lh.loc_addr:
                 lhs = 'S_' + dec_hex(lh.loc_addr)
+                if ELF_utils.elf_arm() and not isinstance(self.instr_list[i][0], Types.InlineData):
+                    lhs = '.thumb_func\n' + lhs
                 label = do_update(lh.loc_label, lhs + ' : ')
                 self.locs[i].loc_label = label
                 j += 1
@@ -400,6 +402,8 @@ class reassemble(ailVisitor):
         self.plt_collect()
         self.plt_sec_collect()
         self.text_sec_collect()
+        # ARM MOVW locations
+        self.ARMmovs = []
 
     def section_collect(self):
         def secmapper(l):
@@ -497,6 +501,9 @@ class reassemble(ailVisitor):
                 self.c2d_addr.insert(0, loc1.loc_addr)
                 return Types.Label(s_label)
             if self.check_text(l1):
+                if ELF_utils.elf_arm():
+                    exp = type(exp)(exp >> 1 << 1)
+                    l1 = exp
                 s_label = self.build_symbol(exp)
                 loc1 = get_loc(instr)
                 if not self.has_text(l1):
@@ -610,45 +617,65 @@ class reassemble(ailVisitor):
             return Types.FourInstr((instr[0], instr[1], self.v_exp2(instr[2], instr, f, False),
                                     instr[3], instr[4], instr[5]))
 
-    def v_exp2ARM(self, exp, instr):
-        if isinstance(exp, Types.Const):
-            s = self.check_sec(exp)
-            if s is not None:
-                s_label = self.build_symbol(exp)
-                loc1 = get_loc(instr)
-                if not self.has_data(exp):
-                    reassemble.data_set[exp] = ''
-                    self.label.insert(0, (s.sec_name, exp))
-                self.c2d_addr.insert(0, loc1.loc_addr)
-                return Types.Label(s_label)
-            if self.check_text(exp):
-                s_label = self.build_symbol(exp)
-                loc1 = get_loc(instr)
-                if not self.has_text(exp):
-                    reassemble.text_set[exp] = ''
-                    self.deslist.insert(0, s_label)
-                self.deslist_reloc.insert(0, loc1.loc_addr)
-                return Types.Label(s_label)
-            if self.check_plt(exp):
-                return Types.Label(self.build_plt_symbol(exp))
-
-        #TODO: stub
-        return exp
-
-    def vinst2ARM(self, instr):
+    def vinst2ARM(self, iv):
+        instr = iv[1]
+        if instr[0].upper() == 'MOVW': self.ARMmovs.append(iv[0])
         if isinstance(instr, Types.DoubleInstr):
-            return Types.DoubleInstr((instr[0], self.v_exp2ARM(instr[1], instr),
+            return Types.DoubleInstr((instr[0], self.v_exp2(instr[1], instr, None, False),
                                       instr[2], instr[3]))
         if isinstance(instr, Types.TripleInstr):
-            return Types.TripleInstr((instr[0], instr[1], self.v_exp2ARM(instr[2], instr),
+            return Types.TripleInstr((instr[0], instr[1], self.v_exp2(instr[2], instr, None, False),
                                       instr[3], instr[4]))
         return instr
+
+    def doublemovARM(self, instrs):
+        ## insert labels for double mov operations
+        ##  movw r0, #0x102c -> movw r0, #:lower16:S_0x2102c
+        ##  movt r0, #0x2    -> movt r0, #:upper16:S_0x2102c
+        for i in self.ARMmovs:
+            mw = list(instrs[i])
+            tindex = i+1 if instrs[i+1][1] == mw[1] else i+2
+            mt = list(instrs[tindex])
+            if mt[0].upper() == 'MOVT' and mt[1] == mw[1]:
+                val = (mt[2] << 16) + (mw[2] & 0xffff)
+
+                s = self.check_sec(val)
+                if s is not None:
+                    s_label = 'S_' + dec_hex(val)
+                    loc1 = get_loc(mw)
+                    loc2 = get_loc(mt)
+                    if not self.has_data(val):
+                        reassemble.data_set[val] = ''
+                        self.label.insert(0, (s.sec_name, val))
+                    self.c2d_addr.insert(0, loc1.loc_addr)
+                    self.c2d_addr.insert(0, loc2.loc_addr)
+                    mw[2] = Types.Label('#:lower16:' + s_label)
+                    mt[2] = Types.Label('#:upper16:' + s_label)
+                    instrs[i] = type(instrs[i])(mw)
+                    instrs[tindex] = type(instrs[tindex])(mt)
+                if self.check_text(val):
+                    val = val >> 1 << 1
+                    s_label = 'S_' + dec_hex(val)
+                    loc1 = get_loc(mw)
+                    loc2 = get_loc(mt)
+                    if not self.has_text(val):
+                        reassemble.text_set[val] = ''
+                        self.deslist.insert(0, s_label)
+                    self.deslist_reloc.insert(0, loc1.loc_addr)
+                    self.deslist_reloc.insert(0, loc2.loc_addr)
+                    mw[2] = Types.Label('#:lower16:' + s_label)
+                    mt[2] = Types.Label('#:upper16:' + s_label)
+                    instrs[i] = type(instrs[i])(mw)
+                    instrs[tindex] = type(instrs[tindex])(mt)
+        self.ARMmovs = []
 
     def visit_heuristic_analysis(self, instrs):
         func = lambda i: self.check_text(get_loc(i).loc_addr)
         self.instr_list = instrs
-        tl = map(lambda i: self.vinst2ARM(i), instrs) if ELF_utils.elf_arm() \
-             else map(lambda i: self.vinst2(func, i), instrs)
+        if ELF_utils.elf_arm():
+            tl = map(self.vinst2ARM, enumerate(instrs))
+            self.doublemovARM(tl)
+        else: tl = map(lambda i: self.vinst2(func, i), instrs)
         tl1 = map(lambda l: int(l.split('x')[1], 16), self.deslist)
         self.symbol_list = tl1 + self.symbol_list
         return tl
@@ -656,7 +683,8 @@ class reassemble(ailVisitor):
     def visit_type_infer_analysis(self, bbl, instrs):
         self.instr_list = instrs
         f = lambda: True
-        return map(lambda i: self.vinst2(f, i), instrs)
+        return map(self.vinst2ARM, enumerate(instrs)) if ELF_utils.elf_arm() \
+               else map(lambda i: self.vinst2(f, i), instrs)
 
     def share_lib_processing(self, instrs):
         if ELF_utils.elf_lib() and ELF_utils.elf_32():
@@ -728,9 +756,10 @@ class reassemble(ailVisitor):
         p.data_output()
 
     def init_array_dump(self):
-        if len(self.init_array_list) != 0:
+        if len(self.init_array_list) != 0 and not ELF_utils.elf_arm():
             with open('final_data.s', 'a') as f:
-                f.write('\n\n.section        .ctors,\"aw\",@progbits\n.align 4\n')
+                f.write('\n\n.section        .ctors')
+                f.write('\n.align 4\n')
                 f.write('\n'.join(map(lambda s: '.long ' + s.strip(), self.init_array_list)))
                 f.write('\n')
 

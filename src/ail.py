@@ -77,8 +77,14 @@ class Ail(object):
     def instrProcess_2(self):
         self.pre_process()
         il, fl, re = Disam.disassemble(self.file, self.funcs, self.secs)
+
         print '3: analysis'
         fbl, bbl, cfg_t, cg, il, re = Analysis.analyze_one(il, fl, re)  # @UnusedVariable
+
+        print '4: instrumentation'
+        # TODO:
+        print '     nothing done yet'
+
         print '5: post processing'
         Analysis.post_analyze(il, re)
         self.post_process()

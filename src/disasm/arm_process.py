@@ -46,7 +46,7 @@ def pcrel_process(filename):
             if m:
                 dest = (e[0] & 0xFFFFFFFC) + int(m.group(1), 16) + 4
                 inlinedata[dest] = load_size(e[2], e[3])
-                instr = pcrelre.sub('S_0x%X' % dest, instr)
+                instr = pcrelre.sub('0x%X' % dest, instr)
             elif e[2] in calls and e[3].startswith('#'):
                 instr += plts.get(int(e[3][1:], 16), '')
             f.write(instr + '\n')

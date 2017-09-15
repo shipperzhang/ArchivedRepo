@@ -1,3 +1,5 @@
+import config
+
 def not_hex(d):
     try:
         int(d,16)
@@ -10,7 +12,9 @@ def parse(item):
     h2 = item[4:6]
     h3 = item[2:4]
     h4 = item[0:2]
-    return "S_0x%X" % int(h1+h2+h3+h4, 16)
+    v = int(h1+h2+h3+h4, 16)
+    if config.arch == config.ARCH_ARMT: v = v >> 1 << 1
+    return "S_0x%X" % v
 
 def main():
     with open("init_array.info") as f:
@@ -33,8 +37,8 @@ def main():
             if len(item) != 8 or not_hex(item):
                 break
             else:
-                ctors.append(parse(item)+"\n")
+                ctors.append(parse(item))
 
     with open("init_array_new.info", 'w') as f:
-        f.writelines(ctors)
+        f.write('\n'.join(ctors))
     return ctors

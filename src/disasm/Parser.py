@@ -1,6 +1,6 @@
-import re
 import Types
 import config
+from utils.ail_utils import Opcode_utils
 from lex_new import Lloc, Lop, Lexp, prefix_sub, lexer
 
 
@@ -178,10 +178,9 @@ class parseX86(base_parser):
             if res is not None: return res
         return Types.Label(s)
 
-    call_patt = re.compile('^callq?$', re.I)
     def op_symb(self, sym):
         if sym not in Types.Op: raise Exception('Invalid operator: ' + sym)
-        if parseX86.call_patt.match(sym): self.call_des = True
+        if Opcode_utils.call_patt.match(sym): self.call_des = True  # @UndefinedVariable
         return sym
 
     def prefix_identify(self, instr):
@@ -240,7 +239,9 @@ class parseARM(base_parser):
 
     def jmpdes_symb(self, sym):
         # B #0x1010
-        if sym[0] == '#': return Types.JumpDes(sym[1:], 16)
+        if sym[0] == '#':
+            addr = int(sym[1:], 16) >> 1 << 1
+            return Types.JumpDes(addr)
         try: return Types.CallDes(self.calldes_symb(sym))
         except: return None
 
@@ -249,7 +250,8 @@ class parseARM(base_parser):
         items = sym.split()
         if (len(items) < 2 and items[0][0] == '#') or \
            ('+' in items[1] or '-' in items[1]):
-            return self.get_func('S_' + items[0][1:], False)
+            addr = int(items[0][1:], 16) >> 1 << 1
+            return self.get_func('S_0x%X' % addr, False)
         if '@' in items[1]:
             name = items[1].split('@')[0]
             return self.get_func(name[1:], True)
@@ -272,7 +274,6 @@ class parseARM(base_parser):
             if res is not None: return res
         return Types.Label(s)
 
-    call_patt = re.compile('^blx?([a-z]{2})?$', re.I)
     def op_symb(self, sym):
         if sym in Types.DataTypes: return Types.InlineData(sym)
         parts = sym.split('.')
@@ -281,7 +282,7 @@ class parseARM(base_parser):
            all(map(lambda e: e in Types.OpQualifier, parts[1:])):
             self.jmp_des = parts[0] in Types.ControlOp or \
                            (parts[0][-2:] in Types.CondSuff and parts[0][:-2] in Types.ControlOp)
-            self.call_des = parseARM.call_patt.match(parts[0]) is not None
+            self.call_des = Opcode_utils.call_patt.match(parts[0]) is not None  # @UndefinedVariable
             return sym
         raise Exception('Invalid operator: ' + sym)
 
@@ -317,7 +318,6 @@ class parse(parseARM if (config.arch == config.ARCH_ARMT) else parseX86):
         if has_pre: instr = prefix_sub(instr)
         lexem_list = lexer(instr, loc)
         s = map(self.push_stack, lexem_list)
-        print s
         return self.reduce_stack(s, has_pre)
 
 
