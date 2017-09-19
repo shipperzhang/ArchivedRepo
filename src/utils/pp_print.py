@@ -21,7 +21,6 @@ def p_assist(assist):
     return str(assist).lower()
 
 def p_mathop(mathop):
-    # not used
     return '+' if str(mathop).upper() == 'MATHADD' else '-'
 
 def p_loc(loc):

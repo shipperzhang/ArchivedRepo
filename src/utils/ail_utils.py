@@ -24,10 +24,6 @@ def unify_funclist_by_addr(funclist):
     res.append(funclist[-1])
     return res
 
-def unify_hash_list(h):
-    #stub never used
-    pass
-
 def string_to_int32(s):
     return int(s)
 
@@ -123,18 +119,12 @@ def get_instr_byloc(instrlist, loclist):
     return res
 
 def recover_addr_from_label(lab):
-    lab = lab.strip()
-    if lab.startswith('S_0x'):
-        return int(lab[2:], 16)
-    return -1
+    try: return int(lab.strip()[2:], 16)
+    except: return -1
 
 def get_next_bb(sn):
     assert('BB_' in sn)
     return 'BB_' + str(int(sn.strip()[3:]) + 1)
-
-def memo_rec(f):
-    # stub not used
-    pass
 
 def memo(f):
     m = {}
@@ -290,11 +280,11 @@ class Opcode_utils(object):
 
         @staticmethod
         def is_jmp(op):
-            return op.upper() == 'JMP'
+            return op.upper() in ['JMP', 'JMPQ']
 
         @staticmethod
         def is_cond_jmp(op):
-            return op.upper() != 'JMP' and op in Types.JumpOp
+            return not Opcode_utils.is_jmp(op) and op in Types.JumpOp
 
         @staticmethod
         def is_mov(op):

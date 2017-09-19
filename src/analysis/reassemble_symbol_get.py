@@ -68,6 +68,9 @@ class datahandler:
         self.bss_list = self.data_trans(self.bss)
         self.locations = self.label_locate()
 
+        self.label_set = set(map(lambda e: e[1], self.label))
+        self.label_arr = sorted(self.label_set)
+
         fl = sorted(funcs, cmp=lambda f1,f2: f1.func_begin_addr - f2.func_begin_addr)
         self.fl_sort = map(lambda f: ft(f.func_name, f.func_begin_addr, f.func_end_addr), fl)
 
@@ -128,19 +131,18 @@ class datahandler:
                 else:
                     self.data_labels.insert(0, (s.sec_name, val))
                     self.data_labels_reloc.insert(0, addr)
-                    l[i] = (l[i][0], '.long S_0x%X' % val)
-                    l[i+1:i+8] = ('', '') * 7
+                    l[i] = (l[i][0], '.quadword S_0x%X' % val)
+                    l[i+1:i+8] = [('', '')] * 7
             else:
                 if self.check_text(val):
                     c = bbn_byloc(val, self.begin_addrs) if self.assumption_three else True
-                    if (not c and self.check_jmptable(l[i][0], val)) or \
-                       (c and self.check_jmptable_1(l[i][0])):
+                    if (c and self.check_jmptable_1(l[i][0])) or self.check_jmptable(l[i][0], val):
                         self.in_jmptable = True
                         self.cur_func_name = self.fn_byloc(val)
                         self.text_labels.insert(0, val)
                         self.text_labels_reloc.insert(0, addr)
-                        l[i] = (l[i][0], '.long S_0x%X' % val)
-                        l[i+1:i+8] = ('', '') * 7
+                        l[i] = (l[i][0], '.quadword S_0x%X' % val)
+                        l[i+1:i+8] = [('', '')] * 7
                     else: self.in_jmptable = False
                 else: self.in_jmptable = False
             i += 8
@@ -164,18 +166,17 @@ class datahandler:
                     self.data_labels.insert(0, (s.sec_name, val))
                     self.data_labels_reloc.insert(0, addr)
                     l[i] = (l[i][0], '.long S_0x%X' % val)
-                    l[i+1:i+4] = ('', '') * 3
+                    l[i+1:i+4] = [('', '')] * 3
             else:
                 if self.check_text(val):
                     c = bbn_byloc(val, self.begin_addrs) if self.assumption_three else True
-                    if (not c and self.check_jmptable(l[i][0], val)) or \
-                       (c and self.check_jmptable_1(val)):
+                    if (c and self.check_jmptable_1(val)) or self.check_jmptable(l[i][0], val):
                         self.in_jmptable = True
                         self.cur_func_name = self.fn_byloc(val)
                         self.text_labels.insert(0, val)
                         self.text_labels_reloc.insert(0, addr)
                         l[i] = (l[i][0], '.long S_0x%X' % val)
-                        l[i+1:i+4] = ('', '') * 3
+                        l[i+1:i+4] = [('', '')] * 3
                     else: self.in_jmptable = False
                 else: self.in_jmptable = False
             i += 4
@@ -189,10 +190,6 @@ class datahandler:
     def check_jmptable_1(self, addrs):
         try: return int(addrs, 16) in self.label_set
         except: return False
-
-    def data_refer_solve1(self):
-        # stub not used
-        pass
 
     def fn_byloc(self, addr):
         l = 0; r = len(self.fl_sort)-1
@@ -255,10 +252,6 @@ class datahandler:
             e = b + h.sec_size
             if b <= addr < e: return h
         return None
-
-    def data_transform(self, data_str):
-        # not used stub
-        pass
 
     def data_trans(self, data_list):
         return map(lambda l: ('', l), data_list)[::-1]
@@ -326,18 +319,10 @@ class instrhandler(object):
     def set_instr_list(self):
         self.locs = map(get_loc, self.instr_list)
 
-    def dump_c2c_labels(self, dl):
-        # stub not used
-        pass
-
     def clean_sort(self, ll):
         ll = map(lambda l: int(l[3:] if '$' in l else l[2:], 16), ll)
         ll = filter(lambda e: e != 0, ll)
         return unify_int_list(ll)
-
-    def clean_sort_bdf(self, ll):
-        #stub not used
-        pass
 
     def process(self):
         # here dec_hex is 'S_' + dec_hex(v)
@@ -361,14 +346,6 @@ class instrhandler(object):
             elif dh < lh.loc_addr:
                 j += 1
             i += 1
-
-    def insert_dummy(self):
-        # stub not used
-        pass
-
-    def update_loc(self, locs, d):
-        # stub not used
-        pass
 
 
 class reassemble(ailVisitor):
@@ -447,7 +424,6 @@ class reassemble(ailVisitor):
         return None
 
     def check_text(self, addr):
-        # Not used stuff here...
         e = sum(self.text_sec)
         if addr == 0xffff: return False
         return self.text_sec[0] <= addr < e
@@ -502,7 +478,7 @@ class reassemble(ailVisitor):
                 return Types.Label(s_label)
             if self.check_text(l1):
                 if ELF_utils.elf_arm():
-                    exp = type(exp)(exp >> 1 << 1)
+                    exp = type(exp)(exp & (-2))
                     l1 = exp
                 s_label = self.build_symbol(exp)
                 loc1 = get_loc(instr)
@@ -654,7 +630,7 @@ class reassemble(ailVisitor):
                     instrs[i] = type(instrs[i])(mw)
                     instrs[tindex] = type(instrs[tindex])(mt)
                 if self.check_text(val):
-                    val = val >> 1 << 1
+                    val = val & (-2)
                     s_label = 'S_' + dec_hex(val)
                     loc1 = get_loc(mw)
                     loc2 = get_loc(mt)
@@ -695,10 +671,6 @@ class reassemble(ailVisitor):
                 self.label.insert(0, (s.sec_name, addr))
             return helper.get_instrs()
         return instrs
-
-    def check_bss(self, addr):
-        # stub not used
-        pass
 
     def update_deslist_with_initarray(self):
         self.init_array_list = parse_init_array.main()
@@ -758,8 +730,8 @@ class reassemble(ailVisitor):
     def init_array_dump(self):
         if len(self.init_array_list) != 0 and not ELF_utils.elf_arm():
             with open('final_data.s', 'a') as f:
-                f.write('\n\n.section        .ctors')
-                f.write('\n.align 4\n')
+                f.write('\n\n.section .ctors,"aw",@progbits\n')
+                f.write('.align 4\n')
                 f.write('\n'.join(map(lambda s: '.long ' + s.strip(), self.init_array_list)))
                 f.write('\n')
 
@@ -794,6 +766,8 @@ class reassemble(ailVisitor):
         return instrs
 
     def add_bblock_label(self, bbl, instrs):
+        return instrs
+        # TODO: why?
         bbl1 = sorted(bbl, lambda b1,b2: b1.bblock_begin_loc.loc_addr - b2.bblock_begin_loc.loc_addr)
         i = 0; j = 0
         while True:

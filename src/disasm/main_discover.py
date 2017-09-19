@@ -65,7 +65,7 @@ def main_discover(filename):
                         if lines[j].strip().startswith(pcraddr):
                             main_symbol = lines[j].split()[1]
                             if len(main_symbol) < 8: main_symbol = lines[j+1].split()[1] + main_symbol
-                            main_symbol = int(main_symbol.lstrip('0'), 16) >> 1 << 1
+                            main_symbol = int(main_symbol.lstrip('0'), 16) & (-2)
                             main_symbol = '%X' % main_symbol
                             break
                         j += 1

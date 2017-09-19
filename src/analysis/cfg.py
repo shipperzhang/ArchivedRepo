@@ -124,9 +124,6 @@ class cfg(ailVisitor):
         i = 0; j = 0
         while True:
             if i == len(funcs1) and j < len(bls1):
-                print funcs1
-                print bls1[j]
-                print i, j
                 raise Exception('Bad things')
             if j == len(bls1) or i == len(funcs1): break
             hf = funcs1[i]
@@ -201,7 +198,7 @@ class cfg(ailVisitor):
         return res
 
     def print_cfg_graph(self, cfg_t):
-        # stub not used
+        # stub
         pass
 
     def get_cfg_table(self, instr_list):

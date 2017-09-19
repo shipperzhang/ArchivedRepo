@@ -13,7 +13,7 @@ def parse(item):
     h3 = item[2:4]
     h4 = item[0:2]
     v = int(h1+h2+h3+h4, 16)
-    if config.arch == config.ARCH_ARMT: v = v >> 1 << 1
+    if config.arch == config.ARCH_ARMT: v = v & (-2)
     return "S_0x%X" % v
 
 def main():

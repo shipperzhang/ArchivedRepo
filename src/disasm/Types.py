@@ -159,7 +159,7 @@ if config.arch == config.ARCH_X86:
     Seg = RecSet(['FS', 'GS', 'CS', 'SS', 'DS', 'ES'], True)
     Reg = RecSet([CommonReg, SpecialReg, StackReg, PCReg, OtherReg])
 
-    StackOp = RecSet(['PUSH', 'POP', 'PUSHL', 'POPL', 'PUSHF', 'POPF'], True)
+    StackOp = RecSet(['PUSH', 'POP', 'PUSHL', 'POPL', 'PUSHF', 'POPF', 'PUSHQ', 'POPQ'], True)
     SystemOp = RecSet(['INT', 'IN', 'OUT'], True)
     ArithmOp = RecSet(['ADC', 'ADD', 'XADD', 'SUB', 'ADDL', 'ADDQ', 'SUBL', 'SUBQ',
                        'MUL', 'IMUL', 'MULB', 'MULSD', 'DIV', 'IDIV', 'DIVL', 'ADCL',
@@ -177,7 +177,7 @@ if config.arch == config.ARCH_X86:
                        'SQRTSS', 'MAXSS', 'MINSD', 'SQRTSD', 'MINSS', 'CVTTPS2DQ',
                        'DECQ', 'SUBPD', 'ADDPD', 'PADDQ', 'IMULQ', 'PADDD', 'PADDB',
                        'PSUBD', 'PSUBW', 'PSUBB', 'MULPD', 'UNPCKHPD', 'ADDPS', 'MULPS',
-                       'DIVPD', 'DIVPS', 'CQTO', 'INCB', 'PSUBUSW'
+                       'DIVPD', 'DIVPS', 'CQTO', 'INCB', 'PSUBUSW', 'DIVSS'
     ], True)
     LogicOp = RecSet(['AND', 'ANDB', 'OR', 'XOR', 'PXOR', 'NOT', 'ANDL', 'NOTL', 'ORW',
                       'XORB', 'XORL', 'SAHF', 'ANDW', 'NOTB', 'NOTW', 'XORPD', 'XORPS',
@@ -252,7 +252,7 @@ elif config.arch == config.ARCH_ARMT:
                           'Q0',  'Q1',  'Q2',  'Q3',  'Q4',  'Q5',  'Q6',  'Q7',
                           'Q8',  'Q9',  'Q10', 'Q11', 'Q12', 'Q13', 'Q14', 'Q15'
     ], True)
-    StackReg = RecSet(['R13', 'SP', 'FP', 'SB'], True)
+    StackReg = RecSet(['R13', 'SP', 'FP', 'SB', 'SL'], True)
     LinkReg = RecSet(['R14', 'LR', 'IP'], True)
     PCReg = RecSet(['R15', 'PC'], True)
     Reg = RecSet([CommonReg, SpecialReg, StackReg, PCReg, LinkReg])

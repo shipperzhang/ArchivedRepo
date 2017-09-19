@@ -42,7 +42,7 @@ class parseX86(base_parser):
         return Types.UnOP(r) if r is not None else None
 
     def binptr_m_symb(self, s):
-        if ',' in s: return None
+        if ',' in s or ':' in s: return None
         items = s.split('(')
         offset = items[0]
         if offset[0] != '-': return None
@@ -50,7 +50,7 @@ class parseX86(base_parser):
         return None if reg is None else Types.BinOP_MINUS((reg, int(offset[1:], 16)))
 
     def binptr_p_symb(self, s):
-        if ',' in s: return None
+        if ',' in s or ':' in s: return None
         items = s.split('(')
         offset = items[0]
         reg = self.reg_symb(items[1][:-1])
@@ -172,6 +172,7 @@ class parseX86(base_parser):
         except ValueError: return None
 
     def exp_symb(self, s):
+        if s[0] == '*': return Types.StarDes(self.stardes_symb(s))
         symbf = [self.ptr_symb, self.reg_symb, self.assist_sym, self.const_symb, self.symbol_symb]
         for f in symbf:
             res = f(s)
@@ -240,7 +241,7 @@ class parseARM(base_parser):
     def jmpdes_symb(self, sym):
         # B #0x1010
         if sym[0] == '#':
-            addr = int(sym[1:], 16) >> 1 << 1
+            addr = int(sym[1:], 16) & (-2)
             return Types.JumpDes(addr)
         try: return Types.CallDes(self.calldes_symb(sym))
         except: return None
@@ -250,7 +251,7 @@ class parseARM(base_parser):
         items = sym.split()
         if (len(items) < 2 and items[0][0] == '#') or \
            ('+' in items[1] or '-' in items[1]):
-            addr = int(items[0][1:], 16) >> 1 << 1
+            addr = int(items[0][1:], 16) & (-2)
             return self.get_func('S_0x%X' % addr, False)
         if '@' in items[1]:
             name = items[1].split('@')[0]

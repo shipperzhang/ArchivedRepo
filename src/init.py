@@ -48,7 +48,7 @@ class Init(object):
 
     def textProcess(self):
         useless_func_del.main(self.file)
-        if self.is_arm: arm_process.pcrel_process(self.file)
+        if self.is_arm: arm_process.arm_process(self.file)
         else: os.system("cat " + self.file + ".disassemble | grep \"^ \" | cut -f1,3 > instrs.info")
         # filter_nop.main()
         os.system("cut -f 1 instrs.info > text_mem.info")

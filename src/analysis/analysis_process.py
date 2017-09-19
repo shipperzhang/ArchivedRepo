@@ -10,7 +10,7 @@ class Analysis(object):
         lines = read_file('globalbss.info')
         def mapper(l):
             items = l.strip().split()
-            return (items[1:], items[1])
+            return (items[0][1:].upper(), items[1])
         return map(mapper, lines)
 
     @staticmethod
