@@ -8,6 +8,7 @@ from share_lib_helper import lib32_helper
 from disasm import Types, exception_process
 from utils.ail_utils import get_loc, read_file, ELF_utils, dec_hex, set_loc,\
                             unify_int_list, bbn_byloc
+from cProfile import label
 
 
 def rev_map(f, l):
@@ -455,75 +456,61 @@ class reassemble(ailVisitor):
             return reassemble.normal_char + n
         raise Exception("Failed plt symbol")
 
-    def has_data(self, l):
-        return l in reassemble.data_set
+    def insert_text(self, l, exp):
+        if exp not in reassemble.text_set:
+            reassemble.text_set[exp] = ''
+            self.deslist.insert(0, l)
 
-    def has_text(self, l):
-        return l in reassemble.text_set
+    def insert_data(self, sec, exp, loc_addr):
+        if exp not in reassemble.data_set:
+            reassemble.data_set[exp] = ''
+            self.label.insert(0, (sec, exp))
+        self.c2d_addr.insert(0, loc_addr)
 
     def v_exp2(self, exp, instr, f, chk):
-        # TODO: create subfunctions to simplify this mess
-        # check_test_condition = lambda l,c: not (isinstance(l, Types.Normal) and c)
         if isinstance(exp, Types.Const):
             if isinstance(exp, Types.Normal) and chk: return exp
-            l1 = self.parse_const(exp)
-            s = self.check_sec(l1)
+            s = self.check_sec(exp)
             if s is not None:
+                self.insert_data(s.sec_name, exp, get_loc(instr).loc_addr)
+                return Types.Label(self.build_symbol(exp))
+            if self.check_text(exp):
+                if ELF_utils.elf_arm(): exp = type(exp)(exp & (-2))
                 s_label = self.build_symbol(exp)
-                loc1 = get_loc(instr)
-                if not self.has_data(l1):
-                    reassemble.data_set[l1] = ''
-                    self.label.insert(0, (s.sec_name, l1))
-                self.c2d_addr.insert(0, loc1.loc_addr)
+                self.insert_text(s_label, exp)
+                self.deslist_reloc.insert(0, get_loc(instr).loc_addr)
                 return Types.Label(s_label)
-            if self.check_text(l1):
-                if ELF_utils.elf_arm():
-                    exp = type(exp)(exp & (-2))
-                    l1 = exp
-                s_label = self.build_symbol(exp)
-                loc1 = get_loc(instr)
-                if not self.has_text(l1):
-                    reassemble.text_set[l1] = ''
-                    self.deslist.insert(0, s_label)
-                self.deslist_reloc.insert(0, loc1.loc_addr)
-                return Types.Label(s_label)
-            if self.check_plt(l1):
+            if self.check_plt(exp):
                 return Types.Label(self.build_plt_symbol(exp))
         elif isinstance(exp, Types.Symbol):
             if isinstance(exp, Types.JumpDes):
                 if self.check_text(exp):
                     s_label = 'S_' + dec_hex(exp)
-                    if not self.has_text(exp):
-                        reassemble.text_set[exp] = ''
-                        self.deslist.insert(0, s_label)
+                    self.insert_text(s_label, exp)
                     return Types.Label(s_label)
+                elif self.check_plt(exp):
+                    return Types.Label(reassemble.plt_hash[exp])
             elif isinstance(exp, Types.StarDes):
                 return Types.StarDes(self.v_exp2(exp.content, instr, f, chk))
             elif isinstance(exp, Types.CallDes):
-                fn = exp.func_name[2:]
-                is_dig_loc = False
-                try:
-                    addr = int(fn, 16)
-                    is_dig_loc = True
-                except: self.symbol_list.insert(0, exp.func_begin_addr)
-                if is_dig_loc:
+                if exp.func_name.startswith('S_0'):
+                    addr = int(exp.func_name[2:], 16)
                     if self.check_text(addr):
                         s_label = 'S_' + dec_hex(addr)
-                        if not self.has_text(addr):
-                            reassemble.text_set[addr] = ''
-                            self.deslist.insert(0, s_label)
+                        self.insert_text(s_label, addr)
                         return Types.Label(s_label)
+                    elif self.check_plt(addr):
+                        off = 0
+                        while not reassemble.plt_hash.get(addr - off, None): off += 2
+                        return Types.Label(reassemble.plt_hash[addr - off])
+                else: self.symbol_list.insert(0, exp.func_begin_addr)
         elif isinstance(exp, Types.Ptr):
             if isinstance(exp, (Types.BinOP_PLUS, Types.BinOP_MINUS)):
                 r, addr = exp
                 s = self.check_sec(addr)
                 if s is not None:
                     s_label = 'S_' + dec_hex(addr)
-                    loc1 = get_loc(instr)
-                    if not self.has_data(addr):
-                        reassemble.data_set[addr] = ''
-                        self.label.insert(0, (s.sec_name, addr))
-                    self.c2d_addr.insert(0, loc1.loc_addr)
+                    self.insert_data(s.sec_name, addr, get_loc(instr).loc_addr)
                     return Types.BinOP_PLUS_S((r, s_label)) \
                         if isinstance(exp, Types.BinOP_PLUS) \
                         else Types.BinOP_MINUS_S((r, s_label))
@@ -532,11 +519,7 @@ class reassemble(ailVisitor):
                 s = self.check_sec(addr)
                 if s is not None:
                     s_label = 'S_' + dec_hex(addr)
-                    loc1 = get_loc(instr)
-                    if not self.has_data(addr):
-                        reassemble.data_set[addr] = ''
-                        self.label.insert(0, (s.sec_name, addr))
-                    self.c2d_addr.insert(0, loc1.loc_addr)
+                    self.insert_data(s.sec_name, addr, get_loc(instr).loc_addr)
                     return Types.FourOP_PLUS_S((r1,r2,off,s_label)) \
                         if isinstance(exp, Types.FourOP_PLUS) \
                         else Types.FourOP_MINUS_S((r1,r2,off,s_label))
@@ -545,38 +528,24 @@ class reassemble(ailVisitor):
                 s = self.check_sec(addr)
                 if s is not None:
                     s_label = 'S_' + dec_hex(addr)
-                    loc1 = get_loc(instr)
-                    if not self.has_data(addr):
-                        reassemble.data_set[addr] = ''
-                        self.label.insert(0, (s.sec_name, addr))
-                    self.c2d_addr.insert(0, loc1.loc_addr)
+                    self.insert_data(s.sec_name, addr, get_loc(instr).loc_addr)
                     return Types.JmpTable_PLUS_S((s_label, r, off))
                 if self.check_text(addr):
                     s_label = 'S_' + dec_hex(addr)
-                    loc1 = get_loc(instr)
-                    if not self.has_text(addr):
-                        reassemble.text_set[addr] = ''
-                        self.deslist.insert(0, s_label)
-                    self.deslist_reloc.insert(0, loc1.loc_addr)
+                    self.insert_text(s_label, addr)
+                    self.deslist_reloc.insert(0, get_loc(instr).loc_addr)
                     return Types.JmpTable_PLUS_S((s_label, r, off))
             elif isinstance(exp, Types.JmpTable_MINUS):
                 addr, r, off = exp
                 s = self.check_sec(addr)
                 if s is not None:
                     s_label = '-S_' + dec_hex(addr)
-                    loc1 = get_loc(instr)
-                    if not self.has_data(addr):
-                        reassemble.data_set[addr] = ''
-                        self.label.insert(0, (s.sec_name, addr))
-                    self.c2d_addr.insert(0, loc1.loc_addr)
+                    self.insert_data(s.sec_name, addr, get_loc(instr).loc_addr)
                     return Types.JmpTable_MINUS_S((s_label, r, off))
                 if self.check_text(addr):
                     s_label = '-S_' + dec_hex(addr)
-                    loc1 = get_loc(instr)
-                    if not self.has_text(addr):
-                        reassemble.text_set[addr] = ''
-                        self.deslist.insert(0, s_label)
-                    self.deslist_reloc.insert(0, loc1.loc_addr)
+                    self.insert_text(s_label, addr)
+                    self.deslist_reloc.insert(0, get_loc(instr).loc_addr)
                     return Types.JmpTable_MINUS_S((s_label, r, off))
         return exp
 
@@ -597,6 +566,10 @@ class reassemble(ailVisitor):
         instr = iv[1]
         if instr[0].upper() == 'MOVW': self.ARMmovs.append(iv[0])
         if isinstance(instr, Types.DoubleInstr):
+            if isinstance(instr[1], Types.TBExp):
+                self.insert_text(instr[1].base, int(instr[1].base.split('x')[1], 16))
+                self.insert_text(instr[1].dest, int(instr[1].dest.split('x')[1], 16))
+                return instr
             return Types.DoubleInstr((instr[0], self.v_exp2(instr[1], instr, None, False),
                                       instr[2], instr[3]))
         if isinstance(instr, Types.TripleInstr):
@@ -614,17 +587,11 @@ class reassemble(ailVisitor):
             mt = list(instrs[tindex])
             if mt[0].upper() == 'MOVT' and mt[1] == mw[1]:
                 val = (mt[2] << 16) + (mw[2] & 0xffff)
-
                 s = self.check_sec(val)
                 if s is not None:
                     s_label = 'S_' + dec_hex(val)
-                    loc1 = get_loc(mw)
-                    loc2 = get_loc(mt)
-                    if not self.has_data(val):
-                        reassemble.data_set[val] = ''
-                        self.label.insert(0, (s.sec_name, val))
-                    self.c2d_addr.insert(0, loc1.loc_addr)
-                    self.c2d_addr.insert(0, loc2.loc_addr)
+                    self.insert_data(s.sec_name, val, get_loc(mw).loc_addr)
+                    self.c2d_addr.insert(0, get_loc(mt).loc_addr)
                     mw[2] = Types.Label('#:lower16:' + s_label)
                     mt[2] = Types.Label('#:upper16:' + s_label)
                     instrs[i] = type(instrs[i])(mw)
@@ -632,13 +599,9 @@ class reassemble(ailVisitor):
                 if self.check_text(val):
                     val = val & (-2)
                     s_label = 'S_' + dec_hex(val)
-                    loc1 = get_loc(mw)
-                    loc2 = get_loc(mt)
-                    if not self.has_text(val):
-                        reassemble.text_set[val] = ''
-                        self.deslist.insert(0, s_label)
-                    self.deslist_reloc.insert(0, loc1.loc_addr)
-                    self.deslist_reloc.insert(0, loc2.loc_addr)
+                    self.insert_text(s_label, val)
+                    self.deslist_reloc.insert(0, get_loc(mw).loc_addr)
+                    self.deslist_reloc.insert(0, get_loc(mt).loc_addr)
                     mw[2] = Types.Label('#:lower16:' + s_label)
                     mt[2] = Types.Label('#:upper16:' + s_label)
                     instrs[i] = type(instrs[i])(mw)
@@ -706,16 +669,11 @@ class reassemble(ailVisitor):
 
     def adjust_globallabel(self, g_bss, instr_list):
         g_bss = filter(lambda e: '@' in e[1], g_bss)
-        labels = map(lambda e: e[0], g_bss)
-        gbss_hs = {}
-        for e in g_bss:
-            addr = 'S_0x' + e[0]
-            gbss_hs[addr] = e[1].split('@')[0] if '@' in e[1] else e[1]
+        gbss_hs = {'S_0x' + e[0].lstrip('0'): e[1].split('@')[0] if '@' in e[1] else e[1] for e in g_bss}
+        labels = gbss_hs.keys()
         def mapper(l):
             r = next((lab for lab in labels if lab in l), None)
-            if r is not None:
-                key = 'S_0x' + r
-                return l.replace(key, gbss_hs[key], 1)
+            if r is not None: return l.replace(r, gbss_hs[r], 1)
             return l
         return map(mapper, instr_list)
 
@@ -755,8 +713,10 @@ class reassemble(ailVisitor):
             hf = ufuncs[i]
             hi = instrs[j]
             iloc = get_loc(hi)
-            if hf.func_begin_addr == iloc.loc_addr:
-                iloc.loc_label = '\n' + hf.func_name + ' : ' + iloc.loc_label
+            if hf.func_begin_addr == iloc.loc_addr and hf.func_name not in iloc.loc_label:
+                lab = '\n' + hf.func_name + ' : '
+                if ELF_utils.elf_arm(): lab = '\n.thumb_func' + lab
+                iloc.loc_label = lab + iloc.loc_label
                 instrs[j] = set_loc(hi, iloc)
                 i += 1
                 j -= 1
@@ -766,8 +726,6 @@ class reassemble(ailVisitor):
         return instrs
 
     def add_bblock_label(self, bbl, instrs):
-        return instrs
-        # TODO: why?
         bbl1 = sorted(bbl, lambda b1,b2: b1.bblock_begin_loc.loc_addr - b2.bblock_begin_loc.loc_addr)
         i = 0; j = 0
         while True:

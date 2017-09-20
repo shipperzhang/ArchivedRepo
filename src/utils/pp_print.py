@@ -41,6 +41,9 @@ if config.arch == config.ARCH_ARMT:
     def p_shift(shift):
         return shift.op + ' #' + str(shift.val)
 
+    def p_tbexp(tbe):
+        return tbe.__repr__()
+
     def p_ptraddr(addr):
         if isinstance(addr, Types.UnOP):
             return '[' + p_reg(addr) + ']'
@@ -53,10 +56,11 @@ if config.arch == config.ARCH_ARMT:
         elif isinstance(addr, Types.BinOP_MINUS_S):
             return '[' + p_reg(addr[0]) + ',-' + addr[1] + (']!' if addr.preind else ']')
         elif isinstance(addr, Types.ThreeOP):
-            return '[' + p_reg(addr[0]) + ',' + p_reg(addr[1]) + ',' + p_shift(addr[2]) + ']'
+            return '[' + p_reg(addr[0]) + ',' + p_reg(addr[1]) + \
+                   (',' + p_shift(addr[2]) if addr[2].val > 0 else '') + ']'
 
     def p_const(const):
-        return ('#' if isinstance(const, Types.Normal) else '') + '0x%X' % const
+        return ('#' if isinstance(const, Types.Normal) else '') + ('-' if const < 0 else '') + '0x%X' % abs(const)
 
     def p_symbol(sym):
         if isinstance(sym, Types.CallDes): return p_func(sym)
@@ -161,6 +165,7 @@ def p_exp(exp):
     elif config.arch == config.ARCH_ARMT:
         if isinstance(exp, Types.ShiftExp): return p_shift(exp)
         elif isinstance(exp, Types.RegList): return p_reglist(exp)
+        elif isinstance(exp, Types.TBExp): return p_tbexp(exp)
 
 def p_single(p):
     return p_op(p)

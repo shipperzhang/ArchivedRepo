@@ -1,7 +1,7 @@
 import config
 from disasm import Types
-from disasm.Parser import parse
 from utils.ail_utils import get_loc, get_op, get_cf_des, Opcode_utils
+from termcolor import colored
 
 
 class stack_of_loc(object):
@@ -75,11 +75,10 @@ class dis_validator(object):
         self.locs = map(lambda i: get_loc(i).loc_addr, self.locs)
         if len(self.locs) != 0:
             if config.arch == config.ARCH_ARMT:
-                print '     Warning: instructions at this locations were probably misinterpreted:'
+                print colored('     Warning:', 'yellow'), 'instructions at this locations were probably misinterpreted:'
                 print '     ' + str(map(hex, self.locs))
             else:
                 self.validate(instrlist)
-        return instrlist
 
     def trim_results(self):
         return self.trim_tbl.items()
@@ -90,7 +89,7 @@ class dis_validator(object):
 
     def is_icf(self, p, e):
         if e is None: return False
-        return is_cp(p) and isinstance(e, Types.StarDes)
+        return Opcode_utils.is_cp(p) and isinstance(e, Types.StarDes)
 
     def update_cfd(self, index, instrlist):
         if not self.looking_for_cfd: return

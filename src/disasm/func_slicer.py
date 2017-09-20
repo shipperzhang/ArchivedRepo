@@ -77,5 +77,5 @@ class func_slicer(object):
         self.funcaddr_from_file()
         self.build_func_info()
         fl = self.get_func_list()
-        print '     func number', len(fl)
+        print '     Sliced', len(fl), 'functions'
         return fl

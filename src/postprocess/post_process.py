@@ -95,15 +95,10 @@ def main():
         if main_symbol1 != '':
             def helpf(l):
                 if main_symbol1 + ' :' in l:
-                #main_s1 = "S"+main_symbol
-                #if main_s1 in l:
-                    #l = l.replace(main_s1, ".globl main\nmain")
-                    l = ".globl main\nmain:\n" + l
-                #else:
-                    #l = l.replace(main_symbol, ".globl main\nmain")
-                #    l = ".globl main\nmain:\n"+l
+                    l = l.replace(main_symbol1 + ' :', '.globl main\nmain :')
+                elif main_symbol1 in l:
+                    l = l.replace(main_symbol1, 'main')
                 return l
-            #print lines
             lines = map(helpf, lines)
 
     #branch_routine :pop global_des

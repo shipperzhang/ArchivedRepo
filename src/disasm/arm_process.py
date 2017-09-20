@@ -16,22 +16,20 @@ def load_size(op, exp):
     return 4
 
 def tb_process(offsize, pc, buf, filehandle):
+    i = 0
     if offsize > 2:
         # ldr jumptable
-        # TODO: stub
-        pass
+        while i < len(buf):
+            val = unpack('<I', buf[i:i+offsize])[0]
+            filehandle.write(('%x' % (pc+i)).rjust(8) + ':\t.word   0x%x\n' % val)
+            i += offsize
     else:
         # tb[hb] jumptable
-        # TODO: this is not super clean and must be fixed, things will get broken
-        # if new instructions are inserted since offsets won't be valid anymore.
-        # A solution could be transforming it to a ldr jumptable but the value
-        # of the register acting as table index would be modified.
-        i = 0
         unpacker = '<H' if offsize == 2 else '<B'
         datatype = ('.short' if offsize == 2 else '.byte').ljust(7)
         while i < len(buf):
-            val = unpack(unpacker, buf[i:i+offsize])[0]
-            filehandle.write(('%x' % (pc+i)).rjust(8) + ':\t' + datatype + ' 0x%X\n' % val)
+            val = unpack(unpacker, buf[i:i+offsize])[0] << 1
+            filehandle.write(('%x' % (pc+i)).rjust(8) + ':\t' + datatype + ' (S_0x%X-S_0x%X)/2\n' % (pc + val, pc))
             i += offsize
 
 def eval_tb_size(op, last_cmp, reg):
@@ -92,12 +90,17 @@ def arm_process(filename):
             elif e[2] in calls and e[3].startswith('#'):
                 # Insert plt symbol
                 instr += plts.get(int(e[3][1:], 16), '')
+            elif e[2].startswith('adr'):
+                # Insert label for PC relative add
+                const = e[3].split(', ')[1]
+                dest = (e[0] & 0xFFFFFFFC) + int(const[1:], 16) + 4
+                instr = instr.replace(const, '0x%x' % dest)
             f.write(instr + '\n')
             if e[2] in offtableop or e[2].startswith('ldr'):
                 # Process inline jumptable
                 m = pcreltblre.search(e[3])
                 if m:
-                    offsize, tablesize = eval_tb_size(e[2], last_cmp, m.group(0))
+                    offsize, tablesize = eval_tb_size(e[2], last_cmp, m.group(1) if m.group(1) is not None else m.group(3))
                     tb_process(offsize, curr_off + textsec.addr, textraw[curr_off:curr_off + tablesize], f)
                     curr_off += tablesize
                     break

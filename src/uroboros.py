@@ -5,21 +5,20 @@ import config
 from argparse import ArgumentParser, RawTextHelpFormatter
 
 
-def process(filepath):
+def process(filepath, gfree=False):
     import init
     import traceback
     from disasm import main_discover, func_addr
     from postprocess import compile_process, post_process_data, gobmk_sub, label_adjust
 
-    print "Start to process binary: " + filepath
+    print "Starting to process binary '" + filepath + "'"
     try:
         func_addr.func_addr(filepath, 0)
 
         os.system(config.strip + ' ' + filepath)
         main_discover.main_discover(filepath)
 
-        init.main(filepath)
-        # exit()
+        init.main(filepath, gfree)
         if not os.path.isfile("final.s"): return False
 
         post_process_data.post_process_data()
@@ -99,13 +98,14 @@ def main():
     p = ArgumentParser(formatter_class=RawTextHelpFormatter)
     p.add_argument("binary", help="path to the input binary")
     p.add_argument("-o", "--output", help="destination output file")
+    p.add_argument("-g", "--gfree", action='store_true', help="instrument output")
     p.add_argument("-a", "--assumption", action="append",
                    help='''this option configures three addtional assumption,
 note that two basic assumptions and addtional assumption one
 (n-byte alignment) are set by default,
 while assumption two and three need to be configured. For example, setting
 assumption two and three: -a 2 -a 3''')
-    p.add_argument('--version', action='version', version='Uroboros 0.2b')
+    p.add_argument("--version", action="version", version="Uroboros 0.2b")
 
     args = p.parse_args()
     filepath = os.path.realpath(args.binary)
@@ -116,7 +116,7 @@ assumption two and three: -a 2 -a 3''')
     os.chdir(workdir)
 
     if check(filepath, args.assumption) and set_assumption(args.assumption):
-        if process(os.path.basename(filepath)):
+        if process(os.path.basename(filepath), args.gfree):
             print "Processing succeeded"
             if outpath is not None: shutil.copy('a.out', outpath)
         else: print "Exception, processing failed"

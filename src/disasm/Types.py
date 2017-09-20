@@ -250,14 +250,16 @@ elif config.arch == config.ARCH_ARMT:
                          'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S23',
                          'S24', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31',
                           'Q0',  'Q1',  'Q2',  'Q3',  'Q4',  'Q5',  'Q6',  'Q7',
-                          'Q8',  'Q9',  'Q10', 'Q11', 'Q12', 'Q13', 'Q14', 'Q15'
+                          'Q8',  'Q9', 'Q10', 'Q11', 'Q12', 'Q13', 'Q14', 'Q15',
+                          'C0',  'C1',  'C2',  'C3',  'C4',  'C5',  'C6',  'C7',
+                          'C8',  'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15'
     ], True)
     StackReg = RecSet(['R13', 'SP', 'FP', 'SB', 'SL'], True)
     LinkReg = RecSet(['R14', 'LR', 'IP'], True)
     PCReg = RecSet(['R15', 'PC'], True)
     Reg = RecSet([CommonReg, SpecialReg, StackReg, PCReg, LinkReg])
 
-    StackOp = RecSet(['POP', 'PUSH'], True)
+    StackOp = RecSet(['POP', 'PUSH', 'VPOP', 'VPUSH'], True)
     SystemOp = RecSet(['BKPT', 'CLREX', 'CPS', 'CPSIE', 'CPSID', 'DBG', 'DMB',
                        'DSB', 'ISB', 'PLD', 'PLI', 'RFE', 'SEV', 'SMC', 'SRS',
                        'SVC', 'WFE', 'WFI', 'YIELD'], True)
@@ -288,24 +290,26 @@ elif config.arch == config.ARCH_ARMT:
                       'UBFX'], True)
     RolOp = RecSet(['ASR', 'ASRS', 'LSL', 'LSLS', 'LSR', 'LSRS', 'ROR', 'RORS',
                     'RRX', 'RRXS'], True)
-    AssignOp = RecSet(['BFC', 'BFI', 'CPY', 'LDMDB', 'LDMEA', 'LDMIA', 'LDMFD',
+    AssignOp = RecSet(['BFC', 'BFI', 'CPY', 'LDM', 'STM', 'LDMDB', 'LDMEA', 'LDMIA', 'LDMFD',
                        'LDR', 'LDRB', 'LDRBT', 'LDRD', 'LDREX', 'LDREXB', 'LDREXD',
                        'LDREXH', 'LDRH', 'LDRHT', 'LDRSB', 'LDRSBT', 'LDRSH', 'LDRSHT',
-                       'LDRT', 'MOV', 'MOVS', 'MOVW', 'MOVT', 'MRS', 'MSR', 'MVN', 'MVNS'
+                       'LDRT', 'MOV', 'MOVS', 'MOVW', 'MOVT', 'MRS', 'MSR', 'MVN', 'MVNS',
                        'SEL', 'STMDB', 'STMFD', 'STMIA', 'STMEA', 'STR', 'STRB', 'STRBT',
                        'STRD', 'STREX', 'STREXB', 'STREXD', 'STREXH', 'STRH', 'STRHT',
                        'STRT', 'VCVT', 'VCVTT', 'VCVTR', 'VCVTB', 'VMOV', 'VMSR',
                        'VSTR', 'VSTM', 'VSTMDB', 'VPUSH', 'VLDR', 'VLDM', 'VLDMDB'
                        'VPOP'
     ], True)
-    CompareOp = RecSet(['CMN', 'CMP', 'IT', 'TEQ', 'TST', 'VCMP', 'VCMPE'], True)
+    CompareOp = RecSet(['CMN', 'CMP', 'IT', 'TEQ', 'TST', 'VCMP', 'VCMPE', 'ITE', 'ITT',
+                        'ITTT', 'ITTE', 'ITEE', 'ITET', 'ITTTT', 'ITTTE', 'ITTET', 'ITTEE',
+                        'ITETT', 'ITETE', 'ITEET', 'ITEEE'], True)
     OtherOp = RecSet(['CDP', 'CDP2', 'LDC', 'LDCL', 'LDC2', 'LDC2L', 'MCR', 'MCR2',
                       'MCRR', 'MCRR2', 'MRC', 'MRC2', 'MRRC', 'MRRC2', 'NOP', 'SETEND',
                       'STC', 'STC2', 'STCL', 'STC2L'], True)
     AssistOp = RecSet([], True)
     ControlOp = RecSet(['B', 'BL', 'BLX', 'BX', 'BXJ', 'CBNZ', 'CBZ', 'SUBS', 'TBB', 'TBH'], True)
-    CondSuff = RecSet(['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC',
-                       'HI', 'LS', 'GE', 'LT', 'GT', 'LE', 'AL'], True)
+    CondSuff = RecSet(['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC', 'LO',
+                       'HI', 'LS', 'GE', 'LT', 'GT', 'LE', 'AL', 'HS'], True)
     OpQualifier = RecSet(['W', 'N', 'F32', 'F64', 'U8', 'U16', 'U32', 'S8', 'S16', 'S32'])
     CommonOp = RecSet([ArithmOp, LogicOp, RolOp, AssignOp, CompareOp])
     Op = RecSet([CommonOp, StackOp, ControlOp, SystemOp, OtherOp])
@@ -317,6 +321,13 @@ elif config.arch == config.ARCH_ARMT:
     class ShiftExp(Exp):
         def __init__(self, op, val):
             self.op = op; self.val = val
+        def __repr__(self):
+            return self.op + ' #' + str(self.val)
+    class TBExp(Exp):
+        def __init__(self, base, dest):
+            self.base = base; self.dest = dest
+        def __repr__(self):
+            return '(' + self.dest + '-' + self.base + ')/2'
     class FiveInstr(Instr):
         def __init__(self, items):
             if len(items) != 7: raise Exception('Invalid five')

@@ -1,3 +1,4 @@
+from termcolor import colored
 from disasm import pre_process
 from disasm.Types import Func, Section
 from disasm.disassemble_process import Disam
@@ -74,17 +75,18 @@ class Ail(object):
     def pre_process(self):
         pre_process.main()
 
-    def instrProcess_2(self):
+    def instrProcess_2(self, gfree=False, docfg=False):
         self.pre_process()
         il, fl, re = Disam.disassemble(self.file, self.funcs, self.secs)
 
-        print '3: analysis'
-        fbl, bbl, cfg_t, cg, il, re = Analysis.analyze_one(il, fl, re)  # @UnusedVariable
+        print colored('3: ANALYSIS', 'green')
+        fbl, bbl, cfg_t, cg, il, re = Analysis.analyze_one(il, fl, re, docfg)  # @UnusedVariable
 
-        print '4: instrumentation'
-        # TODO:
-        print '     nothing done yet'
+        if gfree:
+            print colored('4: INSTRUMENTATION', 'green')
+            # TODO: all
+            print '     nothing done yet'
 
-        print '5: post processing'
+        print colored(('5' if gfree else '4') + ': POST-PROCESSING', 'green')
         Analysis.post_analyze(il, re)
         self.post_process()

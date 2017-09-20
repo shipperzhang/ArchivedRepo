@@ -2,6 +2,7 @@ import os
 import sys
 import ail
 import config
+from termcolor import colored
 from utils.ail_utils import ELF_utils
 from disasm import bss_creator, pic_process, pic_process64, useless_func_del,\
                    extern_symbol_process64, arm_process
@@ -15,7 +16,7 @@ class Init(object):
         self.is_arm = ELF_utils.elf_arm()
 
     def disassemble(self):
-        print '1: linearly disassemble'
+        print colored('1: DISASSEMBLE', 'green')
         ret = os.system(config.objdump + ' -Dr -j .text ' + self.file + ' > ' + self.file + '.temp')
         self.checkret(ret, self.file + '.temp')
 
@@ -82,24 +83,24 @@ class Init(object):
     def externDataProcess(self):
         os.system("readelf -r " + self.file + " | awk \'/GLOB_DAT/ {print $5} \' > externdatas.info")
 
-    def ailProcess(self):
+    def ailProcess(self, gfree=False):
         processor = ail.Ail(self.file)
         processor.sections()
         processor.userfuncs()
         processor.externdatas()
         processor.global_bss()
-        processor.instrProcess_2()
+        processor.instrProcess_2(gfree)
 
     def checkret(self, ret, path):
         if ret != 0 and os.path.isfile(path):
             os.remove(path)
 
 
-def main(filepath):
+def main(filepath, gfree=False):
     if ELF_utils.elf_strip() and ELF_utils.elf_exe():
         init = Init(filepath)
         init.disassemble()
         init.process()
-        init.ailProcess()
+        init.ailProcess(gfree)
     else:
         sys.stderr.write('Error: binary is not stripped or is a shared library\n')

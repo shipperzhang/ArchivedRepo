@@ -1,3 +1,4 @@
+import re
 import Types
 import config
 from utils.ail_utils import Opcode_utils
@@ -211,7 +212,7 @@ class parseARM(base_parser):
         # LDR R0, [R1, #0x10]
         preind = sym[-1] == '!'
         items = sym[1:(-2 if preind else -1)].split(',')
-        if len(items) == 2:
+        if len(items) == 2 and items[1][0] == '#':
             off = int(items[1][1:], 16)
             return Types.BinOP_PLUS((self.reg_symb(items[0]), off), preind) if off >= 0 else \
                    Types.BinOP_MINUS((self.reg_symb(items[0]), -off), preind)
@@ -233,7 +234,7 @@ class parseARM(base_parser):
 
     def shift_symb(self, sym):
         # ADD R0, R1, R2, LSL #8
-        if '|' in sym:
+        if sym[0] != '[' and '|' in sym:
             items = sym.split('|')
             return Types.ShiftExp(items[0], int(items[1][1:]))
         return None
@@ -241,6 +242,7 @@ class parseARM(base_parser):
     def jmpdes_symb(self, sym):
         # B #0x1010
         if sym[0] == '#':
+            if '.' in sym: return None
             addr = int(sym[1:], 16) & (-2)
             return Types.JumpDes(addr)
         try: return Types.CallDes(self.calldes_symb(sym))
@@ -267,8 +269,14 @@ class parseARM(base_parser):
             return Types.RegList(map(Types.RegClass, sym[1:-1].split(',')))
         return None
 
+    tb_matcher = re.compile('\((S_0x[0-9a-f]+)\-(S_0x[0-9a-f]+)\)\/2', re.I)
+    def tb_symb(self, sym):
+        m = parseARM.tb_matcher.search(sym)
+        if m: return Types.TBExp(m.group(2), m.group(1))
+        return None
+
     def exp_symb(self, s):
-        symbf = [self.reg_list, self.shift_symb, self.ptr_symb,
+        symbf = [self.reg_list, self.tb_symb, self.shift_symb, self.ptr_symb,
                  self.reg_symb, self.const_symb, self.symbol_symb]
         for f in symbf:
             res = f(s)

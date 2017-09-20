@@ -78,7 +78,6 @@ class AilParser(object):
                 loc = items[0]
                 instr = ':'.join(items[1:])
                 self.instrs.insert(0, p.parse_instr(instr, loc))
-                # print self.instrs[0]
         self.funcs = p.get_funclist()
 
     def p_instrs(self):

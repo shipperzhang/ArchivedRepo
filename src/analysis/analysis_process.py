@@ -14,26 +14,28 @@ class Analysis(object):
         return map(mapper, lines)
 
     @staticmethod
-    def analyze_one(il, fl, re):
-        _cfg = cfg()
-        _cg = cg()
-        _cg.set_funcs(fl)
-        _cfg.set_funcs(fl)
+    def analyze_one(il, fl, re, docfg=False):
         u_fl = filter(lambda f: not f.is_lib, fl)
-        print '     user defined func number', len(u_fl)
-        _il = _cg.visit(il)
-        _il = re.visit_type_infer_analysis([], _il)
-        _il = re.share_lib_processing(_il)
-        _il = re.adjust_loclabel(_il)
+        print '     Parsed', len(u_fl), 'call destinations'
 
+        if docfg:
+            _cg = cg()
+            _cg.set_funcs(fl)
+            il = _cg.visit(il)
+
+        il = re.adjust_loclabel(il)
         re.reassemble_dump(u_fl)
+        il = re.adjust_jmpref(il)
 
-        _il = re.adjust_jmpref(_il)
-        _il = _cfg.visit(_il)
+        if docfg:
+            _cfg = cfg()
+            _cfg.set_funcs(fl)
+            il = _cfg.visit(il)
+            bbl = _cfg.get_bbl()
+            il = re.add_bblock_label(bbl, il)
+            return (_cfg.get_fbl(), bbl, _cfg.get_cfg_table(il), _cg.get_cg_table(), il, re)
 
-        bbl = _cfg.get_bbl()
-        return (_cfg.get_fbl(), bbl, _cfg.get_cfg_table(_il),
-                _cg.get_cg_table(), re.add_bblock_label(bbl, _il), re)
+        return (None, None, None, None, il, re)
 
     @staticmethod
     def post_analyze(il, re):

@@ -55,7 +55,7 @@ def modifyARM():
 
 
 def main():
-    print "     modifying final.s to adjust redundant symbols"
+    print "     Adjusting redundant symbols"
     if ELF_utils.elf_arm():
         reassemble(True)
         modifyARM()
