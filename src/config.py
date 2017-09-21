@@ -15,6 +15,7 @@ objdump = 'objdump'
 toolprefix = ''
 strip = 'strip'
 compiler = 'gcc'
+ARM_maxDoublemovDist = 16
 
 
 def setup(filepath):

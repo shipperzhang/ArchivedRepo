@@ -56,7 +56,7 @@ class Init(object):
 
     def userFuncProcess(self):
         os.system("cat " + self.file + ".disassemble | grep \"<\" | grep \">:\" > userfuncs.info")
-        os.system("cat fl >> userfuncs.info")
+        os.system("cat fl | grep -v \"<S_0x\" >> userfuncs.info")
 
     def sectionProcess(self):
         badsec = '.got.plt' if self.is_32 else'.data.rel.ro'

@@ -8,7 +8,6 @@ from share_lib_helper import lib32_helper
 from disasm import Types, exception_process
 from utils.ail_utils import get_loc, read_file, ELF_utils, dec_hex, set_loc,\
                             unify_int_list, bbn_byloc
-from cProfile import label
 
 
 def rev_map(f, l):
@@ -17,6 +16,8 @@ def rev_map(f, l):
 class ft(object):
     def __init__(self, fn, fbaddr, feaddr):
         self.fn = fn; self.fbaddr = fbaddr; self.feaddr = feaddr
+    def __repr__(self):
+        return self.fn + ('@0x%X-0x%X' % (self.fbaddr, self.feaddr))
 
 
 class datahandler:
@@ -132,7 +133,7 @@ class datahandler:
                 else:
                     self.data_labels.insert(0, (s.sec_name, val))
                     self.data_labels_reloc.insert(0, addr)
-                    l[i] = (l[i][0], '.quadword S_0x%X' % val)
+                    l[i] = (l[i][0], '.quad S_0x%X' % val)
                     l[i+1:i+8] = [('', '')] * 7
             else:
                 if self.check_text(val):
@@ -142,7 +143,7 @@ class datahandler:
                         self.cur_func_name = self.fn_byloc(val)
                         self.text_labels.insert(0, val)
                         self.text_labels_reloc.insert(0, addr)
-                        l[i] = (l[i][0], '.quadword S_0x%X' % val)
+                        l[i] = (l[i][0], '.quad S_0x%X' % val)
                         l[i+1:i+8] = [('', '')] * 7
                     else: self.in_jmptable = False
                 else: self.in_jmptable = False
@@ -380,8 +381,9 @@ class reassemble(ailVisitor):
         self.plt_collect()
         self.plt_sec_collect()
         self.text_sec_collect()
-        # ARM MOVW locations
+        # ARM
         self.ARMmovs = []
+        self.ARMvldrtargets = []
 
     def section_collect(self):
         def secmapper(l):
@@ -488,7 +490,7 @@ class reassemble(ailVisitor):
                     s_label = 'S_' + dec_hex(exp)
                     self.insert_text(s_label, exp)
                     return Types.Label(s_label)
-                elif self.check_plt(exp):
+                elif self.check_plt(exp) and exp in reassemble.plt_hash:
                     return Types.Label(reassemble.plt_hash[exp])
             elif isinstance(exp, Types.StarDes):
                 return Types.StarDes(self.v_exp2(exp.content, instr, f, chk))
@@ -573,19 +575,40 @@ class reassemble(ailVisitor):
             return Types.DoubleInstr((instr[0], self.v_exp2(instr[1], instr, None, False),
                                       instr[2], instr[3]))
         if isinstance(instr, Types.TripleInstr):
+            if instr[0].startswith('vldr') and isinstance(instr[2], Types.Const):
+                self.ARMvldrtargets.append(instr[2])
             return Types.TripleInstr((instr[0], instr[1], self.v_exp2(instr[2], instr, None, False),
                                       instr[3], instr[4]))
         return instr
 
     def doublemovARM(self, instrs):
-        ## insert labels for double mov operations
-        ##  movw r0, #0x102c -> movw r0, #:lower16:S_0x2102c
-        ##  movt r0, #0x2    -> movt r0, #:upper16:S_0x2102c
+        # insert labels for double mov operations
+        #  movw r0, #0x102c -> movw r0, #:lower16:S_0x2102c
+        #  movt r0, #0x2    -> movt r0, #:upper16:S_0x2102c
         for i in self.ARMmovs:
             mw = list(instrs[i])
-            tindex = i+1 if instrs[i+1][1] == mw[1] else i+2
+            destreg = mw[1]
+            tindex = 1
+            while tindex < config.ARM_maxDoublemovDist:
+                # GCC optimizations causes movw and movt not to be close to each other
+                currinstr = instrs[i+tindex]
+                if currinstr[0].upper() == 'MOV' and currinstr[2] == destreg:
+                    # Sometimes GCC changes idea and picks another register to load the address
+                    destreg = instrs[i+tindex][1]
+                elif currinstr[1] == destreg:
+                    if currinstr[0].upper() == 'STR':
+                        # Some other times GCC wants to have even more fun and changes register using the stack
+                        tindex += 1
+                        while tindex < config.ARM_maxDoublemovDist:
+                            if instrs[i+tindex][2] == currinstr[2]:
+                                destreg = instrs[tindex+i][1]
+                                break
+                            tindex += 1
+                    else: break
+                tindex += 1
+            tindex = i + tindex
             mt = list(instrs[tindex])
-            if mt[0].upper() == 'MOVT' and mt[1] == mw[1]:
+            if mt[0].upper() == 'MOVT' and mt[1] == destreg:
                 val = (mt[2] << 16) + (mw[2] & 0xffff)
                 s = self.check_sec(val)
                 if s is not None:
@@ -686,6 +709,7 @@ class reassemble(ailVisitor):
         p.data_output()
 
     def init_array_dump(self):
+        return # This seems creating problems rather than solving them
         if len(self.init_array_list) != 0 and not ELF_utils.elf_arm():
             with open('final_data.s', 'a') as f:
                 f.write('\n\n.section .ctors,"aw",@progbits\n')
@@ -751,4 +775,17 @@ class reassemble(ailVisitor):
                 instrs[i] = set_loc(instrs[i], Types.Loc('', lo.loc_addr, True))
             else:
                 last_label = lo.loc_label
+        return instrs
+
+    def alignvldrARM(self, instrs):
+        self.ARMvldrtargets = sorted(set(self.ARMvldrtargets))
+        i = 0; j = 0
+        while True:
+            if i == len(instrs) or j == len(self.ARMvldrtargets): break
+            loc = get_loc(instrs[i])
+            if loc.loc_addr == self.ARMvldrtargets[j]:
+                loc.loc_label = '\n.align 2' + loc.loc_label
+                instrs[i] = set_loc(instrs[i], loc)
+                j += 1
+            i += 1
         return instrs

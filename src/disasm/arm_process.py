@@ -16,21 +16,14 @@ def load_size(op, exp):
     return 4
 
 def tb_process(offsize, pc, buf, filehandle):
+    # tb[hb] jumptable
     i = 0
-    if offsize > 2:
-        # ldr jumptable
-        while i < len(buf):
-            val = unpack('<I', buf[i:i+offsize])[0]
-            filehandle.write(('%x' % (pc+i)).rjust(8) + ':\t.word   0x%x\n' % val)
-            i += offsize
-    else:
-        # tb[hb] jumptable
-        unpacker = '<H' if offsize == 2 else '<B'
-        datatype = ('.short' if offsize == 2 else '.byte').ljust(7)
-        while i < len(buf):
-            val = unpack(unpacker, buf[i:i+offsize])[0] << 1
-            filehandle.write(('%x' % (pc+i)).rjust(8) + ':\t' + datatype + ' (S_0x%X-S_0x%X)/2\n' % (pc + val, pc))
-            i += offsize
+    unpacker = '<H' if offsize == 2 else '<B'
+    datatype = ('.short' if offsize == 2 else '.byte').ljust(7)
+    while i < len(buf):
+        val = unpack(unpacker, buf[i:i+offsize])[0] << 1
+        filehandle.write(('%x' % (pc+i)).rjust(8) + ':\t' + datatype + ' (S_0x%X-S_0x%X)/2\n' % (pc + val, pc))
+        i += offsize
 
 def eval_tb_size(op, last_cmp, reg):
     if reg != last_cmp[0]: raise Exception('Unhandled jumptable case')
@@ -70,6 +63,7 @@ def arm_process(filename):
 
     inlinedata = {}
     last_cmp = ('', '')
+    last_adr_dest = 0
     pcrelre = re.compile('\[pc,\s*\#0x([0-9a-f]+)\]', re.I)
     pcreltblre = re.compile('\[pc,\s*(r[0-9]+)(,\s*lsl \#1)?\]|pc,\s*\[r[0-9],\s*(r[0-9]),\s*lsl\s*\#2\]', re.I)
     calls = set(('bl', 'blx'))
@@ -93,17 +87,22 @@ def arm_process(filename):
             elif e[2].startswith('adr'):
                 # Insert label for PC relative add
                 const = e[3].split(', ')[1]
-                dest = (e[0] & 0xFFFFFFFC) + int(const[1:], 16) + 4
-                instr = instr.replace(const, '0x%x' % dest)
+                last_adr_dest = (e[0] & 0xFFFFFFFC) + int(const[1:], 16) + 4
+                instr = instr.replace(const, '0x%x' % last_adr_dest)
             f.write(instr + '\n')
             if e[2] in offtableop or e[2].startswith('ldr'):
                 # Process inline jumptable
                 m = pcreltblre.search(e[3])
                 if m:
                     offsize, tablesize = eval_tb_size(e[2], last_cmp, m.group(1) if m.group(1) is not None else m.group(3))
-                    tb_process(offsize, curr_off + textsec.addr, textraw[curr_off:curr_off + tablesize], f)
-                    curr_off += tablesize
-                    break
+                    if offsize > 2:
+                        # ldr jumptable
+                        for i in xrange(0, tablesize, 4): inlinedata[last_adr_dest + i] = 4
+                    else:
+                        # tb jumptable
+                        tb_process(offsize, curr_off + textsec.addr, textraw[curr_off:curr_off + tablesize], f)
+                        curr_off += tablesize
+                        break
             if curr_off + textsec.addr in inlinedata: break
         else:
             if curr_off < textsec.size: inlinedata[curr_off + textsec.addr] = 2

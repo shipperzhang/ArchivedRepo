@@ -1,6 +1,6 @@
 from cg import cg
 from cfg import cfg
-from utils.ail_utils import read_file
+from utils.ail_utils import read_file, ELF_utils
 from utils.pp_print import pp_print_list, pp_print_file
 
 class Analysis(object):
@@ -16,7 +16,6 @@ class Analysis(object):
     @staticmethod
     def analyze_one(il, fl, re, docfg=False):
         u_fl = filter(lambda f: not f.is_lib, fl)
-        print '     Parsed', len(u_fl), 'call destinations'
 
         if docfg:
             _cg = cg()
@@ -40,6 +39,7 @@ class Analysis(object):
     @staticmethod
     def post_analyze(il, re):
         il = re.unify_loc(il)
+        if ELF_utils.elf_arm(): il = re.alignvldrARM(il)
         ils = pp_print_list(il)
         ils = re.adjust_globallabel(Analysis.global_bss(), ils)
         pp_print_file(ils)

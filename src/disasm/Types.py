@@ -177,7 +177,9 @@ if config.arch == config.ARCH_X86:
                        'SQRTSS', 'MAXSS', 'MINSD', 'SQRTSD', 'MINSS', 'CVTTPS2DQ',
                        'DECQ', 'SUBPD', 'ADDPD', 'PADDQ', 'IMULQ', 'PADDD', 'PADDB',
                        'PSUBD', 'PSUBW', 'PSUBB', 'MULPD', 'UNPCKHPD', 'ADDPS', 'MULPS',
-                       'DIVPD', 'DIVPS', 'CQTO', 'INCB', 'PSUBUSW', 'DIVSS'
+                       'DIVPD', 'DIVPS', 'CQTO', 'INCB', 'PSUBUSW', 'DIVSS', 'PUNPCKHBW',
+                       'PUNPCKHWD', 'PUNPCKHDQ', 'PUNPCKHQDQ', 'PUNPCKLBW', 'PUNPCKLWD',
+                       'PUNPCKLDQ', 'PUNPCKLQDQ'
     ], True)
     LogicOp = RecSet(['AND', 'ANDB', 'OR', 'XOR', 'PXOR', 'NOT', 'ANDL', 'NOTL', 'ORW',
                       'XORB', 'XORL', 'SAHF', 'ANDW', 'NOTB', 'NOTW', 'XORPD', 'XORPS',
@@ -307,7 +309,7 @@ elif config.arch == config.ARCH_ARMT:
                       'MCRR', 'MCRR2', 'MRC', 'MRC2', 'MRRC', 'MRRC2', 'NOP', 'SETEND',
                       'STC', 'STC2', 'STCL', 'STC2L'], True)
     AssistOp = RecSet([], True)
-    ControlOp = RecSet(['B', 'BL', 'BLX', 'BX', 'BXJ', 'CBNZ', 'CBZ', 'SUBS', 'TBB', 'TBH'], True)
+    ControlOp = RecSet(['B', 'BL', 'BLX', 'BX', 'BXJ', 'CBNZ', 'CBZ', 'TBB', 'TBH'], True)
     CondSuff = RecSet(['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC', 'LO',
                        'HI', 'LS', 'GE', 'LT', 'GT', 'LE', 'AL', 'HS'], True)
     OpQualifier = RecSet(['W', 'N', 'F32', 'F64', 'U8', 'U16', 'U32', 'S8', 'S16', 'S32'])
