@@ -190,7 +190,7 @@ if config.arch == config.ARCH_X86:
                     'SAL', 'SAR', 'SHLL', 'ROLL', 'SHRB', 'SHLB', 'SARL', 'ROLW', 'SHLW',
                     'SARW', 'SHRW', 'SHLQ', 'SHRQ', 'PSHUFD', 'SHUFPS', 'SHUFPD',
                     'PSLLW', 'PSLLD', 'PSLLQ', 'PSRAW', 'PSRAD', 'PSLLDQ', 'PSRLDQ',
-                    'PSRLD', 'PSHUFLW'
+                    'PSRLD', 'PSHUFLW', 'SHRD'
     ], True)
     AssignOp = RecSet(['MOV', 'XCHG', 'LEA', 'MOVSX', 'MOVSD', 'MOVL', 'FLDL', 'MOVZBL', 'MOVZBW',
                        'MOVSW', 'MOVAPD', 'MOVSLQ', 'MOVQ', 'MOVABS', 'MOVSBQ',
@@ -220,7 +220,7 @@ if config.arch == config.ARCH_X86:
     ], True)
     OtherOp = RecSet(['NOP', 'HLT', 'NOPW', 'NOPL', 'UD2'], True)
     JumpOp = RecSet(['JMP', 'JNE', 'JE', 'JB', 'JNAE', 'JNP',
-                     'JC', 'JNB', 'JAE', 'JNC', 'JBE', 'JNA',
+                     'JC', 'JNB', 'JAE', 'JNC', 'JBE', 'JNA', 'JO',
                      'JA', 'JNBE', 'JL', 'JNGE', 'JGE', 'JNL', 'JLE',
                      'JNG', 'JG', 'JNLE', 'JS', 'JNS', 'JP', 'JMPQ'
     ], True)

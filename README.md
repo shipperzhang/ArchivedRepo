@@ -1,25 +1,33 @@
-# Uroboros
+# Uroboros [\[1\]](#uroboros)
 ### Infrastructure for Reassembleable Disassembling and Transformation
 
 ### Fork motivation
 
-This fork is made with the idea of extending this technique to ARM executables. In such process, the OCaml core has been rewritten in Python.
+This fork is made with the idea of extending this technique to ARM Thumb executables. In such process, the OCaml core has been completely rewritten in Python. To this date the tool has been tested to work on the following executables: bzip, gzip.
 
 ## Installation
 
-Uroboros uses the following utilities:
-(Version numbers indicate the versions that we use in our development.)
+Uroboros uses the following utilities (version numbers are in line with what was used during development, older releases may work as well):
 
 | Tool        | Version |
-|-------------|--------:|
+|:------------|--------:|
+| python      | 2.7     |
 | objdump     | ≥2.22   |
 | readelf     | ≥2.22   |
 | awk         | ≥3.18   |
-| libcapstone | 3.0.4   |
+| libcapstone | ≥3.0.4  |
+
+and the following python packages (available through `pip` repositories):
+
+| Package     | Version |
+|:------------|--------:|
+| capstone    | ≥3.0.4  |
+| termcolor   | ≥1.1.0  |
+| ELF-Esteem  | ≥0.1    |
 
 ## Build
 
-Uroboros is now completely written in Python on the `allpy` branch. You don't need to build anything.
+Uroboros is now completely written in Python on the `allpy` branch. You don't need to build anything. However, you may want to modify some value in `config.py` to match your system configuration.
 
 ## Usage: Disassembling
 
@@ -32,16 +40,22 @@ To use Uroboros for disassembling:
 
 The disassembled output can be found in the `workdir` directory, named `final.s`. Uroboros will also assemble it back into an executable, `a.out`.
 
-The Python script uroboros.py provides the following options:
+The startup Python script provides the following options:
 
 1. `-o (output)`
 
     This option allows to specify an output path for the reassembled binary.
 
-2. `-a (assumption)`
+2. `-g`
+
+    **NOT YET DEVELOPED**
+
+    Instrument the output binary against ROP attacks using an adaptation of the technique described in [\[2\]](#gfree).
+
+3. `-a (assumption)`
 
     This option configures the three symbolization assumptions proposed in
-    the original Uroboros paper [1]. Note that in the current version, the
+    the original Uroboros paper [\[1\]](#uroboros). Note that in the current version, the
     first assumption (**n-byte alignment**) are set by default. The other
     two assumptions can be set by users.
 
@@ -58,5 +72,7 @@ The Python script uroboros.py provides the following options:
     These assumptions can also be used at the same time (`python uroboros.py path_to_bin -a 3 -a 2`)
 
 
-[1] Reassembleable Disassembling, by Shuai Wang, Pei Wang, and Dinghao Wu. In
-Proceedings of the 24th USENIX Security Symposium, Washington, D.C., August 12-14, 2015.
+
+<a name="uroboros">[1]</a> [Reassembleable Disassembling](https://www.usenix.org/conference/usenixsecurity15/technical-sessions/presentation/wang-shuai), by Shuai Wang, Pei Wang, and Dinghao Wu. In Proceedings of the 24th USENIX Security Symposium, Washington, D.C., August 12-14. 2015.
+
+<a name="gfree">[2]</a> [G-Free: defeating return-oriented programming through gadget-less binaries](https://doi.org/10.1145/1920261.1920269), by Onarlioglu Kaan, Leyla Bilge, Andrea Lanzi, Davide Balzarotti, and Engin Kirda. In Proceedings of the 26th Annual Computer Security Applications Conference, pp. 49-58. ACM, 2010."

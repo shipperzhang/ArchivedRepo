@@ -138,9 +138,11 @@ class datahandler:
             else:
                 if self.check_text(val):
                     c = bbn_byloc(val, self.begin_addrs) if self.assumption_three else True
-                    if (c and self.check_jmptable_1(l[i][0])) or self.check_jmptable(l[i][0], val):
-                        self.in_jmptable = True
-                        self.cur_func_name = self.fn_byloc(val)
+                    if c or (not c and self.check_jmptable(l[i][0], val)):
+                        if c and self.check_jmptable_1(l[i][0]):
+                            self.in_jmptable = True
+                            self.cur_func_name = self.fn_byloc(val)
+                        else: self.in_jmptable = False
                         self.text_labels.insert(0, val)
                         self.text_labels_reloc.insert(0, addr)
                         l[i] = (l[i][0], '.quad S_0x%X' % val)
@@ -156,6 +158,13 @@ class datahandler:
         self.traverse64(self.rodata_list, 0x0804cc60)
         self.traverse64(self.got_list, 0x0)
 
+    def checkifprobd2dARM(self, val):
+        # Assume 2 byte alignment
+        if val & 1 != 0: return False
+        low = val & 0xffff; hi = val >> 16
+        # Often short values in arrays are close to each other
+        return abs(low - hi) >= 8
+
     def traverse32(self, l, addr):
         i = 0
         while i < len(l) - 3:
@@ -164,17 +173,20 @@ class datahandler:
             if s is not None:
                 if self.assumption_two:
                     self.in_jmptable = False
-                else:
+                elif not ELF_utils.elf_arm() or self.checkifprobd2dARM(val):
                     self.data_labels.insert(0, (s.sec_name, val))
                     self.data_labels_reloc.insert(0, addr)
                     l[i] = (l[i][0], '.long S_0x%X' % val)
                     l[i+1:i+4] = [('', '')] * 3
             else:
+                if ELF_utils.elf_arm(): val = val & (-2)
                 if self.check_text(val):
                     c = bbn_byloc(val, self.begin_addrs) if self.assumption_three else True
-                    if (c and self.check_jmptable_1(val)) or self.check_jmptable(l[i][0], val):
-                        self.in_jmptable = True
-                        self.cur_func_name = self.fn_byloc(val)
+                    if c or (not c and self.check_jmptable(l[i][0], val)):
+                        if c and self.check_jmptable_1(l[i][0]):
+                            self.in_jmptable = True
+                            self.cur_func_name = self.fn_byloc(val)
+                        else: self.in_jmptable = False
                         self.text_labels.insert(0, val)
                         self.text_labels_reloc.insert(0, addr)
                         l[i] = (l[i][0], '.long S_0x%X' % val)
@@ -566,7 +578,7 @@ class reassemble(ailVisitor):
 
     def vinst2ARM(self, iv):
         instr = iv[1]
-        if instr[0].upper() == 'MOVW': self.ARMmovs.append(iv[0])
+        if instr[0].upper().startswith('MOVW'): self.ARMmovs.append(iv[0])
         if isinstance(instr, Types.DoubleInstr):
             if isinstance(instr[1], Types.TBExp):
                 self.insert_text(instr[1].base, int(instr[1].base.split('x')[1], 16))
@@ -608,7 +620,7 @@ class reassemble(ailVisitor):
                 tindex += 1
             tindex = i + tindex
             mt = list(instrs[tindex])
-            if mt[0].upper() == 'MOVT' and mt[1] == destreg:
+            if mt[0].upper().startswith('MOVT') and mt[1] == destreg:
                 val = (mt[2] << 16) + (mw[2] & 0xffff)
                 s = self.check_sec(val)
                 if s is not None:
