@@ -42,7 +42,7 @@ def arm_process(filename):
     #      .short  0x0123
     #       ...
     #  or
-    #     addr    r2, pc, #4
+    #     add     r2, pc, #4
     #     ldr     pc, [r2, r3, lsl #2]
     #      .word   0x00010545
     #      ...
@@ -66,6 +66,7 @@ def arm_process(filename):
     last_adr_dest = 0
     pcrelre = re.compile('\[pc,\s*\#0x([0-9a-f]+)\]', re.I)
     pcreltblre = re.compile('\[pc,\s*(r[0-9]+)(,\s*lsl \#1)?\]|pc,\s*\[r[0-9],\s*(r[0-9]),\s*lsl\s*\#2\]', re.I)
+    pcreladd = re.compile('^(r[0-9]+|fp|lr|sb|sl),\s*pc,\s*\#(0x[0-9a-f]+)$', re.I)
     calls = set(('bl', 'blx'))
     offtableop = set(('tbb', 'tbh'))
     f = open('instrs.info', 'w')
@@ -89,6 +90,13 @@ def arm_process(filename):
                 const = e[3].split(', ')[1]
                 last_adr_dest = (e[0] & 0xFFFFFFFC) + int(const[1:], 16) + 4
                 instr = instr.replace(const, '0x%x' % last_adr_dest)
+            elif e[2].startswith('addw'):
+                # PC relative double loads load address with addw
+                m = pcreladd.search(e[3])
+                if m:
+                    dest = (e[0] & 0xFFFFFFFC) + int(m.group(2), 16) + 4
+                    inlinedata[dest] = 8
+                    instr = ('%x' % e[0]).rjust(8) + ':\tadr    ' + m.group(1) + (',0x%X' % dest)
             f.write(instr + '\n')
             if e[2] in offtableop or e[2].startswith('ldr'):
                 # Process inline jumptable

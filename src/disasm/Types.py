@@ -90,6 +90,10 @@ class FourInstr(Instr):
     def __init__(self, items):
         if len(items) != 6: raise Exception('Invalid quad')
         super(FourInstr, self).__init__(items)
+class FiveInstr(Instr):
+    def __init__(self, items):
+        if len(items) != 7: raise Exception('Invalid five')
+        super(FiveInstr, self).__init__(items)
 
 class Symbol(object): pass
 class Exp(object): pass
@@ -179,18 +183,20 @@ if config.arch == config.ARCH_X86:
                        'PSUBD', 'PSUBW', 'PSUBB', 'MULPD', 'UNPCKHPD', 'ADDPS', 'MULPS',
                        'DIVPD', 'DIVPS', 'CQTO', 'INCB', 'PSUBUSW', 'DIVSS', 'PUNPCKHBW',
                        'PUNPCKHWD', 'PUNPCKHDQ', 'PUNPCKHQDQ', 'PUNPCKLBW', 'PUNPCKLWD',
-                       'PUNPCKLDQ', 'PUNPCKLQDQ'
+                       'PUNPCKLDQ', 'PUNPCKLQDQ', 'VDIVSD', 'VADDSD', 'VMULSD', 'VSHUFPS',
+                       'VPADDD', 'VPSHUFB', 'VPSHUFD', 'VPSHUFHW', 'VPADDQ', 'VPALIGNR'
     ], True)
     LogicOp = RecSet(['AND', 'ANDB', 'OR', 'XOR', 'PXOR', 'NOT', 'ANDL', 'NOTL', 'ORW',
                       'XORB', 'XORL', 'SAHF', 'ANDW', 'NOTB', 'NOTW', 'XORPD', 'XORPS',
                       'ANDQ', 'XORQ', 'ANDPS', 'ANDNPS', 'ORPS', 'ANDPD', 'NOTQ', 'ANDNPD',
-                      'ORPD', 'PAND', 'POR', 'PANDN'
+                      'ORPD', 'PAND', 'POR', 'PANDN', 'VXORPD', 'VPXOR'
     ], True)
-    RolOp = RecSet(['ROL', 'SHL', 'SHR', 'SHLD |SHRD', 'SHRL', 'ROR', 'RORL',
+    RolOp = RecSet(['ROL', 'SHL', 'SHR', 'SHLD', 'SHRD', 'SHRL', 'ROR', 'RORL',
                     'SAL', 'SAR', 'SHLL', 'ROLL', 'SHRB', 'SHLB', 'SARL', 'ROLW', 'SHLW',
                     'SARW', 'SHRW', 'SHLQ', 'SHRQ', 'PSHUFD', 'SHUFPS', 'SHUFPD',
                     'PSLLW', 'PSLLD', 'PSLLQ', 'PSRAW', 'PSRAD', 'PSLLDQ', 'PSRLDQ',
-                    'PSRLD', 'PSHUFLW', 'SHRD'
+                    'PSRLD', 'PSHUFLW', 'SHRD', 'VPSLLD', 'VPSRLD', 'VPSLLDQ', 'VPSRLDQ',
+                    'VPSRLQ', 'PSRLQ'
     ], True)
     AssignOp = RecSet(['MOV', 'XCHG', 'LEA', 'MOVSX', 'MOVSD', 'MOVL', 'FLDL', 'MOVZBL', 'MOVZBW',
                        'MOVSW', 'MOVAPD', 'MOVSLQ', 'MOVQ', 'MOVABS', 'MOVSBQ',
@@ -207,7 +213,10 @@ if config.arch == config.ARCH_X86:
                        'FIST', 'FFREE', 'MOVSWQ', 'ORQ', 'MOVDQU', 'MOVDQA',
                        'MOVUPS', 'MOVD', 'MOVHLPS', 'MOVLHPS', 'MOVUPD',
                        'PUNPCKHQDQ', 'PUNPCKLDQ', 'PUNPCKLBW', 'PINSRW', 'PEXTRW',
-                       'PUNPCKLQDQ', 'PUNPCKLWD', 'MOVHPD', 'MOVLPD', 'LAHF', 'SAHF'
+                       'PUNPCKLQDQ', 'PUNPCKLWD', 'MOVHPD', 'MOVLPD', 'LAHF', 'SAHF',
+                       'RDTSC', 'VCVTSI2SD', 'VMOVDQU', 'VMOVDQA', 'VPBLENDW', 'VPUNPCKHQDQ',
+                       'VPUNPCKHDQ', 'VPUNPCKLDQ', 'VPUNPCKLQDQ', 'VMOVUPS', 'VMOVAPS',
+                       'MOVHPS'
     ], True)
     CompareOp = RecSet(['CMP', 'CMPQ', 'TEST', 'CMPL', 'CMPB', 'CMPW', 'TESTB', 'TESTL', 'CMPSB',
                         'BT', 'TESTW', 'CMPNLESS', 'CMPLTSS', 'CMPNLTSS', 'TESTQ', 'CMPNLTSD',
@@ -317,7 +326,6 @@ elif config.arch == config.ARCH_ARMT:
     Op = RecSet([CommonOp, StackOp, ControlOp, SystemOp, OtherOp])
     DataTypes = RecSet(['.word', '.short', '.byte'], True)
 
-
     class RegList(tuple): pass
     class InlineData(str): pass
     class ShiftExp(Exp):
@@ -330,10 +338,10 @@ elif config.arch == config.ARCH_ARMT:
             self.base = base; self.dest = dest
         def __repr__(self):
             return '(' + self.dest + '-' + self.base + ')/2'
-    class FiveInstr(Instr):
+    class CoproInstr(Instr):
         def __init__(self, items):
-            if len(items) != 7: raise Exception('Invalid five')
-            super(FiveInstr, self).__init__(items)
+            if len(items) != 9: raise Exception('Invalid copro')
+            super(CoproInstr, self).__init__(items)
 
 
 class RegClass(str, Exp):

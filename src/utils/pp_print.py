@@ -1,4 +1,3 @@
-import config
 from disasm import Types
 from utils.ail_utils import ELF_utils
 
@@ -33,7 +32,7 @@ def p_sec(sec):
     if sec.sec_name in ['.rodata', '.data', '.bss']: return 'ds'
     raise Exception('p sec')
 
-if config.arch == config.ARCH_ARMT:
+if ELF_utils.elf_arm():
     ## ARM
     def p_reg(reg):
         return str(reg).lower()
@@ -90,6 +89,10 @@ if config.arch == config.ARCH_ARMT:
         e3_str = p_exp(e3)
         e4_str = p_exp(e4)
         return p_str + ' ' + e1_str + ',' + e2_str + ',' + e3_str + ',' + e4_str
+
+    def p_copro(i):
+        p_str = p_op(i[0])
+        return p_str + ' ' + ','.join(map(p_exp, i[1:7]))
 
 else:
     ## X86
@@ -154,6 +157,14 @@ else:
             return p_str + ' ' + e3_str + ' ' + e2_str + ',' + e1_str
         return p_str + ' ' + e3_str + ',' + e2_str + ',' + e1_str
 
+    def p_five(p, e1, e2, e3, e4):
+        p_str = p_op(p)
+        e1_str = p_exp(e1)
+        e2_str = p_exp(e2)
+        e3_str = p_exp(e3)
+        e4_str = p_exp(e4)
+        return p_str + ' ' + e4_str + ',' + e3_str + ',' + e2_str + ',' + e1_str
+
 
 def p_exp(exp):
     if isinstance(exp, Types.Const): return p_const(exp)
@@ -162,7 +173,7 @@ def p_exp(exp):
     elif isinstance(exp, Types.Ptr): return p_ptraddr(exp)
     elif isinstance(exp, Types.RegClass): return p_reg(exp)
     elif isinstance(exp, Types.Label): return str(exp)
-    elif config.arch == config.ARCH_ARMT:
+    elif ELF_utils.elf_arm():
         if isinstance(exp, Types.ShiftExp): return p_shift(exp)
         elif isinstance(exp, Types.RegList): return p_reglist(exp)
         elif isinstance(exp, Types.TBExp): return p_tbexp(exp)
@@ -196,6 +207,8 @@ def pp_print_instr(i):
         res += p_four(i[0], i[1], i[2], i[3])
     elif isinstance(i, Types.FiveInstr):
         res += p_five(i[0], i[1], i[2], i[3], i[4])
+    elif ELF_utils.elf_arm() and isinstance(i, Types.CoproInstr):
+        res += p_copro(i)
     return res
 
 def pp_print_list(ilist):

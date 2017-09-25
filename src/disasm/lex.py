@@ -1,7 +1,6 @@
-import sys
 import Types
-from utils.ail_utils import cat_from, split_by_list
 import config
+from utils.ail_utils import cat_from, split_by_list
 
 class Lop(str): pass
 class Lexp(str): pass
@@ -51,53 +50,25 @@ else:
                 else zip(char_collect_all(e, '['), char_collect_all(e, ']'))
         return filter(lambda com: not any(map(lambda br: br[0] < com < br[1], blist)), clist)
 
-def single_instr(op, l):
-    return (Lop(op), Lloc(l))
-
-def double_instr(op, e, l):
-    return (Lop(op), Lexp(e.strip()), Lloc(l))
-
-def triple_instr(op, el, l):
-    return (Lop(op), Lexp(el[0].strip()), Lexp(el[1].strip()), Lloc(l))
-
-def fourth_instr(op, el, l):
-    return (Lop(op), Lexp(el[0].strip()), Lexp(el[1].strip()), Lexp(el[2].strip()), Lloc(l))
-
-def fifth_instr(op, el, l):
-    return (Lop(op), Lexp(el[0].strip()), Lexp(el[1].strip()), Lexp(el[2].strip()), Lexp(el[3].strip()), Lloc(l))
-
 def do_exp(e, op, l):
     cl = comma_in_brackets(e)
     cl_len = len(cl)
     if cl_len == 0:
-        return double_instr(op, e, l)
-    elif cl_len == 1:
-        return triple_instr(op, split_by_list(e, cl), l)
-    elif cl_len == 2:
-        return fourth_instr(op, split_by_list(e, cl), l)
-    elif cl_len == 3 and config.arch != config.ARCH_X86:
-        return fifth_instr(op, split_by_list(e, cl), l)
-    raise Exception("unsupported exp length")
-
-def lexer1(instr, location):
-    instr = instr.strip()
-    location = '0x' + location.strip()
-    tokens = instr.split()
-    op_str = tokens[0]
-    if len(tokens) == 1:
-        return single_instr(op_str, location)
-    elif check_assist(tokens[1]):
-        return assist_exp(op_str, tokens[1], cat_from(tokens, 2, ' '), location)
-    return do_exp(cat_from(tokens, 1, ' '), op_str, location)
-
-def p_print(lexme=None):
-    if lexme is None: print ' (End)'
-    else:
-        pref = {Lop: 'Op', Lexp: 'Exp', Lloc: 'Loc'}
-        sys.stdout.write(' (' + pref[lexme.__class__] + ' ' + lexme + ')')
+        return (Lop(op), Lexp(e), Lloc(l))
+    elif cl_len < 4 or (config.arch == config.ARCH_ARMT and cl_len == 5):
+        return (Lop(op),) + tuple(map(lambda e: Lexp(e.strip()), split_by_list(e, cl))) + (Lloc(l),)
+    raise Exception("Unsupported exp length: " + str(cl_len))
 
 def prefix_sub(instr):
     return instr.replace('lock ', '') if 'lock ' in instr else instr
 
 def lexer(instr, location):
-    return lexer1(instr, location)
+    instr = instr.strip()
+    location = '0x' + location.strip()
+    tokens = instr.split()
+    op_str = tokens[0]
+    if len(tokens) == 1:
+        return (Lop(op_str), Lloc(location))
+    elif check_assist(tokens[1]):
+        return assist_exp(op_str, tokens[1], cat_from(tokens, 2, ' '), location)
+    return do_exp(cat_from(tokens, 1, ' '), op_str, location)

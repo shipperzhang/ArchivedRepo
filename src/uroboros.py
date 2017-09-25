@@ -36,7 +36,7 @@ def process(filepath, gfree=False):
 
         compile_process.main()
         label_adjust.label_adjust()
-        compile_process.reassemble()
+        if compile_process.reassemble() != 0: return False
 
     except Exception as e:
         print e

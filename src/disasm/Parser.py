@@ -2,7 +2,7 @@ import re
 import Types
 import config
 from utils.ail_utils import Opcode_utils
-from lex_new import Lloc, Lop, Lexp, prefix_sub, lexer
+from lex import Lloc, Lop, Lexp, prefix_sub, lexer
 
 
 class base_parser(object):
@@ -318,7 +318,8 @@ class parse(parseARM if (config.arch == config.ARCH_ARMT) else parseX86):
         elif sl == 4: return Types.TripleInstr(stack)
         elif sl == 5: return Types.FourInstr(stack)
         elif sl == 6: return Types.FiveInstr(stack)
-        raise Exception('Parsing error')
+        elif config.arch == config.ARCH_ARMT and sl == 8: return Types.CoproInstr(stack)
+        raise Exception('Parsing error, strange number of tokens: ' + str(sl))
 
     def parse_instr(self, instr, loc):
         self.call_des = False
@@ -328,5 +329,3 @@ class parse(parseARM if (config.arch == config.ARCH_ARMT) else parseX86):
         lexem_list = lexer(instr, loc)
         s = map(self.push_stack, lexem_list)
         return self.reduce_stack(s, has_pre)
-
-

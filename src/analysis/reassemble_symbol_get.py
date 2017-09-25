@@ -28,6 +28,7 @@ class datahandler:
         self.rodata = []
         self.got = []
         self.bss = []
+        self.plt_symbols = {}
 
         self.text_mem_addrs = []
         self.label_mem_addrs = []
@@ -131,10 +132,14 @@ class datahandler:
                 if self.assumption_two:
                     self.in_jmptable = False
                 else:
-                    self.data_labels.insert(0, (s.sec_name, val))
-                    self.data_labels_reloc.insert(0, addr)
-                    l[i] = (l[i][0], '.quad S_0x%X' % val)
-                    l[i+1:i+8] = [('', '')] * 7
+                    if s.sec_name == '.plt' and val in self.plt_symbols:
+                        l[i] = (l[i][0], '.quad ' + self.plt_symbols[val])
+                        l[i+1:i+8] = [('', '')] * 7
+                    else:
+                        self.data_labels.insert(0, (s.sec_name, val))
+                        self.data_labels_reloc.insert(0, addr)
+                        l[i] = (l[i][0], '.quad S_0x%X' % val)
+                        l[i+1:i+8] = [('', '')] * 7
             else:
                 if self.check_text(val):
                     c = bbn_byloc(val, self.begin_addrs) if self.assumption_three else True
@@ -174,10 +179,14 @@ class datahandler:
                 if self.assumption_two:
                     self.in_jmptable = False
                 elif not ELF_utils.elf_arm() or self.checkifprobd2dARM(val):
-                    self.data_labels.insert(0, (s.sec_name, val))
-                    self.data_labels_reloc.insert(0, addr)
-                    l[i] = (l[i][0], '.long S_0x%X' % val)
-                    l[i+1:i+4] = [('', '')] * 3
+                    if s.sec_name == '.plt' and val in self.plt_symbols:
+                        l[i] = (l[i][0], '.long ' + self.plt_symbols[val])
+                        l[i+1:i+4] = [('', '')] * 3
+                    else:
+                        self.data_labels.insert(0, (s.sec_name, val))
+                        self.data_labels_reloc.insert(0, addr)
+                        l[i] = (l[i][0], '.long S_0x%X' % val)
+                        l[i+1:i+4] = [('', '')] * 3
             else:
                 if ELF_utils.elf_arm(): val = val & (-2)
                 if self.check_text(val):
@@ -228,12 +237,17 @@ class datahandler:
         except: return False
 
     def section_collect(self):
+        def secmapper(l):
+            items = l.split()
+            return Types.Section(items[0], int(items[1], 16), int(items[3], 16))
         with open('sections.info') as f:
+            self.sec += map(secmapper, f)
+        with open('plt_sec.info') as f:
+            self.sec.append(secmapper(f.readline()))
+        with open('plts.info') as f:
             for l in f:
                 items = l.split()
-                addr = int(items[1], 16)
-                size = int(items[3], 16)
-                self.sec.insert(0, Types.Section(items[0], addr, size))
+                self.plt_symbols[int(items[0], 16)] = items[1].split('@')[0][1:]
 
     def section_offset(self, name, addr):
         for h in self.sec:
@@ -306,12 +320,14 @@ class datahandler:
         self.got_list.insert(0, ('.section .got', ''))
         self.data_list.insert(0, ('.section .data', ''))
         self.bss_list.insert(0, ('.section .bss', ''))
+        def createout(l):
+            l = filter(lambda e: len(e[0]) + len(e[1]) > 0, l)
+            return '\n'.join(map(lambda e: e[0] + e[1], l))
         with open('final_data.s', 'a') as f:
-            func = lambda e: e[0] + e[1]
-            f.write('\n'.join(map(func, self.rodata_list)) + '\n')
-            f.write('\n' + '\n'.join(map(func, self.data_list)) + '\n')
-            f.write('\n' + '\n'.join(map(func, self.got_list)) + '\n')
-            f.write('\n' + '\n'.join(map(func, self.bss_list)))
+            f.write(createout(self.rodata_list) + '\n')
+            f.write('\n' + createout(self.data_list) + '\n')
+            f.write('\n' + createout(self.got_list) + '\n')
+            f.write('\n' + createout(self.bss_list))
 
     def collect(self, name):
         if os.path.isfile(name):
@@ -574,7 +590,12 @@ class reassemble(ailVisitor):
                                       self.v_exp2(instr[2], instr, f, is_test), instr[3], instr[4]))
         elif isinstance(instr, Types.FourInstr):
             return Types.FourInstr((instr[0], instr[1], self.v_exp2(instr[2], instr, f, False),
-                                    instr[3], instr[4], instr[5]))
+                                    self.v_exp2(instr[3], instr, f, False) if instr[0][0].upper() == 'V' else instr[3],
+                                    instr[4], instr[5]))
+        elif isinstance(instr, Types.FiveInstr):
+            return Types.FiveInstr((instr[0], instr[1], instr[2], self.v_exp2(instr[3], instr, f, False),
+                                    instr[4], instr[5], instr[6]))
+        return instr
 
     def vinst2ARM(self, iv):
         instr = iv[1]
@@ -707,6 +728,7 @@ class reassemble(ailVisitor):
         gbss_hs = {'S_0x' + e[0].lstrip('0'): e[1].split('@')[0] if '@' in e[1] else e[1] for e in g_bss}
         labels = gbss_hs.keys()
         def mapper(l):
+            if '.word' in l: return l
             r = next((lab for lab in labels if lab in l), None)
             if r is not None: return l.replace(r, gbss_hs[r], 1)
             return l
@@ -748,6 +770,7 @@ class reassemble(ailVisitor):
                 break
             hf = ufuncs[i]
             hi = instrs[j]
+            # print hi
             iloc = get_loc(hi)
             if hf.func_begin_addr == iloc.loc_addr and hf.func_name not in iloc.loc_label:
                 lab = '\n' + hf.func_name + ' : '
