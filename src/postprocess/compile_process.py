@@ -7,8 +7,8 @@ from utils.ail_utils import ELF_utils
 
 def reassemble(saveerr=False, libs=[]):
     return os.system(config.compiler + ' final.s ' + ' '.join(libs)
-              + ('-mthumb' if ELF_utils.elf_arm() else (' -m32' if ELF_utils.elf_32() else ''))
-              + (' 2> final.error' if saveerr else ''))
+              + ('-mthumb' if ELF_utils.elf_arm() else (' -Wa,-mindex-reg' + (' -m32' if ELF_utils.elf_32() else '')))
+              + ' ' + config.gccoptions + (' 2> final.error' if saveerr else ''))
 
 
 def parse_error():

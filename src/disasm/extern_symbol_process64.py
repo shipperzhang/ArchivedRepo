@@ -15,33 +15,23 @@ import re
 
 
 def main(filepath):
-    # no need in 32 bit binaries
     with open(filepath + '.temp') as f:
         lines = f.readlines()
 
-    # symbols = []
-
-    pat_d = r'0x[0-9a-f]+\(%rip\)'
-    pat_s = r'<(.*)>'
+    pat_d = re.compile(r'0x[0-9a-f]+\(%rip\)')
+    pat_s = re.compile(r'<([^@]+)(@@(?!Base).*)?>')
 
     for i in range(len(lines)):
         l = lines[i]
         if "#" in l and not "+" in l:
-            m_s = re.search(pat_s, l)
-            m_d = re.search(pat_d, l)
-            try:
-                src = m_s.group(1) # let it crash it not
-                des = m_d.group(0) # let it crash it not
-                if '@@' in src: src = src.split('@@')[0]
+            m_s = pat_s.search(l)
+            m_d = pat_d.search(l)
+            if m_s and m_d:
+                src = m_s.group(1)
+                des = m_d.group(0)
                 l = l.split('#')[0]
                 l = l.replace(des, src)
-                lines[i] = l+"\n"
-            except Exception:
-                print "exception in external symbols processing of 64-bit ELF"
-                print l
+                lines[i] = l + '\n'
 
     with open(filepath + '.temp', 'w') as f:
         f.writelines(lines)
-
-    #with open('rip_symbols.txt', 'w') as f:
-    #    f.writelines(sorted(set(symbols)))

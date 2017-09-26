@@ -4,6 +4,9 @@ import config
 from utils.ail_utils import Opcode_utils
 from lex import Lloc, Lop, Lexp, prefix_sub, lexer
 
+class InvalidOpException(Exception):
+    def getop(self):
+        return self.message.split(':')[1].strip()
 
 class base_parser(object):
 
@@ -181,7 +184,7 @@ class parseX86(base_parser):
         return Types.Label(s)
 
     def op_symb(self, sym):
-        if sym not in Types.Op: raise Exception('Invalid operator: ' + sym)
+        if sym not in Types.Op: raise InvalidOpException('Invalid operator: ' + sym.upper())
         if Opcode_utils.call_patt.match(sym): self.call_des = True  # @UndefinedVariable
         return sym
 
@@ -194,6 +197,9 @@ class parseARM(base_parser):
     def reg_symb(self, sym):
         if sym in Types.Reg:
             return Types.StarDes(Types.RegClass(sym)) if self.call_des else Types.RegClass(sym)
+        if sym[-1] == '!' and sym[:-1] in Types.Reg:
+            # vldmia r2!, {s14}
+            return Types.IncReg(sym)
         return None
 
     def const_symb(self, sym):
@@ -293,7 +299,7 @@ class parseARM(base_parser):
                            (parts[0][-2:] in Types.CondSuff and parts[0][:-2] in Types.ControlOp)
             self.call_des = Opcode_utils.call_patt.match(parts[0]) is not None  # @UndefinedVariable
             return sym
-        raise Exception('Invalid operator: ' + sym)
+        raise InvalidOpException('Invalid operator: ' + sym.upper())
 
     def prefix_identify(self, instr):
         return False

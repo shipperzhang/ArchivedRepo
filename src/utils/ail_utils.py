@@ -270,6 +270,14 @@ class Opcode_utils(object):
                 return exp1.upper() == 'LR'
             return False
 
+        @staticmethod
+        def is_cmp_op(op):
+            return op.split('.')[0] in Types.CompareOp
+
+        @staticmethod
+        def is_assign(op):
+            return op.split('.')[0] in Types.AssignOp
+
     else:
 
         call_patt = re.compile('^callq?$', re.I)
@@ -298,6 +306,14 @@ class Opcode_utils(object):
         def is_ret(op, exp1):
             return op.upper() in ['RET', 'RETN']
 
+        @staticmethod
+        def is_cmp_op(op):
+            return op in Types.CompareOp
+
+        @staticmethod
+        def is_assign(op):
+            return op in Types.AssignOp
+
     @staticmethod
     def is_control_des(i):
         return ':' in get_label(i)
@@ -305,10 +321,6 @@ class Opcode_utils(object):
     @staticmethod
     def is_func(e):
         return isinstance(e, Types.CallDes)
-
-    @staticmethod
-    def is_assign(op):
-        return op in Types.AssignOp
 
     @staticmethod
     def is_mem_exp(e):
@@ -335,9 +347,6 @@ class Opcode_utils(object):
             or Opcode_utils.is_cond_jmp(op) \
             or Opcode_utils.is_ret(op, exp1)
 
-    @staticmethod
-    def is_cmp_op(op):
-        return op in Types.CompareOp
 
 
 class Exp_utils(object):

@@ -64,9 +64,11 @@ def arm_process(filename):
     inlinedata = {}
     last_cmp = ('', '')
     last_adr_dest = 0
+    last_adr_reg = None
     pcrelre = re.compile('\[pc,\s*\#0x([0-9a-f]+)\]', re.I)
     pcreltblre = re.compile('\[pc,\s*(r[0-9]+)(,\s*lsl \#1)?\]|pc,\s*\[r[0-9],\s*(r[0-9]),\s*lsl\s*\#2\]', re.I)
-    pcreladd = re.compile('^(r[0-9]+|fp|lr|sb|sl),\s*pc,\s*\#(0x[0-9a-f]+)$', re.I)
+    pcreladdre = re.compile('^(r[0-9]+|fp|lr|sb|sl),\s*pc,\s*\#(0x[0-9a-f]+)$', re.I)
+    baseregre = re.compile('\[([^,]+),?.*\]', re.I)
     calls = set(('bl', 'blx'))
     offtableop = set(('tbb', 'tbh'))
     f = open('instrs.info', 'w')
@@ -89,10 +91,11 @@ def arm_process(filename):
                 # Insert label for PC relative add
                 const = e[3].split(', ')[1]
                 last_adr_dest = (e[0] & 0xFFFFFFFC) + int(const[1:], 16) + 4
+                last_adr_reg = e[3].split(',')[0]
                 instr = instr.replace(const, '0x%x' % last_adr_dest)
             elif e[2].startswith('addw'):
                 # PC relative double loads load address with addw
-                m = pcreladd.search(e[3])
+                m = pcreladdre.search(e[3])
                 if m:
                     dest = (e[0] & 0xFFFFFFFC) + int(m.group(2), 16) + 4
                     inlinedata[dest] = 8
@@ -111,6 +114,11 @@ def arm_process(filename):
                         tb_process(offsize, curr_off + textsec.addr, textraw[curr_off:curr_off + tablesize], f)
                         curr_off += tablesize
                         break
+                else:
+                    m = baseregre.search(e[3])
+                    if m and last_adr_reg == m.group(1):
+                        inlinedata[last_adr_dest] = load_size(e[2], e[3])
+                        last_adr_reg = None
             if curr_off + textsec.addr in inlinedata: break
         else:
             if curr_off < textsec.size: inlinedata[curr_off + textsec.addr] = 2

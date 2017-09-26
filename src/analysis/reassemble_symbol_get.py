@@ -340,7 +340,6 @@ class instrhandler(object):
     def __init__(self, instr_list, des):
         self.des = des
         self.locs = []
-        # self.new_instrlist = []
         self.instr_list = instr_list
 
     def get_instr_list(self):
@@ -374,6 +373,7 @@ class instrhandler(object):
                 self.locs[i].loc_label = label
                 j += 1
             elif dh < lh.loc_addr:
+                i -= 1
                 j += 1
             i += 1
 
@@ -610,7 +610,7 @@ class reassemble(ailVisitor):
         if isinstance(instr, Types.TripleInstr):
             if instr[0].startswith('vldr') and isinstance(instr[2], Types.Const):
                 self.ARMvldrtargets.append(instr[2])
-            return Types.TripleInstr((instr[0], instr[1], self.v_exp2(instr[2], instr, None, False),
+            return Types.TripleInstr((instr[0], instr[1], self.v_exp2(instr[2], instr, None, True),
                                       instr[3], instr[4]))
         return instr
 

@@ -2,6 +2,7 @@ from Parser import parse
 from func_slicer import func_slicer
 from utils.pp_print import pp_print_instr
 from utils.ail_utils import dec_hex, unify_funclist_by_name, unify_funclist_by_addr, int_of_string_opt
+from disasm.Parser import InvalidOpException
 
 
 class AilParser(object):
@@ -40,7 +41,7 @@ class AilParser(object):
         return unify_funclist_by_addr(fl)
 
     def filter_func_by_name(self, funcs):
-        return filter(lambda f: '.text' not in f.func_name, funcs)
+        return filter(lambda f: '.text' not in f.func_name and f.func_name[:3] != '..@', funcs)
 
     def filter_func_by_secs(self, funcs):
         with open('text_sec.info') as f:
@@ -69,6 +70,7 @@ class AilParser(object):
         self.secs = secs
 
     def processInstrs(self, ilist):
+        invalid = set()
         p = parse()
         p.set_funclist(self.funcs)
         p.set_seclist(self.secs)
@@ -77,7 +79,10 @@ class AilParser(object):
             if len(items) > 1:
                 loc = items[0]
                 instr = ':'.join(items[1:])
-                self.instrs.insert(0, p.parse_instr(instr, loc))
+                try: self.instrs.insert(0, p.parse_instr(instr, loc))
+                except InvalidOpException as e: invalid.add(e.getop())
+        if len(invalid) != 0:
+            raise Exception('Some instructions are not known: ' + str(invalid))
         self.funcs = p.get_funclist()
 
     def p_instrs(self):

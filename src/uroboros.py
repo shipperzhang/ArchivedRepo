@@ -46,7 +46,7 @@ def process(filepath, gfree=False):
     return True
 
 
-def check(filepath, assumptions):
+def check(filepath, assumptions, gccopt=''):
     if not assumptions: assumptions = []
 
     if not os.path.isfile(filepath):
@@ -59,7 +59,7 @@ def check(filepath, assumptions):
         shutil.copy(filepath, '.')
 
     os.system('file ' + filepath + ' > elf.info')
-    config.setup(filepath)
+    config.setup(filepath, gccopt)
 
     if config.is_lib:
         print "Uroboros doesn't support shared library"
@@ -105,6 +105,7 @@ note that two basic assumptions and addtional assumption one
 (n-byte alignment) are set by default,
 while assumption two and three need to be configured. For example, setting
 assumption two and three: -a 2 -a 3''')
+    p.add_argument("-gcc", "--gccopt", action="store", default="", help="A string of additional arguments for GCC")
     p.add_argument("--version", action="version", version="Uroboros 0.2b")
 
     args = p.parse_args()
@@ -115,7 +116,7 @@ assumption two and three: -a 2 -a 3''')
     if not os.path.isdir(workdir): os.mkdir(workdir)
     os.chdir(workdir)
 
-    if check(filepath, args.assumption) and set_assumption(args.assumption):
+    if check(filepath, args.assumption, args.gccopt) and set_assumption(args.assumption):
         if process(os.path.basename(filepath), args.gfree):
             print "Processing succeeded"
             if outpath is not None: shutil.copy('a.out', outpath)

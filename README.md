@@ -1,11 +1,11 @@
-# Uroboros [\[1\]](#uroboros)
-### Infrastructure for Reassembleable Disassembling and Transformation
+# Uroboros
+#### Infrastructure for Reassembleable Disassembling and Transformation
 
 ### Fork motivation
 
 This fork is made with the idea of extending this technique to ARM Thumb executables. In such process, the OCaml core has been completely rewritten in Python.
 
-To this date the rewritten tool has been tested to work on the following executables: bzip, gzip, BLAKE2.
+To this date the rewritten tool has been tested to work on the following executables: bzip, gzip, BLAKE2, Himeno benchmark, dcraw (with statically linked libjpeg and liblcms, only x86).
 
 ## Installation
 
@@ -29,9 +29,9 @@ and the following python packages (available through `pip` repositories):
 
 ## Build
 
-Uroboros is now completely written in Python on the `allpy` branch. You don't need to build anything. However, you may want to modify some value in `config.py` to match your system configuration. Also, the parser, though recognising a large number of operators, is not complete; in case invalid operator exceptions are raised, these can be added to the right set in `Types.py`.
+Uroboros is now completely written in Python on the `allpy` branch. You don't need to build anything. However, you may want to modify some values in `config.py` to match your system configuration. Also, the parser, though recognising a large number of operators, is not complete; in case invalid operator exceptions are raised, these can be added to the right set in `Types.py`.
 
-## Usage: Disassembling
+## Usage
 
 Uroboros supports 64-bit and 32-bit ELF x86 executables and, experimentally, also Thumb2 ARM binaries.
 To use Uroboros for disassembling:

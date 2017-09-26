@@ -26,13 +26,6 @@ class Container(object):
     def __str__(self):
         return str(self.content)
 
-class File(object):
-    def __init__(self, name, stripped, fformat, is32):
-        self.name = name
-        self.stripped = stripped
-        self.format = fformat
-        self.is32bit = is32
-
 class Func(object):
     def __init__(self, name, begin, end, is_lib):
         self.func_name = name
@@ -164,7 +157,7 @@ if config.arch == config.ARCH_X86:
     Reg = RecSet([CommonReg, SpecialReg, StackReg, PCReg, OtherReg])
 
     StackOp = RecSet(['PUSH', 'POP', 'PUSHL', 'POPL', 'PUSHF', 'POPF', 'PUSHQ', 'POPQ'], True)
-    SystemOp = RecSet(['INT', 'IN', 'OUT'], True)
+    SystemOp = RecSet(['INT', 'IN', 'OUT', 'CPUID', 'SFENCE', 'PREFETCHNTA', 'PREFETCH'], True)
     ArithmOp = RecSet(['ADC', 'ADD', 'XADD', 'SUB', 'ADDL', 'ADDQ', 'SUBL', 'SUBQ',
                        'MUL', 'IMUL', 'MULB', 'MULSD', 'DIV', 'IDIV', 'DIVL', 'ADCL',
                        'IDIVL', 'DIVSD', 'IVSS', 'MULSS', 'DIVQ', 'IDIVQ', 'PMULUDQ',
@@ -184,7 +177,10 @@ if config.arch == config.ARCH_X86:
                        'DIVPD', 'DIVPS', 'CQTO', 'INCB', 'PSUBUSW', 'DIVSS', 'PUNPCKHBW',
                        'PUNPCKHWD', 'PUNPCKHDQ', 'PUNPCKHQDQ', 'PUNPCKLBW', 'PUNPCKLWD',
                        'PUNPCKLDQ', 'PUNPCKLQDQ', 'VDIVSD', 'VADDSD', 'VMULSD', 'VSHUFPS',
-                       'VPADDD', 'VPSHUFB', 'VPSHUFD', 'VPSHUFHW', 'VPADDQ', 'VPALIGNR'
+                       'VPADDD', 'VPSHUFB', 'VPSHUFD', 'VPSHUFHW', 'VPADDQ', 'VPALIGNR',
+                       'DIVW', 'PMADDWD', 'PACKSSDW', 'PADDW', 'PACKUSWB', 'PMULHW',
+                       'PFMUL', 'UNPCKHPS', 'PFADD', 'PMULLW', 'PACKSSWB', 'PMULHUW',
+                       'PFSUB', 'PFSUBR'
     ], True)
     LogicOp = RecSet(['AND', 'ANDB', 'OR', 'XOR', 'PXOR', 'NOT', 'ANDL', 'NOTL', 'ORW',
                       'XORB', 'XORL', 'SAHF', 'ANDW', 'NOTB', 'NOTW', 'XORPD', 'XORPS',
@@ -196,7 +192,7 @@ if config.arch == config.ARCH_X86:
                     'SARW', 'SHRW', 'SHLQ', 'SHRQ', 'PSHUFD', 'SHUFPS', 'SHUFPD',
                     'PSLLW', 'PSLLD', 'PSLLQ', 'PSRAW', 'PSRAD', 'PSLLDQ', 'PSRLDQ',
                     'PSRLD', 'PSHUFLW', 'SHRD', 'VPSLLD', 'VPSRLD', 'VPSLLDQ', 'VPSRLDQ',
-                    'VPSRLQ', 'PSRLQ'
+                    'VPSRLQ', 'PSRLQ', 'PSRLW', 'SUBPS'
     ], True)
     AssignOp = RecSet(['MOV', 'XCHG', 'LEA', 'MOVSX', 'MOVSD', 'MOVL', 'FLDL', 'MOVZBL', 'MOVZBW',
                        'MOVSW', 'MOVAPD', 'MOVSLQ', 'MOVQ', 'MOVABS', 'MOVSBQ',
@@ -216,11 +212,13 @@ if config.arch == config.ARCH_X86:
                        'PUNPCKLQDQ', 'PUNPCKLWD', 'MOVHPD', 'MOVLPD', 'LAHF', 'SAHF',
                        'RDTSC', 'VCVTSI2SD', 'VMOVDQU', 'VMOVDQA', 'VPBLENDW', 'VPUNPCKHQDQ',
                        'VPUNPCKHDQ', 'VPUNPCKLDQ', 'VPUNPCKLQDQ', 'VMOVUPS', 'VMOVAPS',
-                       'MOVHPS'
+                       'MOVHPS', 'EMMS', 'PI2FD', 'FEMMS', 'CVTPS2PI', 'CVTPS2DQ', 'CVTPI2PS',
+                       'MOVNTDQ', 'MOVZBQ', 'MOVZWQ'
     ], True)
     CompareOp = RecSet(['CMP', 'CMPQ', 'TEST', 'CMPL', 'CMPB', 'CMPW', 'TESTB', 'TESTL', 'CMPSB',
                         'BT', 'TESTW', 'CMPNLESS', 'CMPLTSS', 'CMPNLTSS', 'TESTQ', 'CMPNLTSD',
-                        'PCMPGTD', 'PCMPGTB', 'PCMPEQD', 'CMPLTSD', 'PCMPEQW', 'CMPEQSS'
+                        'PCMPGTD', 'PCMPGTB', 'PCMPEQD', 'CMPLTSD', 'PCMPEQW', 'CMPEQSS', 'PCMPEQB',
+                        'CMPLESD'
     ], True)
     SetOp = RecSet(['SETA', 'SETAE', 'SETB', 'SETBE', 'SETC',
                     'SETNBE', 'SETNC', 'SETNG', 'SETNE',
@@ -273,7 +271,7 @@ elif config.arch == config.ARCH_ARMT:
     StackOp = RecSet(['POP', 'PUSH', 'VPOP', 'VPUSH'], True)
     SystemOp = RecSet(['BKPT', 'CLREX', 'CPS', 'CPSIE', 'CPSID', 'DBG', 'DMB',
                        'DSB', 'ISB', 'PLD', 'PLI', 'RFE', 'SEV', 'SMC', 'SRS',
-                       'SVC', 'WFE', 'WFI', 'YIELD'], True)
+                       'SVC', 'WFE', 'WFI', 'YIELD', 'UDF'], True)
     ArithmOp = RecSet(['ADC', 'ADCS', 'ADD', 'ADDS', 'ADDW', 'ADR', 'AND', 'ANDS',
                        'CLZ', 'MLA', 'MLS', 'MUL', 'NEG', 'QADD', 'QADD16', 'QADD8',
                        'QASX', 'QDADD', 'QDSUB', 'QSAX', 'QSUB', 'QSUB16', 'QSUB8',
@@ -309,7 +307,7 @@ elif config.arch == config.ARCH_ARMT:
                        'STRD', 'STREX', 'STREXB', 'STREXD', 'STREXH', 'STRH', 'STRHT',
                        'STRT', 'VCVT', 'VCVTT', 'VCVTR', 'VCVTB', 'VMOV', 'VMSR',
                        'VSTR', 'VSTM', 'VSTMDB', 'VPUSH', 'VLDR', 'VLDM', 'VLDMDB'
-                       'VPOP'
+                       'VPOP', 'VSTMIA', 'VLDMIA', 'VMRS', 'VLDMDB'
     ], True)
     CompareOp = RecSet(['CMN', 'CMP', 'IT', 'TEQ', 'TST', 'VCMP', 'VCMPE', 'ITE', 'ITT',
                         'ITTT', 'ITTE', 'ITEE', 'ITET', 'ITTTT', 'ITTTE', 'ITTET', 'ITTEE',
@@ -348,6 +346,14 @@ class RegClass(str, Exp):
     def __init__(self, reg):
         if reg not in Reg: raise Exception('Not a register: ' + reg)
         super(RegClass, self).__init__(reg)
+class IncReg(RegClass):
+    def __init__(self, reg):
+        super(IncReg, self).__init__(reg[:-1])
+    def __new__(cls, reg):
+        if reg[-1] != '!': raise Exception('Invalid IncReg')
+        return super(IncReg, cls).__new__(cls, reg[:-1])
+    def __str__(self):
+        return super(IncReg, self).__str__() + '!'
 class AssistOpClass(str, Exp):
     def __init__(self, op):
         if op not in AssistOp: raise Exception('No assist op: ' + op)
