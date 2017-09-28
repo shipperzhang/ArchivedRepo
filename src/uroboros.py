@@ -2,6 +2,7 @@ import os
 import glob
 import shutil
 import config
+from termcolor import colored
 from argparse import ArgumentParser, RawTextHelpFormatter
 
 
@@ -66,7 +67,7 @@ def check(filepath, assumptions, gccopt=''):
         return False
 
     # if assumption three is utilized, then input binary must be unstripped.
-    if '3' in assumptions and config.is_unstrip:
+    if '3' in assumptions and not config.is_unstrip:
         print 'Uroboros does not support stripped binaries when using assumption three'
         return False
 
@@ -87,7 +88,7 @@ def set_assumption (assumptions):
         chk = (i in ['2', '3'] for i in assumptions)
         if any(chk) == False:
             print "assumption undefined!"
-            print "accecpt assumptions: 2 for assumption two and 3 for assumption three"
+            print "accepted assumptions: 2 for assumption two and 3 for assumption three"
             return False
         with open('assumption_set.info', 'w') as f:
             f.write(' '.join(assumptions) + '\n')
@@ -118,9 +119,9 @@ assumption two and three: -a 2 -a 3''')
 
     if check(filepath, args.assumption, args.gccopt) and set_assumption(args.assumption):
         if process(os.path.basename(filepath), args.gfree):
-            print "Processing succeeded"
+            print colored("Processing succeeded", "blue")
             if outpath is not None: shutil.copy('a.out', outpath)
-        else: print "Exception, processing failed"
+        else: print colored("Processing failed", "red")
 
 
 if __name__ == "__main__":

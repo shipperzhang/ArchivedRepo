@@ -78,6 +78,8 @@ class dis_validator(object):
                 print colored('     Warning:', 'yellow'), 'instructions at this locations were probably misinterpreted:'
                 print '     ' + str(map(hex, self.locs))
             else:
+                print map(hex, self.locs)
+                exit()
                 self.validate(instrlist)
 
     def trim_results(self):
@@ -122,7 +124,7 @@ class dis_validator(object):
                 else:
                     p = get_op(i); e = get_cf_des(i)
                     if Opcode_utils.call_patt.match(p):  # @UndefinedVariable
-                        print "detected call instruction in disassembly validator"
+                        print "detected call instruction in disassembly validator: " + str(i)
                         self.update_cfd(index + 1, instrlist)
                         if self.is_icf(p, e): self.update_cft_stack(i)
                     elif self.is_icf(p, e):

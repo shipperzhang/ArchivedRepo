@@ -76,7 +76,7 @@ def arm_process(filename):
     while curr_off < textsec.size:
         for e in dis.disasm_lite(textraw[curr_off:], textsec.addr + curr_off):
             curr_off += e[1]
-            if e[2] == 'cmp': last_cmp = tuple(e[3].split(','))
+            if e[2].split('.')[0] == 'cmp': last_cmp = tuple(e[3].split(','))
             instr = ('%x' % e[0]).rjust(8) + ':\t' + e[2].ljust(7) + ' ' + e[3].replace(', ', ',').replace(' ', '|')
             m = pcrelre.search(instr)
             if m:
@@ -102,9 +102,9 @@ def arm_process(filename):
                     instr = ('%x' % e[0]).rjust(8) + ':\tadr    ' + m.group(1) + (',0x%X' % dest)
             f.write(instr + '\n')
             if e[2] in offtableop or e[2].startswith('ldr'):
-                # Process inline jumptable
                 m = pcreltblre.search(e[3])
                 if m:
+                    # Process inline jumptable
                     offsize, tablesize = eval_tb_size(e[2], last_cmp, m.group(1) if m.group(1) is not None else m.group(3))
                     if offsize > 2:
                         # ldr jumptable
@@ -115,6 +115,7 @@ def arm_process(filename):
                         curr_off += tablesize
                         break
                 else:
+                    # adr + ldr
                     m = baseregre.search(e[3])
                     if m and last_adr_reg == m.group(1):
                         inlinedata[last_adr_dest] = load_size(e[2], e[3])

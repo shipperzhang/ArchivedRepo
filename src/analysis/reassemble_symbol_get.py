@@ -664,16 +664,51 @@ class reassemble(ailVisitor):
                     instrs[tindex] = type(instrs[tindex])(mt)
         self.ARMmovs = []
 
+    def pcreloffARM(self, instrs):
+        # Trying to handle this mess
+        #  ldr r7, label           -> ldr r7, label
+        #  ...                     -> ...
+        #  add r7,pc               -> add r7, #0
+        #  ...                     -> ...
+        #  ldr r1, [r7]            -> ldr r1, [r7]
+        #  ...                     -> ...
+        #  label: .word 0xoffset   -> label: .word (0xoffset + pc)
+        i = 0
+        offsets = {}
+        inlen = len(instrs)
+        while i < inlen:
+            hi = instrs[i]
+            if isinstance(hi, Types.TripleInstr) \
+              and hi[0].lower().startswith('ldr') \
+              and isinstance(hi[2], Types.Point):
+                j = i + 1
+                while j - i < config.ARM_maxAddPcDist and j < inlen:
+                    hj = instrs[j]
+                    if isinstance(hj, Types.TripleInstr) \
+                      and hj[0].lower().startswith('add') \
+                      and hj[1] == hi[1] \
+                      and isinstance(hj[2], Types.RegClass) \
+                      and hj[2].lower() == 'pc':
+                        offsets[hi[2]] = get_loc(hj).loc_addr + 4
+                        instrs[j] = Types.TripleInstr((hj[0], hj[1], Types.Normal(0), hj[3], hj[4]))
+                        break
+                    j += 1
+            elif isinstance(hi, Types.DoubleInstr) and isinstance(hi[0], Types.InlineData):
+                off = offsets.pop(get_loc(hi).loc_addr, None)
+                if off:
+                    instrs[i] = Types.DoubleInstr((hi[0], Types.Point((hi[1] + off) & 0xFFFFFFFF), hi[2], hi[3]))
+            i += 1
+
     def visit_heuristic_analysis(self, instrs):
         func = lambda i: self.check_text(get_loc(i).loc_addr)
         self.instr_list = instrs
         if ELF_utils.elf_arm():
-            tl = map(self.vinst2ARM, enumerate(instrs))
-            self.doublemovARM(tl)
-        else: tl = map(lambda i: self.vinst2(func, i), instrs)
-        tl1 = map(lambda l: int(l.split('x')[1], 16), self.deslist)
-        self.symbol_list = tl1 + self.symbol_list
-        return tl
+            self.pcreloffARM(instrs)
+            instrs = map(self.vinst2ARM, enumerate(instrs))
+            self.doublemovARM(instrs)
+        else: instrs = map(lambda i: self.vinst2(func, i), instrs)
+        self.symbol_list = map(lambda l: int(l.split('x')[1], 16), self.deslist) + self.symbol_list
+        return instrs
 
     def visit_type_infer_analysis(self, bbl, instrs):
         self.instr_list = instrs
@@ -682,7 +717,7 @@ class reassemble(ailVisitor):
                else map(lambda i: self.vinst2(f, i), instrs)
 
     def share_lib_processing(self, instrs):
-        if ELF_utils.elf_lib() and ELF_utils.elf_32():
+        if ELF_utils.elf_lib() and ELF_utils.elf_32() and not ELF_utils.elf_arm():
             helper = lib32_helper(instrs)
             for addr in helper.traverse():
                 s = self.check_sec(addr)
@@ -724,7 +759,8 @@ class reassemble(ailVisitor):
         return p.get_instr_list()
 
     def adjust_globallabel(self, g_bss, instr_list):
-        g_bss = filter(lambda e: '@' in e[1], g_bss)
+        # g_bss = filter(lambda e: '@' in e[1], g_bss)
+        g_bss = filter(lambda e: int(e[0], 16) != 0, g_bss)
         gbss_hs = {'S_0x' + e[0].lstrip('0'): e[1].split('@')[0] if '@' in e[1] else e[1] for e in g_bss}
         labels = gbss_hs.keys()
         def mapper(l):

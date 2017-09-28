@@ -14,6 +14,7 @@
 ##  ....
 
 import os
+import re
 from utils.ail_utils import ELF_utils
 
 sec_symb = {".got.plt": "$_GLOBAL_OFFSET_TABLE_"}
@@ -22,32 +23,26 @@ step = 1
 def info_dump(f):
     os.system("readelf -S "+ f +" | awk '$2==\".got.plt\" {print $2,$4,$5,$6}' > pic_secs.info")
 
-
 def text_collect(f):
     fn = f + '.temp'
     with open(fn) as fd:
         return fd.read().splitlines()
 
-
 def info_collect():
     pic_map = {}
     with open("pic_secs.info") as fd:
         ls = fd.read().splitlines()
-
     def helpf(l):
         items = l.split()
         # name ;  begin addr; ... ; size
         pic_map[items[0]] = (int(items[1], 16), int(items[3], 16))
     map(lambda l: helpf(l), ls)
-
     return pic_map
-
 
 #   here is the tricky thing, in unstripped binary,
 #   we can safely identify the symbol "__i686.get_pc_thunk.bx"
 #   however, we have to pattern match __i686.get_pc_thunk.bx function
 #   manually, then get the address
-
 def text_process_unstrip(f):
     ls = text_collect(f)
     info_dump(f)
@@ -130,7 +125,7 @@ def text_process_strip(f):
     return True
 
 
-def main(filepath):
+def picprocess32(filepath):
     global step
     step = 1
     if ELF_utils.elf_exe(): # executable
@@ -144,3 +139,33 @@ def main(filepath):
         addr = thunk_identify(filepath).strip()
         with open('pic_thunk.info', 'w') as f:
             f.write(addr+'\n')
+
+
+# this code aims at solving typical issue in 64 bit code
+# typical instruction disassembled by objdump like this
+#     4005c9:    48 8b 05 58 08 20 00     mov    0x200858(%rip),%rax        # 600e28 <__libc_start_main@plt+0x200a28>
+# should be rewritten in this format
+#     4005c9:   ...................     mov    S_0x600e28(%rip), %rax
+# also leave a symbol in file rip_symbols.txt
+#     600e28
+def picprocess64(filepath):
+    with open(filepath + '.temp') as f:
+        lines = f.readlines()
+
+    pat = re.compile(r'0x[0-9a-f]+\(%rip\)')
+
+    for i in xrange(len(lines)):
+        l = lines[i]
+        if "#" in l:
+            m = pat.search(l)
+            if m:
+                items = l.split('#')
+                des = items[1].split()[0]
+                sub = m.group(0)
+                sub1 = "0x" + des + "(%rip)"
+                l = items[0]
+                l = l.replace(sub, sub1)
+                lines[i] = l + "\n"
+
+    with open(filepath + '.temp', 'w') as f:
+        f.writelines(lines)

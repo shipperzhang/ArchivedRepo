@@ -15,8 +15,9 @@ objdump = 'objdump'
 toolprefix = ''
 strip = 'strip'
 compiler = 'gcc'
-ARM_maxDoublemovDist = 16
-gccoptions = ""
+ARM_maxDoublemovDist = 40
+ARM_maxAddPcDist = 8
+gccoptions = ''
 
 
 def setup(filepath, gccopt=''):
@@ -31,7 +32,7 @@ def setup(filepath, gccopt=''):
     is_dynamic = 'dynamically linked' in elf_info
     is_unstrip = 'not stripped' in elf_info
     gccoptions = gccopt
-    if ', ARM' in elf_info:
+    if ', ARM,' in elf_info:
         global arch
         global strip
         global objdump

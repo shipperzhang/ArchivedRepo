@@ -5,7 +5,7 @@
 
 This fork is made with the idea of extending this technique to ARM Thumb executables. In such process, the OCaml core has been completely rewritten in Python.
 
-To this date the rewritten tool has been tested to work on the following executables: bzip, gzip, BLAKE2, Himeno benchmark, dcraw (with statically linked libjpeg and liblcms, only x86).
+To this date the rewritten tool has been tested to work on the following executables: bzip, gzip, BLAKE2, Himeno benchmark, dcraw (with statically linked libjpeg and liblcms, ARM requires assumption 3).
 
 ## Installation
 
@@ -44,7 +44,7 @@ The disassembled output can be found in the `workdir` directory, named `final.s`
 
 The startup Python script provides the following options:
 
-1. `-o (output)`
+1. `-o output`
 
     This option allows to specify an output path for the reassembled binary.
 
@@ -54,7 +54,11 @@ The startup Python script provides the following options:
 
     Instrument the output binary against ROP attacks using an adaptation of the technique described in [\[2\]](#gfree).
 
-3. `-a (assumption)`
+3. `-gcc "parameters"`
+ 
+    String of optional parameters to pass to the compiler. Useful to handle dynamic libraries (e.g. `-lm`). 
+
+4. `-a assumption_number`
 
     This option configures the three symbolization assumptions proposed in
     the original Uroboros paper [\[1\]](#uroboros). Note that in the current version, the
@@ -72,7 +76,6 @@ The startup Python script provides the following options:
     the input, which is then stripped before disassembling.
 
     These assumptions can also be used at the same time (`python uroboros.py path_to_bin -a 3 -a 2`)
-
 
 
 <a name="uroboros">[1]</a> [Reassembleable Disassembling](https://www.usenix.org/conference/usenixsecurity15/technical-sessions/presentation/wang-shuai), by Shuai Wang, Pei Wang, and Dinghao Wu. In Proceedings of the 24th USENIX Security Symposium, Washington, D.C., August 12-14. 2015.

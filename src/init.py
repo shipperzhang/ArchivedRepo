@@ -4,27 +4,25 @@ import ail
 import config
 from termcolor import colored
 from utils.ail_utils import ELF_utils
-from disasm import bss_creator, pic_process, pic_process64, useless_func_del,\
-                   extern_symbol_process64, arm_process
+from disasm import bss_creator, pic_process, extern_symbol_process, arm_process
 
 
 class Init(object):
 
     def __init__(self, filepath):
         self.file = filepath
-        self.is_32 = ELF_utils.elf_32()
-        self.is_arm = ELF_utils.elf_arm()
 
     def disassemble(self):
         print colored('1: DISASSEMBLE', 'green')
         ret = os.system(config.objdump + ' -Dr -j .text ' + self.file + ' > ' + self.file + '.temp')
         self.checkret(ret, self.file + '.temp')
 
-        if self.is_32:
-            if not self.is_arm: pic_process.main(self.file)
-        else:
-            extern_symbol_process64.main(self.file)
-            pic_process64.main(self.file)
+        if not ELF_utils.elf_arm():
+            if ELF_utils.elf_32():
+                pic_process.picprocess32(self.file)
+            else:
+                extern_symbol_process.globalvar(self.file)
+                pic_process.picprocess64(self.file)
 
         ret = os.system(config.objdump + " -s -j .rodata " + self.file + " | grep \"^ \" | cut -d \" \" -f3,4,5,6 > rodata.info")
         self.checkret(ret, 'rodata.info')
@@ -48,27 +46,25 @@ class Init(object):
         os.system('readelf -sW ' + self.file + ' | grep OBJECT | awk \'/GLOBAL/ {print $2,$8}\' > globalbss.info')
 
     def textProcess(self):
-        useless_func_del.main(self.file)
-        if self.is_arm: arm_process.arm_process(self.file)
-        else: os.system("cat " + self.file + ".disassemble | grep \"^ \" | cut -f1,3 > instrs.info")
-        # filter_nop.main()
+        # useless_func_del.main(self.file)
+        if ELF_utils.elf_arm(): arm_process.arm_process(self.file)
+        else:
+            extern_symbol_process.pltgot(self.file)
+            os.system("cat " + self.file + ".temp | grep \"^ \" | cut -f1,3 > instrs.info")
         os.system("cut -f 1 instrs.info > text_mem.info")
 
     def userFuncProcess(self):
-        os.system("cat " + self.file + ".disassemble | grep \"<\" | grep \">:\" > userfuncs.info")
+        os.system("cat " + self.file + ".temp | grep \"<\" | grep \">:\" > userfuncs.info")
         os.system("cat fl | grep -v \"<S_0x\" >> userfuncs.info")
 
     def sectionProcess(self):
-        badsec = '.got.plt' if self.is_32 else'.data.rel.ro'
+        badsec = '.got.plt' if ELF_utils.elf_32() else'.data.rel.ro'
         os.system("readelf -SW " + self.file + " | awk \'/data|bss|got/ {print $2,$4,$5,$6} \' | awk \ '$1 != \"" + badsec + "\" {print $1,$2,$3,$4}\' > sections.info")
         os.system("readelf -SW " + self.file + " | awk \'/text/ {print $2,$4,$5,$6} \' > text_sec.info")
         os.system("readelf -SW " + self.file + " | awk \'/init/ {print $2,$4,$5,$6} \' | awk \'$1 != \".init_array\" {print $1,$2,$3,$4}\' > init_sec.info")
         if os.path.isfile('init_array.info'): os.remove('init_array.info')
         os.system(config.objdump + " -s -j .init_array " + self.file + " >> init_array.info 2>&1")
         os.system("readelf -SW " + self.file + " | awk '$2==\".plt\" {print $2,$4,$5,$6}' > plt_sec.info")
-
-    def externFuncProcess(self):
-        os.system("readelf -r " + self.file + " | awk \'/JUMP_SLOT/ {print $1,$5} \' > externfuncs.info")
 
     def check_disassemble(self):
         if os.system("grep \"(bad)\" " + self.file + ".temp > /dev/null") == 0:
