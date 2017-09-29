@@ -40,7 +40,7 @@ class Disam(object):
             fl = ailpar.get_funcs()
 
             il = re.visit_heuristic_analysis(ailpar.get_instrs())
-            il = re.share_lib_processing(il)
+            il = re.lib32_processing(il, fl)
             il = re.add_func_label(Disam.get_userfuncs(fl), il)
 
             print colored('2: DISASSEMBLY VALIDATION', 'green')

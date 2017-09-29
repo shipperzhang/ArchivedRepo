@@ -4,7 +4,7 @@ import ail
 import config
 from termcolor import colored
 from utils.ail_utils import ELF_utils
-from disasm import bss_creator, pic_process, extern_symbol_process, arm_process
+from disasm import pic_process, extern_symbol_process, arm_process
 
 
 class Init(object):
@@ -37,13 +37,17 @@ class Init(object):
         self.textProcess()
         self.sectionProcess()
         self.bssHandler()
-        self.externDataProcess()
         self.export_tbl_dump()
         self.userFuncProcess()
 
     def bssHandler(self):
-        bss_creator.main()
+        with open("sections.info") as f:
+            bssinfo = next((l for l in f if '.bss' in l), None)
+            size = int(bssinfo.split()[3], 16) if bssinfo is not None else 0
+        with open("bss.info", 'w') as f:
+            f.write(".byte 0x00\n" * size)
         os.system('readelf -sW ' + self.file + ' | grep OBJECT | awk \'/GLOBAL/ {print $2,$8}\' > globalbss.info')
+        os.system('readelf -rW ' + self.file + ' | grep _GLOB_DAT | grep -v __gmon_start__ | awk \'{print $1,$5}\' > gotglobals.info')
 
     def textProcess(self):
         # useless_func_del.main(self.file)
@@ -74,16 +78,12 @@ class Init(object):
         os.system("readelf -s " + self.file + " | grep GLOBAL > export_tbl.info")
 
     def pltProcess(self):
-        os.system(config.toolprefix + "objdump -j .plt -Dr " + self.file + " | grep \">:\" > plts.info")
-
-    def externDataProcess(self):
-        os.system("readelf -r " + self.file + " | awk \'/GLOB_DAT/ {print $5} \' > externdatas.info")
+        os.system(config.objdump + " -j .plt -Dr " + self.file + " | grep \">:\" > plts.info")
 
     def ailProcess(self, gfree=False):
         processor = ail.Ail(self.file)
         processor.sections()
         processor.userfuncs()
-        processor.externdatas()
         processor.global_bss()
         processor.instrProcess_2(gfree)
 

@@ -13,7 +13,6 @@ class Ail(object):
         self.funcs = []
         self.secs = []
         self.instrs = []
-        self.datas = []
         self.g_bss = []
 
     def sections(self):
@@ -40,10 +39,6 @@ class Ail(object):
 
     def get_userfuncs(self):
         return filter(lambda f: not f.is_lib, self.funcs)
-
-    def externdatas(self):
-        with open('externdatas.info') as f:
-            self.datas += map(str.strip, f)
 
     def global_bss(self):
         def bss_mapper(line):

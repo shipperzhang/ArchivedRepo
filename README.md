@@ -5,7 +5,7 @@
 
 This fork is made with the idea of extending this technique to ARM Thumb executables. In such process, the OCaml core has been completely rewritten in Python.
 
-To this date the rewritten tool has been tested to work on the following executables: bzip, gzip, BLAKE2, Himeno benchmark, dcraw (with statically linked libjpeg and liblcms, ARM requires assumption 3).
+To this date the rewritten tool has been tested to work on the following executables: bzip, gzip, BLAKE2, Himeno benchmark, dcraw (with statically linked libjpeg and liblcms, ARM requires assumption 3), FLAC encoder.
 
 ## Installation
 
@@ -55,8 +55,8 @@ The startup Python script provides the following options:
     Instrument the output binary against ROP attacks using an adaptation of the technique described in [\[2\]](#gfree).
 
 3. `-gcc "parameters"`
- 
-    String of optional parameters to pass to the compiler. Useful to handle dynamic libraries (e.g. `-lm`). 
+
+    String of optional parameters to pass to the compiler. Useful to handle dynamic libraries (e.g. `-lm`).
 
 4. `-a assumption_number`
 

@@ -14,9 +14,7 @@ class func_slicer(object):
         self.baddr = -1
         self.eaddr = -1
         self.label = ''
-        self.funcs1 = []
         self.func_begins = []
-        self.addr_set = []
         self.text_b_addr = 0
         self.text_e_addr = 0
 
@@ -70,12 +68,10 @@ class func_slicer(object):
     def get_func_list(self):
         return func_slicer.func_set.values()
 
-    def funcaddr_from_file(self):
-        self.func_begins = map(lambda a: int(a, 16), read_file('faddr.txt'))
-
     def get_funcs(self):
-        self.funcaddr_from_file()
+        self.func_begins = map(lambda a: int(a, 16), read_file('faddr.txt'))
+        self.func_begins += [f.func_begin_addr for f in self.funcs if f.func_begin_addr != 0]
         self.build_func_info()
         fl = self.get_func_list()
-        print '     Sliced', len(fl), 'functions'
+        print '     Sliced', len(self.func_begins), 'functions'
         return fl

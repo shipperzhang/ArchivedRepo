@@ -11,25 +11,25 @@ class InvalidOpException(Exception):
 class base_parser(object):
 
     def __init__(self):
-        self.func_list = []
+        self.funcs = {}
         self.sec_list = []
         self.call_des = False
         self.jmp_des = False
 
     def set_funclist(self, l):
-        self.func_list = l
+        self.funcs = {f.func_name: f for f in l}
 
     def get_funclist(self):
-        return self.func_list
+        return self.funcs.values()
 
     def set_seclist(self, l):
         self.sec_list = l
 
-    def get_func(self, name, lib):
-        f = next((e for e in self.func_list if e.func_name == name), None)
+    def get_func(self, name, lib, baddr=0):
+        f = self.funcs.get(name, None)
         if f is None:
-            f = Types.Func(name, 0, 0, lib)
-            self.func_list.insert(0, f)
+            f = Types.Func(name, baddr, 0, lib)
+            self.funcs[name] = f
         return f
 
     def get_sec(self, addr):
@@ -144,7 +144,8 @@ class parseX86(base_parser):
         if len(items) < 2: return None
         s1 = items[1].strip()
         if '+' in s1 or '-' in s1:
-            return self.get_func('S_0x' + items[0], False)
+            addr = int(items[0], 16)
+            return self.get_func('S_0x%X' % addr, False, addr)
         elif '@' in s1:
             name = s1.split('@')[0]
             return self.get_func(name[1:], True)
@@ -260,7 +261,7 @@ class parseARM(base_parser):
         if (len(items) < 2 and items[0][0] == '#') or \
            ('+' in items[1] or '-' in items[1]):
             addr = int(items[0][1:], 16) & (-2)
-            return self.get_func('S_0x%X' % addr, False)
+            return self.get_func('S_0x%X' % addr, False, addr)
         if '@' in items[1]:
             name = items[1].split('@')[0]
             return self.get_func(name[1:], True)

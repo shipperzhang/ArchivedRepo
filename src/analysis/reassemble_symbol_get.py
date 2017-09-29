@@ -23,7 +23,7 @@ class ft(object):
 class datahandler:
 
     def __init__(self, label):
-        self.sec = []
+        self.sec = {}
         self.data = []
         self.rodata = []
         self.got = []
@@ -239,26 +239,25 @@ class datahandler:
     def section_collect(self):
         def secmapper(l):
             items = l.split()
-            return Types.Section(items[0], int(items[1], 16), int(items[3], 16))
+            return items[0], Types.Section(items[0], int(items[1], 16), int(items[3], 16))
         with open('sections.info') as f:
-            self.sec += map(secmapper, f)
+            self.sec = dict(map(secmapper, f))
         with open('plt_sec.info') as f:
-            self.sec.append(secmapper(f.readline()))
+            n, s = secmapper(f.readline())
+            self.sec[n] = s
         with open('plts.info') as f:
             for l in f:
                 items = l.split()
                 self.plt_symbols[int(items[0], 16)] = items[1].split('@')[0][1:]
 
     def section_offset(self, name, addr):
-        for h in self.sec:
-            if h.sec_name == name:
-                return addr - h.sec_begin_addr
+        if name in self.sec:
+            return addr - self.sec[name].sec_begin_addr
         raise Exception('failed to find section offset')
 
     def section_addr(self, name):
-        for h in self.sec:
-            if h.sec_name == name:
-                return h.sec_begin_addr
+        if name in self.sec:
+            return self.sec[name].sec_begin_addr
         raise Exception('failed to find section')
 
     def data_collect(self):
@@ -275,7 +274,7 @@ class datahandler:
         return '.rodata'
 
     def check_sec(self, addr):
-        for h in self.sec:
+        for h in self.sec.values():
             b = h.sec_begin_addr
             e = b + h.sec_size
             if b <= addr < e: return h
@@ -310,9 +309,25 @@ class datahandler:
                     l += self.section_addr(n)
                 ds[n][off] = ('S_' + dec_hex(l) + ': ', ds[n][off][1])
 
+    def gotexternals(self):
+        with open('gotglobals.info') as f:
+            def mapper(l):
+                items = l.split()
+                return (int(items[0], 16), items[1].split('@')[0])
+            syms = sorted(map(mapper, f), key=lambda e: e[0])
+        gotsec = self.sec['.got']
+        datatype = '.long ' if ELF_utils.elf_32() else '.quad '
+        skiplen = 3 if ELF_utils.elf_32() else 7
+        syms = filter(lambda s: gotsec.sec_begin_addr <= s[0] < gotsec.sec_begin_addr + gotsec.sec_size, syms)
+        for s in syms:
+            off = s[0] - gotsec.sec_begin_addr
+            self.got_list[off] = ('S_' + dec_hex(s[0]) + ': ', datatype + s[1])
+            self.got_list[off+1:off+1+skiplen] = [('', '')] * skiplen
+
     def data_output(self):
         self.process(self.locations)
         self.process(self.data_labels, True)
+        self.gotexternals()
         if len(self.rodata_list) != 0:
             l, s = self.rodata_list[0]
             self.rodata_list[0] = ('s_dummy:\n' + l, s)
@@ -716,13 +731,10 @@ class reassemble(ailVisitor):
         return map(self.vinst2ARM, enumerate(instrs)) if ELF_utils.elf_arm() \
                else map(lambda i: self.vinst2(f, i), instrs)
 
-    def share_lib_processing(self, instrs):
-        if ELF_utils.elf_lib() and ELF_utils.elf_32() and not ELF_utils.elf_arm():
-            helper = lib32_helper(instrs)
-            for addr in helper.traverse():
-                s = self.check_sec(addr)
-                if s is None: raise Exception('unsupported section info')
-                self.label.insert(0, (s.sec_name, addr))
+    def lib32_processing(self, instrs, funcs):
+        if ELF_utils.elf_32() and not ELF_utils.elf_arm():
+            helper = lib32_helper(instrs, funcs)
+            self.label += map(lambda addr: (self.check_sec(addr).sec_name, addr), helper.traverse())
             return helper.get_instrs()
         return instrs
 
