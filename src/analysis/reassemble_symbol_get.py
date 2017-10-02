@@ -654,6 +654,7 @@ class reassemble(ailVisitor):
                             tindex += 1
                     else: break
                 tindex += 1
+            if tindex >= config.ARM_maxDoublemovDist: continue
             tindex = i + tindex
             mt = list(instrs[tindex])
             if mt[0].upper().startswith('MOVT') and mt[1] == destreg:
@@ -870,5 +871,8 @@ class reassemble(ailVisitor):
                 loc.loc_label = '\n.align 2' + loc.loc_label
                 instrs[i] = set_loc(instrs[i], loc)
                 j += 1
+            elif loc.loc_addr > self.ARMvldrtargets[j]:
+                j += 1
+                i -= 2
             i += 1
         return instrs

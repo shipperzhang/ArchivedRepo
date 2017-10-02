@@ -218,12 +218,12 @@ if config.arch == config.ARCH_X86:
                        'MOVHPS', 'EMMS', 'PI2FD', 'FEMMS', 'CVTPS2PI', 'CVTPS2DQ', 'CVTPI2PS',
                        'MOVNTDQ', 'MOVZBQ', 'MOVZWQ', 'VMOVQ', 'VMOVD', 'CVTDQ2PD', 'VEXTRACTI128',
                        'VBROADCASTSS', 'XGETBV', 'VPBROADCASTD', 'VPMOVZXDQ', 'VPINSRQ', 'PMOVZXDQ',
-                       'VINSERTI128', 'FLDLN2'
+                       'VINSERTI128', 'FLDLN2', 'FCMOVU'
     ], True)
     CompareOp = RecSet(['CMP', 'CMPQ', 'TEST', 'CMPL', 'CMPB', 'CMPW', 'TESTB', 'TESTL', 'CMPSB',
                         'BT', 'TESTW', 'CMPNLESS', 'CMPLTSS', 'CMPNLTSS', 'TESTQ', 'CMPNLTSD',
                         'PCMPGTD', 'PCMPGTB', 'PCMPEQD', 'CMPLTSD', 'PCMPEQW', 'CMPEQSS', 'PCMPEQB',
-                        'CMPLESD'
+                        'CMPLESD', 'CMPUNORDSS', 'CMPLESS'
     ], True)
     SetOp = RecSet(['SETA', 'SETAE', 'SETB', 'SETBE', 'SETC',
                     'SETNBE', 'SETNC', 'SETNG', 'SETNE',
@@ -297,7 +297,7 @@ elif config.arch == config.ARCH_ARMT:
                        'USAX', 'USUB16', 'USUB8', 'UXTAB', 'UXTAB16', 'UXTAH',
                        'UXTB', 'UXTB16', 'UXTH', 'VMUL', 'VNMUL', 'VMLA', 'VMLS',
                        'VNMLS', 'VNMLA', 'VADD', 'VSUB', 'VDIV', 'VABS', 'VNEG',
-                       'VSQRT', 'VRHADD'
+                       'VSQRT', 'VRHADD', 'VADDL', 'VRADDHN'
     ], True)
     LogicOp = RecSet(['BIC', 'BICS', 'EOR', 'EORS', 'ORN', 'ORNS', 'ORR', 'ORRS',
                       'PKHBT', 'PKHTB', 'RBIT', 'REV', 'REV16', 'REVSH', 'SBFX',
@@ -324,7 +324,7 @@ elif config.arch == config.ARCH_ARMT:
     ControlOp = RecSet(['B', 'BL', 'BLX', 'BX', 'BXJ', 'CBNZ', 'CBZ', 'TBB', 'TBH'], True)
     CondSuff = RecSet(['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC', 'LO',
                        'HI', 'LS', 'GE', 'LT', 'GT', 'LE', 'AL', 'HS'], True)
-    OpQualifier = RecSet(['W', 'N', 'F32', 'F64', 'U8', 'U16', 'U32', 'S8', 'S16', 'S32'])
+    OpQualifier = RecSet(['W', 'N', 'F32', 'F64', 'U8', 'U16', 'U32', 'S8', 'S16', 'S32', 'I16'])
     CommonOp = RecSet([ArithmOp, LogicOp, RolOp, AssignOp, CompareOp])
     Op = RecSet([CommonOp, StackOp, ControlOp, SystemOp, OtherOp])
     DataTypes = RecSet(['.word', '.short', '.byte'], True)

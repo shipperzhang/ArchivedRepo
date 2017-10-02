@@ -40,11 +40,12 @@ def pltgot(filepath):
         lastplt = f.readline().split()
     lastplt = (int(lastplt[0],16), re.escape(lastplt[1].rstrip('>:')))
 
-    pltgotsym = check_output('readelf -r ' + filepath + ' | awk \'/_GLOB_DAT/ {print $1,$5}\' | grep -v __gmon_start__', shell=True)
+    pltgotsym = check_output('readelf -r ' + filepath + ' | awk \'/_GLOB_DAT/ {print $1,$5}\' | grep -v __gmon_start__ | cat', shell=True).strip()
+    if len(pltgotsym) == 0: return
     def pltsymmapper(l):
         items = l.strip().split()
         return (int(items[0], 16), items[1].split('@')[0])
-    pltgotsym = dict(map(pltsymmapper, pltgotsym.strip().split('\n')))
+    pltgotsym = dict(map(pltsymmapper, pltgotsym.split('\n')))
 
     pltgottargets = check_output(config.objdump + ' -Dr -j .plt.got ' + filepath + ' | grep jmp | cut -f1,3', shell=True)
     def pltgotmapper(l):

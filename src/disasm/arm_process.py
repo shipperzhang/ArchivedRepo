@@ -62,10 +62,12 @@ def arm_process(filename):
     dis.syntax = capstone.CS_OPT_SYNTAX_ATT
 
     inlinedata = {}
+    negpcrel = False
+    secondpass = True
     last_cmp = ('', '')
     last_adr_dest = 0
     last_adr_reg = None
-    pcrelre = re.compile('\[pc,\s*\#0x([0-9a-f]+)\]', re.I)
+    pcrelre = re.compile('\[pc,\s*\#(\-?0x[0-9a-f]+)\]', re.I)
     pcreltblre = re.compile('\[pc,\s*(r[0-9]+)(,\s*lsl \#1)?\]|pc,\s*\[r[0-9],\s*(r[0-9]),\s*lsl\s*\#2\]', re.I)
     pcreladdre = re.compile('^(r[0-9]+|fp|lr|sb|sl),\s*pc,\s*\#(0x[0-9a-f]+)$', re.I)
     baseregre = re.compile('\[([^,]+),?.*\]', re.I)
@@ -82,6 +84,7 @@ def arm_process(filename):
             if m:
                 # Insert label for PC relative loads
                 dest = (e[0] & 0xFFFFFFFC) + int(m.group(1), 16) + 4
+                if dest < curr_off + textsec.addr: negpcrel = True
                 inlinedata[dest] = load_size(e[2], e[3])
                 instr = pcrelre.sub('0x%X' % dest, instr)
             elif e[2] in calls and e[3].startswith('#'):
@@ -108,6 +111,7 @@ def arm_process(filename):
                     offsize, tablesize = eval_tb_size(e[2], last_cmp, m.group(1) if m.group(1) is not None else m.group(3))
                     if offsize > 2:
                         # ldr jumptable
+                        last_adr_reg = None
                         for i in xrange(0, tablesize, 4): inlinedata[last_adr_dest + i] = 4
                     else:
                         # tb jumptable
@@ -139,4 +143,14 @@ def arm_process(filename):
                 val = unpack('<H' if size == 2 else '<I', textraw[curr_off:curr_off+size])[0]
                 f.write(('%x' % pc).rjust(8) + ':\t' + ('.short' if size == 2 else '.word').ljust(7) + ' 0x%x\n' % val)
             curr_off += size
+
+        if secondpass and curr_off >= textsec.size and negpcrel:
+            secondpass = False
+            curr_off = 0
+            last_cmp = ('', '')
+            last_adr_dest = 0
+            last_adr_reg = None
+            f.close()
+            f = open('instrs.info', 'w')
+
     f.close()

@@ -11,13 +11,13 @@ To this date the rewritten tool has been tested to work on the following executa
 
 Uroboros uses the following utilities (version numbers are in line with what was used during development, older releases may work as well):
 
-| Tool        | Version |
-|:------------|--------:|
-| python      | 2.7     |
-| objdump     | ≥2.22   |
-| readelf     | ≥2.22   |
-| awk         | ≥3.18   |
-| libcapstone | ≥3.0.4  |
+| Tool        | Version   |
+|:------------|----------:|
+| python      | 2.7       |
+| objdump     | ≥2.22     |
+| readelf     | ≥2.22     |
+| awk         | ≥3.18     |
+| libcapstone | 3.0.5-rc3 |
 
 and the following python packages (available through `pip` repositories):
 
