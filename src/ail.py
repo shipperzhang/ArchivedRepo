@@ -32,7 +32,7 @@ class Ail(object):
     def userfuncs(self):
         def func_mapper(line):
             items = line.split()
-            return Func(items[1][1:-2], int(items[0], 16), 0, False)
+            return Func(items[1][1:-2].split('@')[0], int(items[0], 16), 0, False)
         with open('userfuncs.info') as f:
             self.funcs += map(func_mapper,
                 filter(lambda line: not ('-0x' in line or '+0x' in line), f))

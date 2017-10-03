@@ -157,7 +157,7 @@ if config.arch == config.ARCH_X86:
     Reg = RecSet([CommonReg, SpecialReg, StackReg, PCReg, OtherReg])
 
     StackOp = RecSet(['PUSH', 'POP', 'PUSHL', 'POPL', 'PUSHF', 'POPF', 'PUSHQ', 'POPQ', 'PUSHW', 'POPW'], True)
-    SystemOp = RecSet(['INT', 'IN', 'OUT', 'CPUID', 'SFENCE', 'PREFETCHNTA', 'PREFETCH'], True)
+    SystemOp = RecSet(['INT', 'IN', 'OUT', 'CPUID', 'SFENCE', 'PREFETCHNTA', 'PREFETCH', 'PREFETCHT0'], True)
     ArithmOp = RecSet(['ADC', 'ADD', 'XADD', 'SUB', 'ADDL', 'ADDQ', 'SUBL', 'SUBQ',
                        'MUL', 'IMUL', 'MULB', 'MULSD', 'DIV', 'IDIV', 'DIVL', 'ADCL',
                        'IDIVL', 'DIVSD', 'IVSS', 'MULSS', 'DIVQ', 'IDIVQ', 'PMULUDQ',
@@ -182,13 +182,15 @@ if config.arch == config.ARCH_X86:
                        'PFMUL', 'UNPCKHPS', 'PFADD', 'PMULLW', 'PACKSSWB', 'PMULHUW',
                        'PFSUB', 'PFSUBR', 'VPHADDD', 'PALIGNR', 'PHADDD', 'VPMULLD',
                        'PMULLD', 'VPABSD', 'VPMADDWD', 'VPMULDQ', 'VPSUBD', 'PABSD', 'PMULDQ',
-                       'FYL2X'
+                       'FYL2X', 'F2XM1', 'FSCALE', 'MAXPS', 'SQRTPS', 'VMULPS', 'VSQRTPS',
+                       'VMAXPS', 'VADDPS', 'VSUBPS'
+
     ], True)
     LogicOp = RecSet(['AND', 'ANDB', 'OR', 'XOR', 'PXOR', 'NOT', 'ANDL', 'NOTL', 'ORW',
                       'XORB', 'XORL', 'SAHF', 'ANDW', 'NOTB', 'NOTW', 'XORPD', 'XORPS',
                       'ANDQ', 'XORQ', 'ANDPS', 'ANDNPS', 'ORPS', 'ANDPD', 'NOTQ', 'ANDNPD',
                       'ORPD', 'PAND', 'POR', 'PANDN', 'VXORPD', 'VPXOR', 'BSF', 'POPCNT', 'TZCNT',
-                      'VZEROUPPER'
+                      'VZEROUPPER', 'VXORPS', 'VANDPS'
     ], True)
     RolOp = RecSet(['ROL', 'SHL', 'SHR', 'SHLD', 'SHRD', 'SHRL', 'ROR', 'RORL',
                     'SAL', 'SAR', 'SHLL', 'ROLL', 'SHRB', 'SHLB', 'SARL', 'ROLW', 'SHLW',
@@ -218,12 +220,14 @@ if config.arch == config.ARCH_X86:
                        'MOVHPS', 'EMMS', 'PI2FD', 'FEMMS', 'CVTPS2PI', 'CVTPS2DQ', 'CVTPI2PS',
                        'MOVNTDQ', 'MOVZBQ', 'MOVZWQ', 'VMOVQ', 'VMOVD', 'CVTDQ2PD', 'VEXTRACTI128',
                        'VBROADCASTSS', 'XGETBV', 'VPBROADCASTD', 'VPMOVZXDQ', 'VPINSRQ', 'PMOVZXDQ',
-                       'VINSERTI128', 'FLDLN2', 'FCMOVU'
+                       'VINSERTI128', 'FLDLN2', 'FCMOVU', 'FLDL2E', 'FLDLG2', 'CVTSI2SSQ', 'VMOVSD',
+                       'VMOVLHPS', 'VINSERTPS', 'FISTTPL', 'FISTTPLL', 'FISTTP', 'VMOVSS', 'VUNPCKLPS'
     ], True)
     CompareOp = RecSet(['CMP', 'CMPQ', 'TEST', 'CMPL', 'CMPB', 'CMPW', 'TESTB', 'TESTL', 'CMPSB',
                         'BT', 'TESTW', 'CMPNLESS', 'CMPLTSS', 'CMPNLTSS', 'TESTQ', 'CMPNLTSD',
                         'PCMPGTD', 'PCMPGTB', 'PCMPEQD', 'CMPLTSD', 'PCMPEQW', 'CMPEQSS', 'PCMPEQB',
-                        'CMPLESD', 'CMPUNORDSS', 'CMPLESS'
+                        'CMPLESD', 'CMPUNORDSS', 'CMPLESS', 'CMPNLESD', 'COMISD', 'COMISS', 'FCOMI',
+                        'FCOMIP'
     ], True)
     SetOp = RecSet(['SETA', 'SETAE', 'SETB', 'SETBE', 'SETC',
                     'SETNBE', 'SETNC', 'SETNG', 'SETNE',

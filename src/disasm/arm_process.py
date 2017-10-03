@@ -22,7 +22,7 @@ def tb_process(offsize, pc, buf, filehandle):
     datatype = ('.short' if offsize == 2 else '.byte').ljust(7)
     while i < len(buf):
         val = unpack(unpacker, buf[i:i+offsize])[0] << 1
-        filehandle.write(('%x' % (pc+i)).rjust(8) + ':\t' + datatype + ' (S_0x%X-S_0x%X)/2\n' % (pc + val, pc))
+        filehandle.write(('%x' % (pc+i)).rjust(8) + ':\t' + datatype + ' (S_0x%X-S_0x%X)/2\n' % ((pc + val) & 0xFFFFFFFF, pc))
         i += offsize
 
 def eval_tb_size(op, last_cmp, reg):

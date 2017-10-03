@@ -5,7 +5,7 @@
 
 This fork is made with the idea of extending this technique to ARM Thumb executables. In such process, the OCaml core has been completely rewritten in Python.
 
-To this date the rewritten tool has been tested to work on the following executables: bzip, gzip, BLAKE2, Himeno benchmark, dcraw (with statically linked libjpeg and liblcms, ARM requires assumption 3), FLAC encoder.
+To this date the rewritten tool has been tested to work on the following executables: bzip, gzip, BLAKE2, Himeno benchmark, dcraw (with statically linked libjpeg and liblcms, ARM requires assumption 3), FLAC encoder, dolfyn, OPUS encoder (with statically linked libopus, ARM requires assumption 3).
 
 ## Installation
 

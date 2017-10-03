@@ -36,7 +36,7 @@ def process(filepath, gfree=False):
             gobmk_sub.gobmk_sub()
 
         compile_process.main()
-        label_adjust.label_adjust()
+        # label_adjust.label_adjust()
         if compile_process.reassemble() != 0: return False
 
     except Exception as e:
