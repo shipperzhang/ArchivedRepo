@@ -5,10 +5,19 @@ from sets import Set
 from utils.ail_utils import ELF_utils
 
 
+def inferlibflags():
+    try:
+        with open('linkedlibs.info') as f:
+            return map(lambda l: '-l' + l.split('.')[0].lstrip('lib'), f)
+    except: return []
+
+
 def reassemble(saveerr=False, libs=[]):
-    return os.system(config.compiler + ' final.s ' + ' '.join(libs)
+    if len(libs) == 0: libs = inferlibflags()
+    return os.system(config.compiler + ' final.s '
               + ('-mthumb' if ELF_utils.elf_arm() else (' -Wa,-mindex-reg' + (' -m32' if ELF_utils.elf_32() else '')))
-              + ' ' + config.gccoptions + (' 2> final.error' if saveerr else ''))
+              + ' ' + config.gccoptions + ' ' + ' '.join(libs)
+              + (' 2> final.error' if saveerr else ''))
 
 
 def parse_error():
@@ -54,7 +63,9 @@ def modifyARM():
         f.writelines(lines)
 
 
-def main():
+def main(filepath):
+    # Dump linked shared libraries
+    os.system('readelf -d ' + filepath + ' | awk \'/Shared/{match($0, /\[([^\]]*)\]/, arr); print arr[1]}\' | grep -i -v "libc\\." > linkedlibs.info')
     print "     Adjusting redundant symbols"
     if ELF_utils.elf_arm():
         reassemble(True)

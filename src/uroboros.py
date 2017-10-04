@@ -10,7 +10,7 @@ def process(filepath, gfree=False):
     import init
     import traceback
     from disasm import main_discover, func_addr
-    from postprocess import compile_process, post_process_data, gobmk_sub, label_adjust
+    from postprocess import compile_process, post_process_data, gobmk_sub
 
     print "Starting to process binary '" + filepath + "'"
     try:
@@ -35,7 +35,7 @@ def process(filepath, gfree=False):
         if "gobmk" in filepath:
             gobmk_sub.gobmk_sub()
 
-        compile_process.main()
+        compile_process.main(filepath)
         # label_adjust.label_adjust()
         if compile_process.reassemble() != 0: return False
 

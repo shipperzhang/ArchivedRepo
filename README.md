@@ -56,7 +56,7 @@ The startup Python script provides the following options:
 
 3. `-gcc "parameters"`
 
-    String of optional parameters to pass to the compiler. Useful to handle dynamic libraries (e.g. `-lm`).
+    String of additional arguments a user may want to pass to the compiler.
 
 4. `-a assumption_number`
 
