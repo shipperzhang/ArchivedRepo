@@ -5,7 +5,7 @@
 
 This fork is made with the idea of extending this technique to ARM Thumb executables. In such process, the OCaml core has been completely rewritten in Python.
 
-To this date the rewritten tool has been tested to work on the following executables: bzip, gzip, BLAKE2, Himeno benchmark, dcraw (with statically linked libjpeg and liblcms, ARM requires assumption 3), FLAC encoder, dolfyn, OPUS encoder (with statically linked libopus, ARM requires assumption 3).
+To this date the rewritten tool has been tested to work on the following executables: bzip, gzip, BLAKE2, Himeno benchmark, dcraw (with statically linked libjpeg and liblcms, ARM requires assumption 3), FLAC encoder (with statically linked libFLAC), dolfyn, OPUS encoder (with statically linked libopus, ARM requires assumption 3).
 
 ## Installation
 
@@ -76,6 +76,10 @@ The startup Python script provides the following options:
     the input, which is then stripped before disassembling.
 
     These assumptions can also be used at the same time (`python uroboros.py path_to_bin -a 3 -a 2`)
+
+## Stuff it would be nice to do
+* **More testing on real applications and, after that, even more testing.**
+* **Change the way data flow is managed**: now, to ease the debugging process, most of the data is passed along via file, which implies a lot of unnecessary IO operations.
 
 
 <a name="uroboros">[1]</a> [Reassembleable Disassembling](https://www.usenix.org/conference/usenixsecurity15/technical-sessions/presentation/wang-shuai), by Shuai Wang, Pei Wang, and Dinghao Wu. In Proceedings of the 24th USENIX Security Symposium, Washington, D.C., August 12-14. 2015.

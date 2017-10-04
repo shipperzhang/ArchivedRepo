@@ -68,7 +68,7 @@ def arm_process(filename):
     last_adr_dest = 0
     last_adr_reg = None
     pcrelre = re.compile('\[pc,\s*\#(\-?0x[0-9a-f]+)\]', re.I)
-    pcreltblre = re.compile('\[pc,\s*(r[0-9]+)(,\s*lsl \#1)?\]|pc,\s*\[r[0-9],\s*(r[0-9]),\s*lsl\s*\#2\]', re.I)
+    pcreltblre = re.compile('\[pc,\s*(r[0-9]+)(,\s*lsl \#1)?\]|pc,\s*\[r[0-9]+,\s*(r[0-9]+|fp|lr|sb|sl),\s*lsl\s*\#2\]', re.I)
     pcreladdre = re.compile('^(r[0-9]+|fp|lr|sb|sl),\s*pc,\s*\#(0x[0-9a-f]+)$', re.I)
     baseregre = re.compile('\[([^,]+),?.*\]', re.I)
     calls = set(('bl', 'blx'))
