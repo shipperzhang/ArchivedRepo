@@ -2,6 +2,7 @@ import re
 import time
 import config
 from disasm import Types
+from operator import itemgetter
 
 def unify_int_list(intlist):
     return sorted(set(intlist))
@@ -22,6 +23,20 @@ def unify_funclist_by_addr(funclist):
             else: res.append(h1)
         else: res.append(h1)
     res.append(funclist[-1])
+    return res
+
+def merge_intervals(intervals):
+    res = []
+    if not intervals: return []
+    sorted_intervals = sorted(intervals, key=itemgetter(0))
+    low, high = sorted_intervals[0]
+    for iv in sorted_intervals[1:]:
+        if iv[0] <= high:
+            high = max(high, iv[1])
+        else:
+            res.append((low, high))
+            low, high = iv
+    res.append((low, high))
     return res
 
 def string_to_int32(s):
@@ -303,7 +318,7 @@ class Opcode_utils(object):
             return op.upper() in ['CALL', 'CALLQ']
 
         @staticmethod
-        def is_ret(op, exp1):
+        def is_ret(op, exp1):  # @UnusedVariable
             return op.upper() in ['RET', 'RETN']
 
         @staticmethod

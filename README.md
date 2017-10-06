@@ -44,36 +44,31 @@ The disassembled output can be found in the `workdir` directory, named `final.s`
 
 The startup Python script provides the following options:
 
-1. `-o output`
+* `-o output`
 
     This option allows to specify an output path for the reassembled binary.
 
-2. `-g`
+* `-g`
 
     **NOT YET DEVELOPED**
 
     Instrument the output binary against ROP attacks using an adaptation of the technique described in [\[2\]](#gfree).
 
-3. `-gcc "parameters"`
+* `-gcc "parameters"`
 
     String of additional arguments a user may want to pass to the compiler.
 
-4. `-a assumption_number`
+* `-ex exclusions_file`
 
-    This option configures the three symbolization assumptions proposed in
-    the original Uroboros paper [\[1\]](#uroboros). Note that in the current version, the
-    first assumption (**n-byte alignment**) are set by default. The other
-    two assumptions can be set by users.
+    Allows to specify a file containing a list of address ranges, in the format `hexaddress-hexaddress`, which will be skipped when searching for pointers in data sections.
 
-    Assumption two reqires to put data sections (.data, .rodata and .bss)
-    to its original starting addresses. Linker scripts can be used during
-    reassembling (`gcc -T ld_script.sty final.s`). Users may write their
-    own linker script, some examples are given at `ld_script` folder.
+* `-a assumption_number`
 
-    Assumption three requires to know the function starting addresses. To
-    obtain this information, Uroboros can take unstripped binaries
-    as input. The function starting address information is obtained from
-    the input, which is then stripped before disassembling.
+    This option configures the three symbolization assumptions proposed in the original Uroboros paper [\[1\]](#uroboros). Note that in the current version, the first assumption (**n-byte alignment**) are set by default. The other two assumptions can be set by users.
+
+    Assumption two reqires to put data sections (.data, .rodata and .bss) to its original starting addresses. Linker scripts can be used during reassembling (`gcc -T ld_script.sty final.s`). Users may write their own linker script, some examples are given at `ld_script` folder.
+
+    Assumption three requires to know the function starting addresses (work will be done on function splitting in order to avoid this requirement). To obtain this information, Uroboros can take unstripped binaries as input. The function starting address information is obtained from the input, which is then stripped before disassembling.
 
     These assumptions can also be used at the same time (`python uroboros.py path_to_bin -a 3 -a 2`)
 

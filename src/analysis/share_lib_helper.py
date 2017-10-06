@@ -11,7 +11,7 @@ class lib32_helper(object):
         self.label = []
         self.sec = []
         self.curr_func = 0
-        self.curr_reg = ''
+        self.curr_regs = set()
         self.gotaddr = 0
         self.section_collect()
 
@@ -23,7 +23,7 @@ class lib32_helper(object):
     def v_exp(self, e):
         if isinstance(e, (Types.BinOP_PLUS, Types.BinOP_MINUS)):
             r1, addr = e
-            if r1.upper() == self.curr_reg:
+            if r1.upper() in self.curr_regs:
                 addr = -addr if isinstance(e, Types.BinOP_MINUS) else addr
                 des = self.gotaddr + addr
                 s = self.check_sec(des)
@@ -40,16 +40,22 @@ class lib32_helper(object):
             if get_loc(h1).loc_addr >= self.funcs[self.curr_func][1]:
                 # It can be assumed that the base register is set only inside a single function
                 self.curr_func += 1
-                self.curr_reg = ''
-            if isinstance(h1, Types.TripleInstr) and self.match_get_pc_thunk(h1):
-                self.curr_reg = h1[1].upper()
-            elif self.curr_reg != '':
+                self.curr_regs.clear()
+            if isinstance(h1, Types.TripleInstr) and (self.match_get_pc_thunk(h1) \
+              or (h1[0].upper() == 'MOV' and isinstance(h1[2], Types.RegClass) \
+              and h1[2].upper() in self.curr_regs and isinstance(h1[1], Types.RegClass))):
+                self.curr_regs.add(h1[1].upper())
+            elif len(self.curr_regs) > 0:
                 if isinstance(h1, Types.DoubleInstr):
                     self.instrs[i] = Types.DoubleInstr((h1[0], self.v_exp(h1[1]), h1[2], h1[3]))
-                elif isinstance(h1, Types.TripleInstr):
-                    self.instrs[i] = Types.TripleInstr((h1[0], self.v_exp(h1[1]), self.v_exp(h1[2]), h1[3], h1[4]))
-                elif isinstance(h1, Types.FourInstr):
-                    self.instrs[i] = Types.FourInstr((h1[0], h1[1], self.v_exp(h1[2]), h1[3], h1[4], h1[5]))
+                elif not isinstance(h1, Types.SingleInstr):
+                    if isinstance(h1, Types.TripleInstr):
+                        self.instrs[i] = Types.TripleInstr((h1[0], self.v_exp(h1[1]), self.v_exp(h1[2]), h1[3], h1[4]))
+                    elif isinstance(h1, Types.FourInstr):
+                        self.instrs[i] = Types.FourInstr((h1[0], h1[1], self.v_exp(h1[2]), h1[3], h1[4], h1[5]))
+                    if isinstance(h1[1], Types.RegClass) and h1[1].upper() in self.curr_regs:
+                        # Remove if overridden
+                        self.curr_regs.remove(h1[1].upper())
             i += 1
 
     def traverse(self):

@@ -112,20 +112,20 @@ class BinOP_Generic(tuple, Ptr):
         return super(BinOP_Generic, cls).__new__(cls, items)
     def __repr__(self):
         return super(BinOP_Generic, self).__repr__() + ('!' if self.preind else '')
-class BinOP_PLUS(BinOP_Generic): pass
-class BinOP_PLUS_S(BinOP_Generic): pass
-class BinOP_MINUS(BinOP_Generic): pass
-class BinOP_MINUS_S(BinOP_Generic): pass
-class ThreeOP(tuple, Ptr): pass
-class FourOP_PLUS(tuple, Ptr): pass
-class FourOP_MINUS(tuple, Ptr): pass
-class FourOP_PLUS_S(tuple, Ptr): pass
-class FourOP_MINUS_S(tuple, Ptr): pass
-class JmpTable_PLUS(tuple, Ptr): pass
-class JmpTable_MINUS(tuple, Ptr): pass
-class JmpTable_PLUS_S(tuple, Ptr): pass
-class JmpTable_MINUS_S(tuple, Ptr): pass
-class SegRef(tuple, Ptr): pass
+class BinOP_PLUS(BinOP_Generic): pass      # 0xABC(%esp),         [R1, #0x10]
+class BinOP_PLUS_S(BinOP_Generic): pass    # S_0xABC(%esp)
+class BinOP_MINUS(BinOP_Generic): pass     # -0xABC(%esp),        [R1, #-0x10]
+class BinOP_MINUS_S(BinOP_Generic): pass   # -S_0xABC(%exp)
+class ThreeOP(tuple, Ptr): pass            # (%edi, %esi, 8),     [R1, R2, LSL #1]
+class FourOP_PLUS(tuple, Ptr): pass        # 0xABC(%esp,%eax,4)
+class FourOP_MINUS(tuple, Ptr): pass       # -0xABC(%esp,%eax,4)
+class FourOP_PLUS_S(tuple, Ptr): pass      # S_0xABC(%esp,%eax,4)
+class FourOP_MINUS_S(tuple, Ptr): pass     # -S_0xABC(%esp,%eax,4)
+class JmpTable_PLUS(tuple, Ptr): pass      # 0xABC(,%ebx,4)
+class JmpTable_MINUS(tuple, Ptr): pass     # -0xABC(,%ebx,4)
+class JmpTable_PLUS_S(tuple, Ptr): pass    # S_0xABC(,%ebx,4)
+class JmpTable_MINUS_S(tuple, Ptr): pass   # -S_0xABC(,%ebx,4)
+class SegRef(tuple, Ptr): pass             # %es:(%edi)
 ErrorOp = RecSet(['(bad)'])
 
 if config.arch == config.ARCH_X86:
@@ -368,5 +368,5 @@ class AssistOpClass(str, Exp):
         if op not in AssistOp: raise Exception('No assist op: ' + op)
         super(AssistOpClass, self).__init__(op)
 
-class UnOP(RegClass, Ptr): pass
+class UnOP(RegClass, Ptr): pass       # (%ebx), [r1]
 

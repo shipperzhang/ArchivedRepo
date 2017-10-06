@@ -18,20 +18,23 @@ compiler = 'gcc'
 ARM_maxDoublemovDist = 40
 ARM_maxAddPcDist = 8
 gccoptions = ''
+excludedata = ''
 
 
-def setup(filepath, gccopt=''):
+def setup(filepath, gccopt='', exdata=''):
     global is_32
     global is_lib
     global is_dynamic
     global is_unstrip
     global gccoptions
+    global excludedata
     with open('elf.info') as f: elf_info = f.readline()
     is_32 = 'ELF 32-bit' in elf_info
     is_lib = 'LSB shared object' in elf_info
     is_dynamic = 'dynamically linked' in elf_info
     is_unstrip = 'not stripped' in elf_info
     gccoptions = gccopt
+    excludedata = exdata
     if ', ARM,' in elf_info:
         global arch
         global strip

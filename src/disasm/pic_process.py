@@ -13,7 +13,7 @@ def info_collect(f):
 
 def thunk_identify(ls):
     res = set()
-    thunkre = re.compile('\(\%esp\)\,\%e(bx|si|di)', re.I)
+    thunkre = re.compile('\(\%esp\)\,\%e(ax|bx|cx|bp|si|di)', re.I)
 
     for i in xrange(len(ls)):
         l = ls[i]
@@ -37,18 +37,16 @@ def text_process_strip(f):
         l = ls[i]
         if "call" in l and next((addr for addr in pc_thunk_addr if addr in l), None):
             t = ls[i+1]
-            items = t.split()
-            if len(items) != 9 or items[7] != "add": continue
+            items = t.split('\t')
+            addr_s = items[0].strip().rstrip(':')
+            items = items[2].split()
+            if len(items) != 2 or items[0] != "add": continue
             # typically, it should look like this
             # 804c466: add    $0x2b8e,%ebx
-            # if not, just let it crash
-            last = items[-1]
-            addr_s = t.split(':')[0]
-            off_s = last.split(',')[0][1:]
+            off_s = items[-1].split(',')[0][1:]
             off = int(off_s, 16)
             addr = int(addr_s, 16)
             baddr = addr + off
-
             for key, value in pic_map.iteritems():
                 if value[0] == baddr:
                     ls[i+1] = t.replace('$'+off_s, sec_symb[key])

@@ -7,7 +7,7 @@ from visit import ailVisitor
 from share_lib_helper import lib32_helper
 from disasm import Types, exception_process
 from utils.ail_utils import get_loc, read_file, ELF_utils, dec_hex, set_loc,\
-                            unify_int_list, bbn_byloc
+                            unify_int_list, bbn_byloc, merge_intervals
 
 
 def rev_map(f, l):
@@ -24,22 +24,16 @@ class datahandler:
 
     def __init__(self, label):
         self.sec = {}
-        self.data = []
-        self.rodata = []
-        self.got = []
-        self.bss = []
         self.plt_symbols = {}
 
         self.text_mem_addrs = []
         self.label_mem_addrs = []
 
         self.data_labels = []
-        self.data_labels_reloc = []
         self.text_labels = []
-        self.text_labels_reloc = []
 
         self.label = label
-        self.label_set = []
+        self.label_set = set()
 
         self.data_list = []
         self.rodata_list = []
@@ -60,15 +54,12 @@ class datahandler:
         self.cur_func_name = ''
         self.assumption_two = False
         self.assumption_three = False
+        self.exclude = []
 
     def set_datas(self, funcs):
         self.section_collect()
         self.data_collect()
 
-        self.data_list = self.data_trans(self.data)
-        self.rodata_list = self.data_trans(self.rodata)
-        self.got_list = self.data_trans(self.got)
-        self.bss_list = self.data_trans(self.bss)
         self.locations = self.label_locate()
 
         self.label_set = set(map(lambda e: e[1], self.label))
@@ -82,10 +73,11 @@ class datahandler:
 
         self.label_mem_arr = sorted(self.label_mem_addrs)
         self.set_assumption_flag()
+        self.set_excluded_ranges()
 
         self.begin_addrs = map(lambda f: f.func_begin_addr, funcs)
-        if ELF_utils.elf_32(): self.data_refer_solve(funcs)
-        else: self.data_refer_solve_64(funcs)
+        if ELF_utils.elf_32(): self.data_refer_solve()
+        else: self.data_refer_solve_64()
 
     def set_assumption_flag(self):
         with open('assumption_set.info') as f:
@@ -93,8 +85,15 @@ class datahandler:
             self.assumption_two = '2' in l
             self.assumption_three = '3' in l
 
+    def set_excluded_ranges(self):
+        if config.excludedata != '':
+            def rangemapper(l):
+                items = l.strip().split('-')
+                return (int(items[0], 16), int(items[1], 16))
+            with open(config.excludedata) as f:
+                self.exclude = merge_intervals(map(rangemapper, f))
+
     def get_textlabel(self):
-        self.dump_d2c_labels(self.text_labels_reloc)
         return self.text_labels
 
     def text_sec_collect(self):
@@ -118,13 +117,10 @@ class datahandler:
             f.write('\n'.join(map(dec_hex, dl)))
             f.write('\n')
 
-    def dump_d2c_labels(self, dl):
-        with open('final_d2c_label.txt', 'a') as f:
-            f.write('\n'.join(map(dec_hex, dl)))
-            f.write('\n')
-
-    def traverse64(self, l, addr):
+    def traverse64(self, l, startaddr):
         i = 0
+        holei = 0
+        while holei < len(self.exclude) and startaddr > self.exclude[holei][1]: holei += 1
         while i < len(l) - 7:
             val = int(''.join(map(lambda e: e[1][8:10], reversed(l[i:i+8]))), 16)
             s = self.check_sec(val)
@@ -137,7 +133,6 @@ class datahandler:
                         l[i+1:i+8] = [('', '')] * 7
                     else:
                         self.data_labels.insert(0, (s.sec_name, val))
-                        self.data_labels_reloc.insert(0, addr)
                         l[i] = (l[i][0], '.quad S_0x%X' % val)
                         l[i+1:i+8] = [('', '')] * 7
             else:
@@ -149,19 +144,21 @@ class datahandler:
                             self.cur_func_name = self.fn_byloc(val)
                         else: self.in_jmptable = False
                         self.text_labels.insert(0, val)
-                        self.text_labels_reloc.insert(0, addr)
                         l[i] = (l[i][0], '.quad S_0x%X' % val)
                         l[i+1:i+8] = [('', '')] * 7
                     else: self.in_jmptable = False
                 else: self.in_jmptable = False
-            i += 8
-            addr += 8
+            if holei < len(self.exclude) and self.exclude[holei][0] <= startaddr + i + 8 <= self.exclude[holei][1]:
+                i = self.exclude[holei][1]
+                i += 8 - i % 8
+                holei += 1
+            else: i += 8
 
-    def data_refer_solve_64(self, funcs):
+    def data_refer_solve_64(self):
         self.add_data_label()
-        self.traverse64(self.data_list, 0x080500c4)
-        self.traverse64(self.rodata_list, 0x0804cc60)
-        self.traverse64(self.got_list, 0x0)
+        self.traverse64(self.data_list, self.section_addr('.data'))
+        self.traverse64(self.rodata_list, self.section_addr('.rodata'))
+        self.traverse64(self.got_list, self.section_addr('.got'))
 
     def checkifprobd2dARM(self, val):
         # Assume 2 byte alignment
@@ -170,8 +167,10 @@ class datahandler:
         # Often short values in arrays are close to each other
         return abs(low - hi) >= 8
 
-    def traverse32(self, l, addr):
+    def traverse32(self, l, startaddr):
         i = 0
+        holei = 0
+        while holei < len(self.exclude) and startaddr > self.exclude[holei][1]: holei += 1
         while i < len(l) - 3:
             val = int(''.join(map(lambda e: e[1][8:10], reversed(l[i:i+4]))), 16)
             s = self.check_sec(val)
@@ -184,7 +183,6 @@ class datahandler:
                         l[i+1:i+4] = [('', '')] * 3
                     else:
                         self.data_labels.insert(0, (s.sec_name, val))
-                        self.data_labels_reloc.insert(0, addr)
                         l[i] = (l[i][0], '.long S_0x%X' % val)
                         l[i+1:i+4] = [('', '')] * 3
             else:
@@ -197,18 +195,20 @@ class datahandler:
                             self.cur_func_name = self.fn_byloc(val)
                         else: self.in_jmptable = False
                         self.text_labels.insert(0, val)
-                        self.text_labels_reloc.insert(0, addr)
                         l[i] = (l[i][0], '.long S_0x%X' % val)
                         l[i+1:i+4] = [('', '')] * 3
                     else: self.in_jmptable = False
                 else: self.in_jmptable = False
-            i += 4
-            addr += 4
+            if holei < len(self.exclude) and self.exclude[holei][0] <= startaddr + i + 4 <= self.exclude[holei][1]:
+                i = self.exclude[holei][1]
+                i += 4 - i % 4
+                holei += 1
+            else: i += 4
 
-    def data_refer_solve(self, funcs):
+    def data_refer_solve(self):
         self.add_data_label()
-        self.traverse32(self.data_list, 0x082f3110)
-        self.traverse32(self.rodata_list, 0x08288680)
+        self.traverse32(self.data_list, self.section_addr('.data'))
+        self.traverse32(self.rodata_list, self.section_addr('.rodata'))
 
     def check_jmptable_1(self, addrs):
         try: return int(addrs, 16) in self.label_set
@@ -258,15 +258,20 @@ class datahandler:
     def section_addr(self, name):
         if name in self.sec:
             return self.sec[name].sec_begin_addr
-        raise Exception('failed to find section')
+        raise Exception('failed to find section ' + name)
 
     def data_collect(self):
         spliter.main()
-        self.data = self.collect('data_split.info')
-        self.rodata = self.collect('rodata_split.info')
-        # if not ELF_utils.elf_32():
-        self.got = self.collect('got_split.info')
-        self.bss = self.collect('bss.info')
+        self.data_list = self.collect('data_split.info')
+        self.rodata_list = self.collect('rodata_split.info')
+        self.got_list = self.collect('got_split.info')
+        self.bss_list = self.collect('bss.info')
+
+    def collect(self, name):
+        if os.path.isfile(name):
+            with open(name) as f:
+                return map(lambda l: ('', l.strip()), f)[::-1]
+        return []
 
     def sec_transform(self, s):
         if s == '.got': return '.got'
@@ -279,9 +284,6 @@ class datahandler:
             e = b + h.sec_size
             if b <= addr < e: return h
         return None
-
-    def data_trans(self, data_list):
-        return map(lambda l: ('', l), data_list)[::-1]
 
     def label_locate(self):
         return map(lambda l: (l[0], self.section_offset(l[0], l[1])), self.label)
@@ -342,12 +344,7 @@ class datahandler:
             f.write(createout(self.rodata_list) + '\n')
             f.write('\n' + createout(self.data_list) + '\n')
             f.write('\n' + createout(self.got_list) + '\n')
-            f.write('\n' + createout(self.bss_list))
-
-    def collect(self, name):
-        if os.path.isfile(name):
-            return map(str.strip, read_file(name))
-        return []
+            f.write('\n' + createout(self.bss_list) + '\n')
 
 
 class instrhandler(object):
@@ -403,11 +400,9 @@ class reassemble(ailVisitor):
     def __init__(self):
         super(reassemble, self).__init__()
         self.label = []
-        # collect relocation info in c2d
-        self.c2d_addr = []
+        # collect relocation info
         self.deslist = []
         # only collect the relocated symbol
-        self.deslist_reloc = []
         self.init_array_list = []
         self.eh_frame_list = []
         self.excpt_tbl_list = []
@@ -504,26 +499,24 @@ class reassemble(ailVisitor):
     def insert_text(self, l, exp):
         if exp not in reassemble.text_set:
             reassemble.text_set[exp] = ''
-            self.deslist.insert(0, l)
+            self.deslist.append(l)
 
-    def insert_data(self, sec, exp, loc_addr):
+    def insert_data(self, sec, exp):
         if exp not in reassemble.data_set:
             reassemble.data_set[exp] = ''
-            self.label.insert(0, (sec, exp))
-        self.c2d_addr.insert(0, loc_addr)
+            self.label.append((sec, exp))
 
     def v_exp2(self, exp, instr, f, chk):
         if isinstance(exp, Types.Const):
             if isinstance(exp, Types.Normal) and chk: return exp
             s = self.check_sec(exp)
             if s is not None:
-                self.insert_data(s.sec_name, exp, get_loc(instr).loc_addr)
+                self.insert_data(s.sec_name, exp)
                 return Types.Label(self.build_symbol(exp))
             if self.check_text(exp):
                 if ELF_utils.elf_arm(): exp = type(exp)(exp & (-2))
                 s_label = self.build_symbol(exp)
                 self.insert_text(s_label, exp)
-                self.deslist_reloc.insert(0, get_loc(instr).loc_addr)
                 return Types.Label(s_label)
             if self.check_plt(exp):
                 return Types.Label(self.build_plt_symbol(exp))
@@ -555,7 +548,7 @@ class reassemble(ailVisitor):
                 s = self.check_sec(addr)
                 if s is not None:
                     s_label = 'S_' + dec_hex(addr)
-                    self.insert_data(s.sec_name, addr, get_loc(instr).loc_addr)
+                    self.insert_data(s.sec_name, addr)
                     return Types.BinOP_PLUS_S((r, s_label)) \
                         if isinstance(exp, Types.BinOP_PLUS) \
                         else Types.BinOP_MINUS_S((r, s_label))
@@ -564,7 +557,7 @@ class reassemble(ailVisitor):
                 s = self.check_sec(addr)
                 if s is not None:
                     s_label = 'S_' + dec_hex(addr)
-                    self.insert_data(s.sec_name, addr, get_loc(instr).loc_addr)
+                    self.insert_data(s.sec_name, addr)
                     return Types.FourOP_PLUS_S((r1,r2,off,s_label)) \
                         if isinstance(exp, Types.FourOP_PLUS) \
                         else Types.FourOP_MINUS_S((r1,r2,off,s_label))
@@ -573,24 +566,22 @@ class reassemble(ailVisitor):
                 s = self.check_sec(addr)
                 if s is not None:
                     s_label = 'S_' + dec_hex(addr)
-                    self.insert_data(s.sec_name, addr, get_loc(instr).loc_addr)
+                    self.insert_data(s.sec_name, addr)
                     return Types.JmpTable_PLUS_S((s_label, r, off))
                 if self.check_text(addr):
                     s_label = 'S_' + dec_hex(addr)
                     self.insert_text(s_label, addr)
-                    self.deslist_reloc.insert(0, get_loc(instr).loc_addr)
                     return Types.JmpTable_PLUS_S((s_label, r, off))
             elif isinstance(exp, Types.JmpTable_MINUS):
                 addr, r, off = exp
                 s = self.check_sec(addr)
                 if s is not None:
                     s_label = '-S_' + dec_hex(addr)
-                    self.insert_data(s.sec_name, addr, get_loc(instr).loc_addr)
+                    self.insert_data(s.sec_name, addr)
                     return Types.JmpTable_MINUS_S((s_label, r, off))
                 if self.check_text(addr):
                     s_label = '-S_' + dec_hex(addr)
                     self.insert_text(s_label, addr)
-                    self.deslist_reloc.insert(0, get_loc(instr).loc_addr)
                     return Types.JmpTable_MINUS_S((s_label, r, off))
         return exp
 
@@ -662,8 +653,7 @@ class reassemble(ailVisitor):
                 s = self.check_sec(val)
                 if s is not None:
                     s_label = 'S_' + dec_hex(val)
-                    self.insert_data(s.sec_name, val, get_loc(mw).loc_addr)
-                    self.c2d_addr.insert(0, get_loc(mt).loc_addr)
+                    self.insert_data(s.sec_name, val)
                     mw[2] = Types.Label('#:lower16:' + s_label)
                     mt[2] = Types.Label('#:upper16:' + s_label)
                     instrs[i] = type(instrs[i])(mw)
@@ -672,8 +662,6 @@ class reassemble(ailVisitor):
                     val = val & (-2)
                     s_label = 'S_' + dec_hex(val)
                     self.insert_text(s_label, val)
-                    self.deslist_reloc.insert(0, get_loc(mw).loc_addr)
-                    self.deslist_reloc.insert(0, get_loc(mt).loc_addr)
                     mw[2] = Types.Label('#:lower16:' + s_label)
                     mt[2] = Types.Label('#:upper16:' + s_label)
                     instrs[i] = type(instrs[i])(mw)
@@ -726,7 +714,7 @@ class reassemble(ailVisitor):
         self.symbol_list = map(lambda l: int(l.split('x')[1], 16), self.deslist) + self.symbol_list
         return instrs
 
-    def visit_type_infer_analysis(self, bbl, instrs):
+    def visit_type_infer_analysis(self, instrs):
         self.instr_list = instrs
         f = lambda: True
         return map(self.vinst2ARM, enumerate(instrs)) if ELF_utils.elf_arm() \
@@ -748,19 +736,13 @@ class reassemble(ailVisitor):
     def update_deslist_with_excp_tbl(self):
         self.excpt_tbl_list = exception_process.main('gcc_exception_table')
 
-    def dump_c2c_labels(self, dl):
-        with open('final_c2c_label.txt', 'w') as f:
-            f.write('\n'.join(map(dec_hex, dl)))
-
     def dump_c2d_labels(self, dl):
         with open('final_c2d_label.txt', 'w') as f:
             f.write('\n'.join(map(dec_hex, dl)))
 
     def adjust_loclabel(self, instr_list):
         self.update_deslist_with_initarray()
-        self.dump_c2c_labels(self.deslist_reloc)
-        t = self.init_array_list + self.deslist
-        p = instrhandler(instr_list, t)
+        p = instrhandler(instr_list, self.init_array_list + self.deslist)
         p.set_instr_list()
         p.process()
         return p.get_instr_list()
@@ -777,7 +759,7 @@ class reassemble(ailVisitor):
         gbss_hs = {'S_0x' + e[0].lstrip('0'): e[1].split('@')[0] if '@' in e[1] else e[1] for e in g_bss}
         labels = gbss_hs.keys()
         def mapper(l):
-            if '.word' in l: return l
+            # if '.word' in l: return l
             r = next((lab for lab in labels if lab in l), None)
             if r is not None: return l.replace(r, gbss_hs[r], 1)
             return l
@@ -819,7 +801,6 @@ class reassemble(ailVisitor):
                 break
             hf = ufuncs[i]
             hi = instrs[j]
-            # print hi
             iloc = get_loc(hi)
             if hf.func_begin_addr == iloc.loc_addr and hf.func_name not in iloc.loc_label:
                 lab = '\n' + hf.func_name + ' : '

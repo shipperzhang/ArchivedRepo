@@ -1,9 +1,11 @@
 import os
+import sys
 import glob
 import shutil
 import config
 from termcolor import colored
 from argparse import ArgumentParser, RawTextHelpFormatter
+from duplicity.tempdir import default
 
 
 def process(filepath, gfree=False):
@@ -47,11 +49,15 @@ def process(filepath, gfree=False):
     return True
 
 
-def check(filepath, assumptions, gccopt=''):
+def check(filepath, assumptions, gccopt='', excludedata=''):
     if not assumptions: assumptions = []
 
     if not os.path.isfile(filepath):
-        print "cannot find input binary"
+        sys.stderr.write("Cannot find input binary\n")
+        return False
+
+    if len(excludedata) != 0 and not os.path.isfile(excludedata):
+        sys.stderr.write("File with exclusions not found\n")
         return False
 
     for f in glob.glob('*'): os.remove(f)
@@ -60,7 +66,7 @@ def check(filepath, assumptions, gccopt=''):
         shutil.copy(filepath, '.')
 
     os.system('file ' + filepath + ' > elf.info')
-    config.setup(filepath, gccopt)
+    config.setup(filepath, gccopt, excludedata)
 
     if config.is_lib:
         print "Uroboros doesn't support shared library"
@@ -79,8 +85,6 @@ def set_assumption (assumptions):
     # Note that assumption two require linker script to reassemble!
     # Some of the examples can be found at ./ld_scripts/*
     # 3 -> assumption three: function starting address + jump table
-    # _ -> not defined.
-
     if not assumptions:
         with open('assumption_set.info', 'w') as f:
             f.write('1\n')
@@ -107,6 +111,7 @@ note that two basic assumptions and addtional assumption one
 while assumption two and three need to be configured. For example, setting
 assumption two and three: -a 2 -a 3''')
     p.add_argument("-gcc", "--gccopt", action="store", default="", help="A string of additional arguments for GCC")
+    p.add_argument("-ex", "--exclude", default="", help="File with a list of address ranges to exclude from symbol search")
     p.add_argument("--version", action="version", version="Uroboros 0.2b")
 
     args = p.parse_args()
@@ -117,7 +122,7 @@ assumption two and three: -a 2 -a 3''')
     if not os.path.isdir(workdir): os.mkdir(workdir)
     os.chdir(workdir)
 
-    if check(filepath, args.assumption, args.gccopt) and set_assumption(args.assumption):
+    if check(filepath, args.assumption, args.gccopt, args.exclude) and set_assumption(args.assumption):
         if process(os.path.basename(filepath), args.gfree):
             print colored("Processing succeeded", "blue")
             if outpath is not None: shutil.copy('a.out', outpath)
