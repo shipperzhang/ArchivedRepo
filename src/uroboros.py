@@ -5,12 +5,12 @@ import shutil
 import config
 from termcolor import colored
 from argparse import ArgumentParser, RawTextHelpFormatter
-from duplicity.tempdir import default
 
 
 def process(filepath, gfree=False):
     import init
-    import traceback
+    # import traceback
+    from instrumentation import plaincode
     from disasm import main_discover, func_addr
     from postprocess import compile_process, post_process_data, gobmk_sub
 
@@ -33,6 +33,7 @@ def process(filepath, gfree=False):
             with open('eh_frame_hdr_split.info') as eh: f.write(eh.read())
         with open('final.s', 'a') as f:
             with open('final_data.s', 'r') as fd: f.write(fd.read())
+            if gfree: f.write(plaincode.instrdata)
 
         if "gobmk" in filepath:
             gobmk_sub.gobmk_sub()
@@ -43,7 +44,7 @@ def process(filepath, gfree=False):
 
     except Exception as e:
         print e
-        traceback.print_exc()
+        # traceback.print_exc()
         return False
 
     return True

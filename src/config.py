@@ -20,6 +20,10 @@ ARM_maxAddPcDist = 8
 gccoptions = ''
 excludedata = ''
 
+gfree_xorkeyvar = 'xorkey'
+gfree_cookiekeyvar = 'cookiekey'
+gfree_failfuncname = 'gfree_fail'
+
 
 def setup(filepath, gccopt='', exdata=''):
     global is_32

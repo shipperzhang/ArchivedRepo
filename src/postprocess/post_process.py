@@ -1,9 +1,10 @@
 import os
 import inline_update
 from utils.ail_utils import ELF_utils
+from instrumentation import plaincode
 
 
-def main():
+def main(gfree=False):
 
     with open("final.s") as f:
         lines = f.readlines()
@@ -84,29 +85,25 @@ def main():
 
 
     if ELF_utils.elf_exe():
-        mains = []
-        main_symbol1 = ""
+        main_symbol1 = ''
 
         with open('main.info') as f:
-            mains = f.readlines()
-
-        main_symbol1 = mains[0].strip()
+            main_symbol1 = f.readline().strip()
 
         if main_symbol1 != '':
             def helpf(l):
                 if main_symbol1 + ' :' in l:
-                    l = l.replace(main_symbol1 + ' :', '.globl main\nmain :')
+                    rep = '.globl main\nmain :'
+                    if gfree: rep += plaincode.keygenfunction
+                    l = l.replace(main_symbol1 + ' :', rep)
                 elif main_symbol1 in l:
                     l = l.replace(main_symbol1, 'main')
                 return l
             lines = map(helpf, lines)
 
-    #branch_routine :pop global_des
-    #jmp *branch_des
-        #lines.append('switch_bb: jmp *branch_des\n')
-
     with open("final.s", 'w') as f:
         f.writelines(lines)
+        if gfree: f.write(plaincode.failfunction)
 
     if os.path.isfile('inline_symbols.txt'):
         inline_update.main()

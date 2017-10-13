@@ -4,6 +4,7 @@ from disasm.Types import Func, Section
 from disasm.disassemble_process import Disam
 from analysis.analysis_process import Analysis
 from postprocess import post_process, post_process_lib
+from instrumentation.gfree import GfreeInstrumentation
 
 
 class Ail(object):
@@ -63,8 +64,8 @@ class Ail(object):
             with open('final.s', 'a') as f:
                 f.write(ex.read())
 
-    def post_process(self):
-        post_process.main()
+    def post_process(self, gfree=False):
+        post_process.main(gfree)
         post_process_lib.main()
 
     def pre_process(self):
@@ -79,9 +80,8 @@ class Ail(object):
 
         if gfree:
             print colored('4: INSTRUMENTATION', 'green')
-            # TODO: all
-            print '     nothing done yet'
+            il = GfreeInstrumentation.perform(il, fl)
 
         print colored(('5' if gfree else '4') + ': POST-PROCESSING', 'green')
         Analysis.post_analyze(il, re)
-        self.post_process()
+        self.post_process(gfree)

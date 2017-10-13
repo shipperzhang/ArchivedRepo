@@ -1,11 +1,6 @@
 from disasm import Types
-from utils.ail_utils import ELF_utils
+from utils.ail_utils import ELF_utils, get_loc
 
-def flip(func, x, y):
-    return func(y, x)
-
-def last_ele(collection):
-    return collection[-1]
 
 def p_op(op):
     return str(op).lower()
@@ -190,9 +185,6 @@ def p_location(loc):
 def p_prefix(pre):
     return ' lock ' if pre else ''
 
-def get_loc(i):
-    return i[-2]
-
 def pp_print_instr(i):
     loc = get_loc(i)
     if not loc.loc_visible: return p_location(loc)
@@ -215,7 +207,7 @@ def pp_print_list(ilist):
     return map(pp_print_instr, ilist)
 
 def pp_print_file(ilist):
-    with open('final.s', 'a') as f:
+    with open('final.s', 'w') as f:
         f.write('.section .text\n')
         if ELF_utils.elf_arm(): f.write('.syntax unified\n.align 2\n.thumb\n')
         f.write('\n'.join(ilist))

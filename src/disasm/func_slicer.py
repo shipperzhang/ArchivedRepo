@@ -3,6 +3,7 @@ import init_sec_adjust
 from Types import Func
 from utils.ail_utils import read_file, unify_int_list, get_loc, dec_hex
 
+# TODO: implement a more advenced function boundary identifier
 
 class func_slicer(object):
 

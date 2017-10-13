@@ -50,8 +50,8 @@ class AilParser(object):
         addr = int(items[1], 16)
         end = addr + int(items[3], 16)
         def fil(f):
-            lenf = len(f.func_name)
-            if lenf < 3: return True
+            if f.func_begin_addr == 0: return False
+            if len(f.func_name) < 3: return True
             opt = int_of_string_opt(f.func_name[2:], 16)
             return True if opt is None else (addr <= opt < end)
         return filter(fil, funcs)
