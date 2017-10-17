@@ -32,6 +32,8 @@ class Func(object):
         self.func_begin_addr = begin
         self.func_end_addr = end
         self.is_lib = is_lib
+    def __contains__(self, addr):
+        return self.func_begin_addr <= addr < self.func_end_addr
     def __repr__(self):
         return self.func_name + '@0x%X-0x%X' % (self.func_begin_addr, self.func_end_addr)
 

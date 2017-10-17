@@ -260,18 +260,22 @@ class Opcode_utils(object):
             parts = op.split('.')
             return parts[0] in Types.ControlOp or (parts[0][-2:] in Types.CondSuff and parts[0][:-2] in Types.ControlOp)
 
+        simplejumps = set(['B', 'BX'])
         @staticmethod
         def is_jmp(op):
-            return op.split('.')[0].upper() in ['B', 'BX']
+            return op.split('.')[0].upper() in Opcode_utils.simplejumps
 
         @staticmethod
         def is_cond_jmp(op):
             parts = op.split('.')
-            return parts[0][-2:] in Types.CondSuff and parts[0][:-2] in Types.ControlOp
+            return parts[0][-2:] in Types.CondSuff \
+                and parts[0][:-2] in Types.ControlOp \
+                and not parts[0][:-2].upper().startswith('BL')
 
+        simplemovs = set(['MOV', 'MOVS', 'MOVW', 'MOVT'])
         @staticmethod
         def is_mov(op):
-            return op.split('.')[0].upper() in ['MOV', 'MOVS', 'MOVW', 'MOVT']
+            return op.split('.')[0].upper() in Opcode_utils.simplemovs
 
         @staticmethod
         def is_call(op):
@@ -281,7 +285,9 @@ class Opcode_utils(object):
         def is_ret(op, exp1):
             if op.upper().startswith('POP') and isinstance(exp1, Types.RegList):
                 return 'PC' in map(str.upper, exp1)
-            elif Opcode_utils.is_cp(op) and isinstance(Types.RegClass, exp1):
+            elif op.upper().startswith('LDR'):
+                return exp1.upper() == 'PC'
+            elif Opcode_utils.is_cp(op) and isinstance(exp1, Types.RegClass):
                 return exp1.upper() == 'LR'
             return False
 
@@ -301,25 +307,30 @@ class Opcode_utils(object):
         def is_cp(op):
             return op in Types.JumpOp or op.upper().startswith('CALL')
 
+        simplejumps = set(['JMP', 'JMPQ'])
         @staticmethod
         def is_jmp(op):
-            return op.upper() in ['JMP', 'JMPQ']
+            return op.upper() in Opcode_utils.simplejumps
 
         @staticmethod
         def is_cond_jmp(op):
             return not Opcode_utils.is_jmp(op) and op in Types.JumpOp
 
+        simplemovs = set(['MOV', 'MOVL'])
         @staticmethod
         def is_mov(op):
-            return op.upper() in ['MOV', 'MOVL']
+            return op.upper() in Opcode_utils.simplemovs
 
         @staticmethod
         def is_call(op):
-            return op.upper() in ['CALL', 'CALLQ']
+            return op.upper().startswith('CALL')
 
+        retstatements = set(['RET', 'RETN', 'RETQ'])
         @staticmethod
         def is_ret(op, exp1):  # @UnusedVariable
-            return op.upper() in ['RET', 'RETN']
+            op = op.upper()
+            return op in Opcode_utils.retstatements or \
+                   op == 'REPZ' and isinstance(exp1, str) and exp1.upper() in Opcode_utils.retstatements
 
         @staticmethod
         def is_cmp_op(op):
@@ -354,6 +365,10 @@ class Opcode_utils(object):
     @staticmethod
     def is_indirect(s):
         return isinstance(s, Types.StarDes)
+
+    @staticmethod
+    def is_any_jump(op):
+        return Opcode_utils.is_jmp(op) or Opcode_utils.is_cond_jmp(op)
 
     @staticmethod
     def is_control_transfer_op(op, exp1):

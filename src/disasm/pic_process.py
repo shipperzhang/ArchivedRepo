@@ -44,7 +44,8 @@ def text_process_strip(f):
             # typically, it should look like this
             # 804c466: add    $0x2b8e,%ebx
             off_s = items[-1].split(',')[0][1:]
-            off = int(off_s, 16)
+            try: off = int(off_s, 16)
+            except: continue
             addr = int(addr_s, 16)
             baddr = addr + off
             for key, value in pic_map.iteritems():

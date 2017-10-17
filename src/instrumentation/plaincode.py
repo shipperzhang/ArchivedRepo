@@ -11,6 +11,7 @@ if ELF_utils.elf_64():
     keygenfunction = '''
 pushq %rax
 pushq %rbx
+pushq %rcx
 pushq %rdx
 pushq %rsi
 pushq %rdi
@@ -38,6 +39,7 @@ call close
 popq %rdi
 popq %rsi
 popq %rdx
+popq %rcx
 popq %rbx
 popq %rax
 '''
@@ -56,7 +58,7 @@ call exit
 elif ELF_utils.elf_arm():
     # ARM
     keygenfunction = '''
-push {{r0,r1,r2,r4,lr}}
+push {{r0,r1,r2,r4,r12,lr}}
 movw r0,#:lower16:.LC2
 movt r0,#:upper16:.LC2
 movs r1,#0
@@ -78,7 +80,7 @@ cmp r0,#4
 bne {0}
 mov r0,r4
 bl close
-pop {{r0, r1, r2, r4, lr}}
+pop {{r0,r1,r2,r4,r12,lr}}
 '''
 
     failfunction = '''.thumb_func
@@ -101,6 +103,8 @@ else:
     keygenfunction = '''
 pushl %eax
 pushl %ebx
+pushl %ecx
+pushl %edx
 subl $16,%esp
 pushl $0
 pushl $.LC2
@@ -129,6 +133,8 @@ subl $12, %esp
 pushl %ebx
 call close
 addl $24, %esp
+popl %edx
+popl %ecx
 popl %ebx
 popl %eax
 '''

@@ -127,8 +127,9 @@ else:
             return p_seg(addr[0]) + ':' + p_exp(addr[1])
 
     def p_const(const):
-        if isinstance(const, Types.Normal): return '$0x%X' % const
-        elif isinstance(const, Types.Point): return '0x%X' % const
+        sign = '-' if const < 0 else ''
+        if isinstance(const, Types.Normal): return '$' + sign + '0x%X' % abs(const)
+        elif isinstance(const, Types.Point): return sign + '0x%X' % abs(const)
 
     def p_symbol(sym):
         if isinstance(sym, Types.CallDes): return p_func(sym)

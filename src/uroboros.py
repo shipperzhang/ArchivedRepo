@@ -9,7 +9,7 @@ from argparse import ArgumentParser, RawTextHelpFormatter
 
 def process(filepath, gfree=False):
     import init
-    # import traceback
+    import traceback
     from instrumentation import plaincode
     from disasm import main_discover, func_addr
     from postprocess import compile_process, post_process_data, gobmk_sub
@@ -44,7 +44,7 @@ def process(filepath, gfree=False):
 
     except Exception as e:
         print e
-        # traceback.print_exc()
+        traceback.print_exc()
         return False
 
     return True

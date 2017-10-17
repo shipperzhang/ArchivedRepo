@@ -24,19 +24,6 @@ def main(gfree=False):
                     find_text = True
                 else:
                     l = l.replace(".text:","")
-            if "lea 0x0(%esi," in l:
-                if ':' in l:
-                    label = l.split(':')[0]   # label:  lea 0x0....
-                    l = label + " : nop;nop;nop;nop;nop;nop;nop;\n"
-                else:
-                    l = "nop;nop;nop;nop;nop;nop;nop;\n"
-            elif "lea 0x0(%edi," in l:
-                if ':' in l:
-                    label = l.split(':')[0]   # label:  lea 0x0....
-                    l = label + " : nop;nop;nop;nop;nop;nop;nop;\n"
-                else:
-                    label = ""
-                    l = "nop;nop;nop;nop;nop;nop;nop;\n"
             # __gmon_start__ symbol is resolved by the linked program itself, it surely can not be resolved
             # in our final.s code, just remove it
             elif "__gmon_start__" in l:
@@ -46,7 +33,7 @@ def main(gfree=False):
             elif "repz retq" in l:
                 l = l.replace("repz retq", "repz\nretq\n")
             elif "repz ret" in l:
-                l = l.replace("repz ret", "repz\nret\n")
+                l = l.replace("repz ret", "repz\nret")
             elif "repz pop" in l:
                 l = l.replace("repz pop", "repz\npop")
             elif "movzbl $S_" in l:
@@ -93,9 +80,9 @@ def main(gfree=False):
         if main_symbol1 != '':
             def helpf(l):
                 if main_symbol1 + ' :' in l:
-                    rep = '.globl main\nmain :'
+                    rep = '.globl main\nmain : '
                     if gfree: rep += plaincode.keygenfunction
-                    l = l.replace(main_symbol1 + ' :', rep)
+                    l = l.replace(main_symbol1 + ' : ', rep)
                 elif main_symbol1 in l:
                     l = l.replace(main_symbol1, 'main')
                 return l
