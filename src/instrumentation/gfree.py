@@ -24,20 +24,26 @@ class GfreeInstrumentation:
         print '     nothing done yet'
         gfree = GfreeInstrumentation(instrs, funcs)
         gfree.findfreebranches()
-
-        # print '|'.join(map(lambda e: '%x:' % e, sorted(filter(lambda a: len(gfree.rets[a]) == 0, gfree.rets))))
-        # exit()
-
         gfree.indirectprotection()
         gfree.returnprotection()
-        gfree.enforcealignment()
         return gfree.instrs
+
+    badbytes = set(('\xc2', '\xc3', '\xca', '\xcb', '\xff'))
+    def generatefuncID(self):
+        while True:
+            fid = os.urandom(4)
+            if not fid in self.fIDset:
+                if not ELF_utils.elf_arm() and \
+                   next((b for b in fid if b in GfreeInstrumentation.badbytes), None) is not None:
+                    continue
+                self.fIDset.add(fid)
+                return unpack('<HH', fid) if ELF_utils.elf_arm() \
+                       else unpack('<i', fid)[0]
 
     def findfreebranches(self):
         j = 0; curr_func = self.funcs[0]
         for ins in self.instrs:
             loc_addr = get_loc(ins).loc_addr
-            # TODO: some indirect calls are also exit points
             if loc_addr >= self.funcs[j].func_end_addr and j < len(self.funcs) - 1:
                 j += 1
                 curr_func = self.funcs[j]
@@ -62,69 +68,38 @@ class GfreeInstrumentation:
         else: popcookie = True
         for t in self.rets[func.func_begin_addr]:
             while get_loc(self.instrs[i]).loc_addr != t: i += 1
+            if ELF_utils.elf_arm() and self.instrs[i][0][-2:] in Types.CondSuff:
+                while not self.instrs[i][0].upper().startswith('IT'): i -= 1
             footer = inlining.get_returnenc(self.instrs[i], popcookie)
             self.instrs[i:i+1] = footer
             i += len(footer)
         return i
 
     def addframecookie(self, i, func):
-        fID = self.generateFuncID()
+        if len(self.rets[func.func_begin_addr]) == 0: return i + 1
+        fID = self.generatefuncID()
         header = inlining.get_framecookiehead(self.instrs[i], fID)
         self.instrs[i:i+1] = header
         i += len(header) - 1
         for t in self.indcalls[func.func_begin_addr]:
             while get_loc(self.instrs[i]).loc_addr != t: i += 1
-            # TODO: find cookie position
             check = inlining.get_framecookiecheck(self.instrs[i], fID)
             self.instrs[i:i+1] = check
             i += len(check)
         return i
 
-    def returnprotection(self):
+    def addinlining(self, locations, instrumenter):
         i = 0; j = 0
         while i < len(self.instrs):
             loc_addr = get_loc(self.instrs[i]).loc_addr
             if loc_addr >= self.funcs[j].func_end_addr and j < len(self.funcs) - 1: j += 1
-            if loc_addr == self.funcs[j].func_begin_addr and len(self.rets[loc_addr]) > 0:
-                i = self.addxorcanary(i, self.funcs[j])
+            if loc_addr == self.funcs[j].func_begin_addr and len(locations[loc_addr]) > 0:
+                i = instrumenter(i, self.funcs[j])
             else: i += 1
+
+    def returnprotection(self):
+        self.addinlining(self.rets, self.addxorcanary)
 
     def indirectprotection(self):
-        i = 0; j = 0
-        while i < len(self.instrs):
-            loc_addr = get_loc(self.instrs[i]).loc_addr
-            if loc_addr >= self.funcs[j].func_end_addr and j < len(self.funcs) - 1: j += 1
-            if loc_addr == self.funcs[j].func_begin_addr and len(self.indcalls[loc_addr]) > 0:
-                # self.adjuststack(i, self.funcs[j])
-                i = self.addframecookie(i, self.funcs[j])
-            else: i += 1
+        self.addinlining(self.indcalls, self.addframecookie)
 
-    badbytes = set(('\xc2', '\xc3', '\xca', '\xcb', '\xff'))
-
-    if ELF_utils.elf_arm():
-        def enforcealignment(self):
-            # TODO:
-            pass
-
-        def adjuststack(self, i, curr_func):
-            # TODO: stub
-            pass
-    else:
-        def enforcealignemt(self):
-            # TODO: nop sled, etc
-            pass
-
-        def adjuststack(self, i, curr_func):
-            # TODO: stub
-            pass
-
-    def generateFuncID(self):
-        while True:
-            fid = os.urandom(4)
-            if not fid in self.fIDset:
-                if not ELF_utils.elf_arm() and \
-                   next((b for b in fid if b in GfreeInstrumentation.badbytes), None) is not None:
-                    continue
-                self.fIDset.add(fid)
-                return unpack('<HH', fid) if ELF_utils.elf_arm() \
-                       else unpack('<i', fid)

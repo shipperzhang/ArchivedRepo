@@ -7,7 +7,7 @@ from termcolor import colored
 from argparse import ArgumentParser, RawTextHelpFormatter
 
 
-def process(filepath, gfree=False):
+def process(filepath, gfree=False, fexclude=''):
     import init
     import traceback
     from instrumentation import plaincode
@@ -16,7 +16,7 @@ def process(filepath, gfree=False):
 
     print "Starting to process binary '" + filepath + "'"
     try:
-        func_addr.func_addr(filepath, 0)
+        func_addr.func_addr(filepath, 0, fexclude)
 
         os.system(config.strip + ' ' + filepath)
         main_discover.main_discover(filepath)
@@ -113,18 +113,21 @@ while assumption two and three need to be configured. For example, setting
 assumption two and three: -a 2 -a 3''')
     p.add_argument("-gcc", "--gccopt", action="store", default="", help="A string of additional arguments for GCC")
     p.add_argument("-ex", "--exclude", default="", help="File with a list of address ranges to exclude from symbol search")
+    p.add_argument("-fex", "--functionexclude", default="", help="File with a list of symbols not representing functions")
     p.add_argument("--version", action="version", version="Uroboros 0.2b")
 
     args = p.parse_args()
     filepath = os.path.realpath(args.binary)
     outpath = os.path.realpath(args.output) if args.output is not None else None
+    exclude = os.path.realpath(args.exclude) if len(args.exclude) > 0 else ''
+    fexclude = os.path.realpath(args.functionexclude) if len(args.functionexclude) > 0 else ''
 
     workdir = os.path.dirname(os.path.abspath(__file__)) + '/workdir'
     if not os.path.isdir(workdir): os.mkdir(workdir)
     os.chdir(workdir)
 
-    if check(filepath, args.assumption, args.gccopt, args.exclude) and set_assumption(args.assumption):
-        if process(os.path.basename(filepath), args.gfree):
+    if check(filepath, args.assumption, args.gccopt, exclude) and set_assumption(args.assumption):
+        if process(os.path.basename(filepath), args.gfree, fexclude):
             print colored("Processing succeeded", "blue")
             if outpath is not None: shutil.copy('a.out', outpath)
         else: print colored("Processing failed", "red")

@@ -157,8 +157,17 @@ instrdata = '''
 .section .rodata
 .LC0: .string "Fatal GFree Error\\n"
 .LC2: .string "/dev/random"
-
+{6}
 .section .bss
 {1}: .{0} 0
 {2}: .{0} 0
-'''.format(keysize, config.gfree_xorkeyvar, config.gfree_cookiekeyvar)
+
+.global {3}
+.section .tbss,"awT",{5}nobits
+.type {3}, {5}object
+.size {3}, 0x{4:x}
+{3}: .zero 0x{4:x}
+'''.format(keysize, config.gfree_xorkeyvar, config.gfree_cookiekeyvar,
+           config.gfree_cookiestackvar, config.gfree_cookiestacksize * 1024,
+           '%' if ELF_utils.elf_arm() else '@',
+           ('.LC3: .word ' + config.gfree_cookiestackvar + '(tpoff)\n') if ELF_utils.elf_arm() else '')

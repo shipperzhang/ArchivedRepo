@@ -4,13 +4,17 @@ import shutil
 import config
 
 
-def func_addr(filename, count):
+def func_addr(filename, count, fexclude=""):
 
     #fn = sys.argv[1]
     #c = int(sys.argv[2])
 
     os.system(config.objdump + ' -Dr -j .text ' + filename + ' > dump.s')
     os.system('grep ">:" dump.s > fl')
+
+    if len(fexclude) > 0 and os.path.isfile(fexclude):
+        os.system('grep -v -f ' + fexclude + ' fl > fl.filtered')
+        shutil.move('fl.filtered', 'fl')
 
     with open('fl') as f: fnl = f.readlines()
 

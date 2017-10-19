@@ -15,6 +15,7 @@ class base_parser(object):
         self.sec_list = []
         self.call_des = False
         self.jmp_des = False
+        self.indjmp_des = False
 
     def set_funclist(self, l):
         self.funcs = {f.func_name: f for f in l}
@@ -197,7 +198,9 @@ class parseARM(base_parser):
 
     def reg_symb(self, sym):
         if sym in Types.Reg:
-            return Types.StarDes(Types.RegClass(sym)) if self.call_des else Types.RegClass(sym)
+            return Types.StarDes(Types.RegClass(sym)) \
+                   if self.call_des or (self.indjmp_des and sym.upper() != 'LR') \
+                   else Types.RegClass(sym)
         if sym[-1] == '!' and sym[:-1] in Types.Reg:
             # vldmia r2!, {s14}
             return Types.IncReg(sym)
@@ -299,6 +302,7 @@ class parseARM(base_parser):
             self.jmp_des = parts[0] in Types.ControlOp or \
                            (parts[0][-2:] in Types.CondSuff and parts[0][:-2] in Types.ControlOp)
             self.call_des = Opcode_utils.call_patt.match(parts[0]) is not None  # @UndefinedVariable
+            self.indjmp_des = Opcode_utils.indjmp_patt.match(parts[0]) is not None # @UndefinedVariable
             return sym
         raise InvalidOpException('Invalid operator: ' + sym.upper())
 
@@ -331,6 +335,7 @@ class parse(parseARM if (config.arch == config.ARCH_ARMT) else parseX86):
     def parse_instr(self, instr, loc):
         self.call_des = False
         self.jmp_des = False
+        self.indjmp_des = False
         has_pre = self.prefix_identify(instr)
         if has_pre: instr = prefix_sub(instr)
         lexem_list = lexer(instr, loc)

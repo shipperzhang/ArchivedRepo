@@ -23,6 +23,8 @@ excludedata = ''
 gfree_xorkeyvar = 'xorkey'
 gfree_cookiekeyvar = 'cookiekey'
 gfree_failfuncname = 'gfree_fail'
+gfree_cookiestackvar = 'cookiestack'
+gfree_cookiestacksize = 2048 # KB
 
 
 def setup(filepath, gccopt='', exdata=''):

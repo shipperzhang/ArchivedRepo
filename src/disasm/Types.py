@@ -117,7 +117,7 @@ class BinOP_Generic(tuple, Ptr):
 class BinOP_PLUS(BinOP_Generic): pass      # 0xABC(%esp),         [R1, #0x10]
 class BinOP_PLUS_S(BinOP_Generic): pass    # S_0xABC(%esp)
 class BinOP_MINUS(BinOP_Generic): pass     # -0xABC(%esp),        [R1, #-0x10]
-class BinOP_MINUS_S(BinOP_Generic): pass   # -S_0xABC(%exp)
+class BinOP_MINUS_S(BinOP_Generic): pass   # -S_0xABC(%esp)
 class ThreeOP(tuple, Ptr): pass            # (%edi, %esi, 8),     [R1, R2, LSL #1]
 class FourOP_PLUS(tuple, Ptr): pass        # 0xABC(%esp,%eax,4)
 class FourOP_MINUS(tuple, Ptr): pass       # -0xABC(%esp,%eax,4)
@@ -128,6 +128,7 @@ class JmpTable_MINUS(tuple, Ptr): pass     # -0xABC(,%ebx,4)
 class JmpTable_PLUS_S(tuple, Ptr): pass    # S_0xABC(,%ebx,4)
 class JmpTable_MINUS_S(tuple, Ptr): pass   # -S_0xABC(,%ebx,4)
 class SegRef(tuple, Ptr): pass             # %es:(%edi)
+NegativePtr = (BinOP_MINUS, FourOP_MINUS, JmpTable_MINUS)
 ErrorOp = RecSet(['(bad)'])
 
 if config.arch == config.ARCH_X86:
@@ -253,6 +254,7 @@ if config.arch == config.ARCH_X86:
     ])
     CommonOp = RecSet([ArithmOp, LogicOp, RolOp, AssignOp, CompareOp, SetOp, OtherOp])
     Op = RecSet([CommonOp, StackOp, ControlOp, SystemOp, ErrorOp])
+    SuffixSize = {'Q': 8, 'L': 4, 'F': 4, 'W': 2}
 
 elif config.arch == config.ARCH_ARMT:
     ###################################################
@@ -349,7 +351,7 @@ elif config.arch == config.ARCH_ARMT:
             return '(' + self.dest + '-' + self.base + ')/2'
     class CoproInstr(Instr):
         def __init__(self, items):
-            if len(items) != 9: raise Exception('Invalid copro')
+            if len(items) != 9: raise Exception('Invalid copro: %d fields' % len(items))
             super(CoproInstr, self).__init__(items)
 
 

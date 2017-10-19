@@ -64,6 +64,12 @@ def update_label(instr, label):
     loc.loc_label = label
     return set_loc(instr, loc)
 
+def increase_ptr(instr, pos, gap):
+    ptr = instr[pos]
+    offset = ptr[-1] + (-gap if isinstance(ptr, Types.NegativePtr) else gap)
+    ptr = type(ptr)(ptr[:-1] + (offset,))
+    return type(instr)(instr[:pos] + (ptr,) + instr[pos+1:])
+
 def get_op(instr):
     return instr[0]
 
@@ -254,6 +260,7 @@ class Opcode_utils(object):
     if config.arch == config.ARCH_ARMT:
 
         call_patt = re.compile('^blx?([a-z]{2})?$', re.I)
+        indjmp_patt = re.compile('^bl?x([a-z]{2})?$', re.I)
 
         @staticmethod
         def is_cp(op):
@@ -359,6 +366,14 @@ class Opcode_utils(object):
         return op.upper().startswith('PUSH')
 
     @staticmethod
+    def is_pop(op):
+        return op.upper().startswith('POP')
+
+    @staticmethod
+    def is_subtraction(op):
+        return op.upper().startswith('SUB')
+
+    @staticmethod
     def is_stack_op(op):
         return op in Types.StackOp
 
@@ -376,7 +391,6 @@ class Opcode_utils(object):
             or Opcode_utils.is_jmp(op) \
             or Opcode_utils.is_cond_jmp(op) \
             or Opcode_utils.is_ret(op, exp1)
-
 
 
 class Exp_utils(object):

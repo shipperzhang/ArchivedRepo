@@ -47,20 +47,39 @@ def modify(errors):
         f.writelines(lines)
 
 def modifyARM():
-    # final.s:36: Error: selected processor does not support `XXX' in Thumb mode
-    if not os.path.isfile('final.error'): return
+    # final.s:xx: Error: branch out of range
+    # final.s:xx: Error: selected processor does not support `XXX' in Thumb mode
+    if not os.path.isfile('final.error'): return True
     with open('final.error') as f:
-        bad = filter(lambda l: 'processor does not support' in l, f)
-    if len(bad) == 0: return
-    patt = re.compile("final\.s\:([0-9]+)\:[^`]+`([^']+)'", re.I)
-    bad = map(lambda l: patt.match(l).groups(), bad)
-    with open('final.s') as f:
         lines = f.readlines()
-    for b in bad:
-        i = int(b[0]) - 1
-        lines[i] = lines[i].replace(b[1], '')
-    with open("final.s", 'w') as f:
-        f.writelines(lines)
+    cbz = filter(lambda l: 'branch out of range' in l, lines)
+    bad = filter(lambda l: 'processor does not support' in l, lines)
+    if len(cbz) > 0:
+        patt = re.compile('final\.s\:([0-9]+)\:', re.I)
+        cbz = map(lambda l: int(patt.match(l).group(1))-1, cbz)
+        cbzpatt = re.compile('(cbn?z)\s+([^,]+),([^\n]+)', re.I)
+        with open('final.s') as f:
+            lines = f.readlines()
+        for c in cbz:
+            m = cbzpatt.match(lines[c])
+            if not m: continue
+            items = list(m.groups())
+            items[0] = 'ne' if len(items[0]) > 3 else 'eq'
+            lines[c] = 'cmp {1},#0\nb{0} {2}\n'.format(*items)
+        with open("final.s", 'w') as f:
+            f.writelines(lines)
+        return False
+    elif len(bad) > 0:
+        patt = re.compile("final\.s\:([0-9]+)\:[^`]+`([^']+)'", re.I)
+        bad = map(lambda l: patt.match(l).groups(), bad)
+        with open('final.s') as f:
+            lines = f.readlines()
+        for b in bad:
+            i = int(b[0]) - 1
+            lines[i] = lines[i].replace(b[1], '')
+        with open("final.s", 'w') as f:
+            f.writelines(lines)
+    return True
 
 
 def main(filepath):
@@ -69,7 +88,9 @@ def main(filepath):
     print "     Adjusting redundant symbols"
     if ELF_utils.elf_arm():
         reassemble(True)
-        modifyARM()
+        if not modifyARM():
+            reassemble(True)
+            modifyARM()
     reassemble(True)
     errors = parse_error()
     modify(errors)
