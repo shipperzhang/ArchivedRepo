@@ -1,6 +1,7 @@
 import config
 from disasm import Types
 from utils.ail_utils import ELF_utils, set_loc, get_loc
+from utils.pp_print import pp_print_instr
 
 
 if ELF_utils.elf_64():
@@ -109,7 +110,7 @@ elif ELF_utils.elf_arm():
         Types.TripleInstr(('ldr', Types.RegClass('r0'), Types.UnOP('r0'), None, False)),
         Types.TripleInstr(('add', Types.RegClass('r1'), Types.RegClass('r0'), None, False)),
         Types.TripleInstr(('ldr', Types.RegClass('r0'), Types.UnOP('r1'), None, False)),
-        Types.TripleInstr(('subs', Types.RegClass('r0'), Types.Normal(1), None, False)),
+        Types.TripleInstr(('sub', Types.RegClass('r0'), Types.Normal(1), None, False)),
         Types.TripleInstr(('str', Types.RegClass('r0'), Types.UnOP('r1'), None, False)),
         Types.DoubleInstr(('pop', Types.RegList((Types.RegClass('r0'), Types.RegClass('r1'))), None, False)),
     ]
@@ -198,6 +199,22 @@ if ELF_utils.elf_arm():
         tmp[-1] = Types.TripleInstr(tmp[-1])
         return set_inlineblocklocation(loc, tmp) + \
                [set_loc(curr_instr, Types.Loc('', loc.loc_addr, loc.loc_visible))]
+
+    def translate_it_block(block):
+        itloc = get_loc(block[0])
+        res = [Types.DoubleInstr(('b' + block[0][1], Types.Label('.IT_%X.T' % itloc.loc_addr), itloc, False))]
+        branches = {'t': [], 'e': []}
+        for i in xrange(1, len(block[0][0])):
+            op = block[i][0].split('.')
+            op[0] = op[0][:-2]
+            instr = type(block[i])(('.'.join(op), ) + block[i][1:])
+            branches[block[0][0][i]].append(instr)
+        endloc = get_loc(block[-1])
+        branches['e'].append(Types.DoubleInstr(('b', Types.Label(('.IT_%X.E' % itloc.loc_addr)), endloc, False)))
+        branches['t'][0][-2].loc_label += '.IT_%X.T: ' % itloc.loc_addr
+        res += branches['e'] + branches['t']
+        res.append(set_loc(block[-1], Types.Loc('.IT_%X.E: ' % itloc.loc_addr, endloc.loc_addr, True)))
+        return res
 
 else:
     # x86

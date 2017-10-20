@@ -289,10 +289,12 @@ class Opcode_utils(object):
             return Opcode_utils.call_patt.match(op) is not None
 
         @staticmethod
-        def is_ret(op, exp1):
+        def is_ret(instr):
+            op, exp1, exp2 = instr[:3]
             if op.upper().startswith('POP') and isinstance(exp1, Types.RegList):
                 return 'PC' in map(str.upper, exp1)
-            elif op.upper().startswith('LDR'):
+            elif op.upper().startswith('LDR') and isinstance(exp2, Types.Ptr) \
+                and ('sp' in exp2 or 'SP' in exp2):
                 return exp1.upper() == 'PC'
             elif Opcode_utils.is_cp(op) and isinstance(exp1, Types.RegClass):
                 return exp1.upper() == 'LR'
@@ -334,8 +336,9 @@ class Opcode_utils(object):
 
         retstatements = set(['RET', 'RETN', 'RETQ'])
         @staticmethod
-        def is_ret(op, exp1):  # @UnusedVariable
-            op = op.upper()
+        def is_ret(instr):
+            op = instr[0].upper()
+            exp1 = instr[1]
             return op in Opcode_utils.retstatements or \
                    op == 'REPZ' and isinstance(exp1, str) and exp1.upper() in Opcode_utils.retstatements
 

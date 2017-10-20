@@ -57,15 +57,16 @@ def modifyARM():
     if len(cbz) > 0:
         patt = re.compile('final\.s\:([0-9]+)\:', re.I)
         cbz = map(lambda l: int(patt.match(l).group(1))-1, cbz)
-        cbzpatt = re.compile('(cbn?z)\s+([^,]+),([^\n]+)', re.I)
+        cbzpatt = re.compile('([^\:]+\s*\:\s*)?(cbn?z)\s+([^,]+),([^\n]+)', re.I)
         with open('final.s') as f:
             lines = f.readlines()
         for c in cbz:
             m = cbzpatt.match(lines[c])
             if not m: continue
             items = list(m.groups())
-            items[0] = 'ne' if len(items[0]) > 3 else 'eq'
-            lines[c] = 'cmp {1},#0\nb{0} {2}\n'.format(*items)
+            if items[0] is None: items[0] = ''
+            items[1] = 'ne' if len(items[1]) > 3 else 'eq'
+            lines[c] = '{0}cmp {2},#0\nb{1} {3}\n'.format(*items)
         with open("final.s", 'w') as f:
             f.writelines(lines)
         return False

@@ -305,7 +305,7 @@ elif config.arch == config.ARCH_ARMT:
                        'USAX', 'USUB16', 'USUB8', 'UXTAB', 'UXTAB16', 'UXTAH',
                        'UXTB', 'UXTB16', 'UXTH', 'VMUL', 'VNMUL', 'VMLA', 'VMLS',
                        'VNMLS', 'VNMLA', 'VADD', 'VSUB', 'VDIV', 'VABS', 'VNEG',
-                       'VSQRT', 'VRHADD', 'VADDL', 'VRADDHN'
+                       'VSQRT', 'VRHADD', 'VADDL', 'VRADDHN', 'VMAX'
     ], True)
     LogicOp = RecSet(['BIC', 'BICS', 'EOR', 'EORS', 'ORN', 'ORNS', 'ORR', 'ORRS',
                       'PKHBT', 'PKHTB', 'RBIT', 'REV', 'REV16', 'REVSH', 'SBFX',
@@ -319,8 +319,8 @@ elif config.arch == config.ARCH_ARMT:
                        'SEL', 'STMDB', 'STMFD', 'STMIA', 'STMEA', 'STR', 'STRB', 'STRBT',
                        'STRD', 'STREX', 'STREXB', 'STREXD', 'STREXH', 'STRH', 'STRHT',
                        'STRT', 'VCVT', 'VCVTT', 'VCVTR', 'VCVTB', 'VMOV', 'VMSR',
-                       'VSTR', 'VSTM', 'VSTMDB', 'VPUSH', 'VLDR', 'VLDM', 'VLDMDB'
-                       'VPOP', 'VSTMIA', 'VLDMIA', 'VMRS', 'VLDMDB'
+                       'VSTR', 'VSTM', 'VSTMDB', 'VPUSH', 'VLDR', 'VLDM', 'VLDMDB',
+                       'VLD4', 'VSTMIA', 'VLDMIA', 'VMRS', 'VLDMDB'
     ], True)
     CompareOp = RecSet(['CMN', 'CMP', 'IT', 'TEQ', 'TST', 'VCMP', 'VCMPE', 'ITE', 'ITT',
                         'ITTT', 'ITTE', 'ITEE', 'ITET', 'ITTTT', 'ITTTE', 'ITTET', 'ITTEE',
@@ -332,7 +332,7 @@ elif config.arch == config.ARCH_ARMT:
     ControlOp = RecSet(['B', 'BL', 'BLX', 'BX', 'BXJ', 'CBNZ', 'CBZ', 'TBB', 'TBH'], True)
     CondSuff = RecSet(['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC', 'LO',
                        'HI', 'LS', 'GE', 'LT', 'GT', 'LE', 'AL', 'HS'], True)
-    OpQualifier = RecSet(['W', 'N', 'F32', 'F64', 'U8', 'U16', 'U32', 'S8', 'S16', 'S32', 'I16'])
+    OpQualifier = RecSet(['W', 'N', 'F32', 'F64', 'U8', 'U16', 'U32', 'S8', 'S16', 'S32', 'I16', '8'])
     CommonOp = RecSet([ArithmOp, LogicOp, RolOp, AssignOp, CompareOp])
     Op = RecSet([CommonOp, StackOp, ControlOp, SystemOp, OtherOp])
     DataTypes = RecSet(['.word', '.short', '.byte'], True)

@@ -50,7 +50,7 @@ The startup Python script provides the following options:
 
 * `-g`
 
-    **NOT YET DEVELOPED**
+    **IN DEVELOPMENT**
 
     Instrument the output binary against ROP attacks using an adaptation of the technique described in [\[2\]](#gfree).
 
@@ -60,7 +60,11 @@ The startup Python script provides the following options:
 
 * `-ex exclusions_file`
 
-    Allows to specify a file containing a list of address ranges, in the format `hexaddress-hexaddress`, which will be skipped when searching for pointers in data sections.
+    Allows to specify a file containing on each line either a hexadecimal value to exclude from symbol search inside the code or an address ranges, in the format `hexaddress-hexaddress`, of the data sections which will be skipped when searching for pointers.
+
+* `-fex function_exclusion_file`
+
+    In case a non-stripped binary is being analysed, allows to specify a file containing a list of symbol which should not be considered functions.
 
 * `-a assumption_number`
 

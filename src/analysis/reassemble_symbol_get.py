@@ -91,7 +91,7 @@ class datahandler:
                 items = l.strip().split('-')
                 return (int(items[0], 16), int(items[1], 16))
             with open(config.excludedata) as f:
-                self.exclude = merge_intervals(map(rangemapper, f))
+                self.exclude = merge_intervals(map(rangemapper, filter(lambda l: '-' in l, f)))
 
     def get_textlabel(self):
         return self.text_labels
@@ -149,7 +149,7 @@ class datahandler:
                     else: self.in_jmptable = False
                 else: self.in_jmptable = False
             if holei < len(self.exclude) and self.exclude[holei][0] <= startaddr + i + 8 <= self.exclude[holei][1]:
-                i = self.exclude[holei][1]
+                i = self.exclude[holei][1] - startaddr
                 i += 8 - i % 8
                 holei += 1
             else: i += 8
@@ -200,7 +200,7 @@ class datahandler:
                     else: self.in_jmptable = False
                 else: self.in_jmptable = False
             if holei < len(self.exclude) and self.exclude[holei][0] <= startaddr + i + 4 <= self.exclude[holei][1]:
-                i = self.exclude[holei][1]
+                i = self.exclude[holei][1] - startaddr
                 i += 4 - i % 4
                 holei += 1
             else: i += 4
@@ -366,7 +366,6 @@ class instrhandler(object):
         return unify_int_list(ll)
 
     def process(self):
-        # here dec_hex is 'S_' + dec_hex(v)
         do_update = lambda s,n: s if n in s else s + '\n' + n
         des1 = self.clean_sort(self.des)
         i = 0; j = 0
@@ -414,6 +413,10 @@ class reassemble(ailVisitor):
         self.text_mem_addrs = []
         # collect all the symbols from code section or from data sections
         self.symbol_list = []
+        self.exclusionset = set()
+        if config.excludedata != '':
+            with open(config.excludedata) as f:
+                self.exclusionset = set(map(lambda e: int(e, 16), filter(lambda l: '-' not in l, f)))
         # Initializer
         self.section_collect()
         self.plt_collect()
@@ -458,6 +461,7 @@ class reassemble(ailVisitor):
             self.plt_sec = (int(items[1], 16), int(items[3], 16))
 
     def check_sec(self, addr):
+        if addr in self.exclusionset: return None
         for s in self.sec:
             b = s.sec_begin_addr
             e = b + s.sec_size
@@ -465,17 +469,16 @@ class reassemble(ailVisitor):
         return None
 
     def check_text(self, addr):
-        e = sum(self.text_sec)
-        if addr == 0xffff: return False
-        return self.text_sec[0] <= addr < e
+        if addr == 0xffff or addr in self.exclusionset: return False
+        return self.text_sec[0] <= addr < sum(self.text_sec)
 
     def check_text_abd(self, addr):
-        e = sum(self.text_sec)
-        return self.text_sec[0] <= addr <= e
+        if addr in self.exclusionset: return False
+        return self.text_sec[0] <= addr <= sum(self.text_sec)
 
     def check_plt(self, addr):
-        e = sum(self.plt_sec)
-        return self.plt_sec[0] <= addr < e
+        if addr in self.exclusionset: return False
+        return self.plt_sec[0] <= addr < sum(self.plt_sec)
 
     def parse_const(self, c):
         if isinstance(c, Types.Const): return c

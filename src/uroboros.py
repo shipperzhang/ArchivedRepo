@@ -112,7 +112,8 @@ note that two basic assumptions and addtional assumption one
 while assumption two and three need to be configured. For example, setting
 assumption two and three: -a 2 -a 3''')
     p.add_argument("-gcc", "--gccopt", action="store", default="", help="A string of additional arguments for GCC")
-    p.add_argument("-ex", "--exclude", default="", help="File with a list of address ranges to exclude from symbol search")
+    p.add_argument("-ex", "--exclude", default="", help="""File where each line is either a single value which must not be
+a label or an address range of data section to exclude from symbol search""")
     p.add_argument("-fex", "--functionexclude", default="", help="File with a list of symbols not representing functions")
     p.add_argument("--version", action="version", version="Uroboros 0.2b")
 
