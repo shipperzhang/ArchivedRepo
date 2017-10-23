@@ -10,9 +10,9 @@ from argparse import ArgumentParser, RawTextHelpFormatter
 def process(filepath, gfree=False, fexclude=''):
     import init
     import traceback
-    from instrumentation import plaincode
     from disasm import main_discover, func_addr
-    from postprocess import compile_process, post_process_data, gobmk_sub
+    from instrumentation import plaincode, alignmentenforce
+    from postprocess import compile_process, post_process_data
 
     print "Starting to process binary '" + filepath + "'"
     try:
@@ -35,11 +35,9 @@ def process(filepath, gfree=False, fexclude=''):
             with open('final_data.s', 'r') as fd: f.write(fd.read())
             if gfree: f.write(plaincode.instrdata)
 
-        if "gobmk" in filepath:
-            gobmk_sub.gobmk_sub()
-
         compile_process.main(filepath)
-        # label_adjust.label_adjust()
+        if gfree: alignmentenforce.enforce_alignment()
+
         if compile_process.reassemble() != 0: return False
 
     except Exception as e:

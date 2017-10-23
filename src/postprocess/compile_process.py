@@ -46,52 +46,101 @@ def modify(errors):
     with open("final.s", 'w') as f:
         f.writelines(lines)
 
+def adjusttbb(pos):
+    i = 0
+    pos.sort()
+    with open('final.s') as f:
+        lines = f.readlines()
+    while i < len(pos):
+        c = pos[i] - 1
+        while 'tbb' not in lines[c]: c -= 1
+        lines[c] = lines[c].replace('tbb', 'tbh', 1).replace(']', ',lsl #1]', 1)
+        while '.byte (' not in lines[c]: c += 1
+        while '.byte (' in lines[c]:
+            lines[c] = lines[c].replace('.byte', '.short', 1)
+            if c == pos[i]: i += 1
+            c += 1
+    with open('final.s', 'w') as f:
+        f.writelines(lines)
+
+def badinstrmapper(bad):
+    def mapper(line):
+        return line.replace(bad, '')
+    return mapper
+
+def cbzmapper():
+    cbzpatt = re.compile('([^\:]+\s*\:\s*)?(cbn?z)\s+([^,]+),([^\n]+)', re.I)
+    def mapper(line):
+        m = cbzpatt.match(line)
+        if not m: return line
+        items = list(m.groups())
+        if items[0] is None: items[0] = ''
+        items[1] = 'ne' if len(items[1]) > 3 else 'eq'
+        return '{0}cmp {2},#0\nb{1} {3}\n'.format(*items)
+    return mapper
+
+def outofrangemapper():
+    oorpatt = re.compile('([^\:]+\s*\:\s*)?vldr\s+([^,]+),(S_0x[A-F0-9]+)', re.I)
+    def mapper(line):
+        m = oorpatt.match(line)
+        if not m: return line
+        items = list(m.groups())
+        if items[0] is None: items[0] = ''
+        return '''{0}push {{r0}}
+movw r0,#:lower16:{2}
+movt r0,#:upper16:{2}
+vldr {1},[r0]
+pop {{r0}}
+'''.format(*items)
+    return mapper
+
 def modifyARM():
     # final.s:xx: Error: branch out of range
     # final.s:xx: Error: selected processor does not support `XXX' in Thumb mode
+    reassemble(True)
     if not os.path.isfile('final.error'): return True
     with open('final.error') as f:
         lines = f.readlines()
     cbz = filter(lambda l: 'branch out of range' in l, lines)
     bad = filter(lambda l: 'processor does not support' in l, lines)
+    tbb = filter(lambda l: 'too large for field of 1 bytes at' in l, lines)
+    outrange = filter(lambda l: 'co-processor offset out of range' in l, lines)
+    if sum(map(len, (cbz, bad, tbb, outrange))) == 0: return True
+    patt = re.compile('final\.s\:([0-9]+)\:', re.I)
+    errors = {}
     if len(cbz) > 0:
-        patt = re.compile('final\.s\:([0-9]+)\:', re.I)
         cbz = map(lambda l: int(patt.match(l).group(1))-1, cbz)
-        cbzpatt = re.compile('([^\:]+\s*\:\s*)?(cbn?z)\s+([^,]+),([^\n]+)', re.I)
-        with open('final.s') as f:
-            lines = f.readlines()
         for c in cbz:
-            m = cbzpatt.match(lines[c])
-            if not m: continue
-            items = list(m.groups())
-            if items[0] is None: items[0] = ''
-            items[1] = 'ne' if len(items[1]) > 3 else 'eq'
-            lines[c] = '{0}cmp {2},#0\nb{1} {3}\n'.format(*items)
-        with open("final.s", 'w') as f:
-            f.writelines(lines)
-        return False
-    elif len(bad) > 0:
-        patt = re.compile("final\.s\:([0-9]+)\:[^`]+`([^']+)'", re.I)
-        bad = map(lambda l: patt.match(l).groups(), bad)
-        with open('final.s') as f:
-            lines = f.readlines()
+            errors[c] = cbzmapper()
+    if len(bad) > 0:
+        bpatt = re.compile("final\.s\:([0-9]+)\:[^`]+`([^']+)'", re.I)
+        bad = map(lambda l: bpatt.match(l).groups(), bad)
         for b in bad:
-            i = int(b[0]) - 1
-            lines[i] = lines[i].replace(b[1], '')
-        with open("final.s", 'w') as f:
-            f.writelines(lines)
-    return True
+            errors[int(b[0])-1] = badinstrmapper(b[1])
+    if len(outrange) > 0:
+        outrange = map(lambda l: int(patt.match(l).group(1))-1, outrange)
+        for o in outrange:
+            errors[o] = outofrangemapper()
+    if len(tbb) > 0:
+        tbb = map(lambda l: int(patt.match(l).group(1))-1, tbb)
+        adjusttbb(tbb)
+    with open('final.s') as f:
+        lines = f.readlines()
+    for c in sorted(errors.keys()):
+        lines[c] = errors[c](lines[c])
+    with open('final.s', 'w') as f:
+        f.writelines(lines)
+
+    return False
 
 
 def main(filepath):
     # Dump linked shared libraries
     os.system('readelf -d ' + filepath + ' | awk \'/Shared/{match($0, /\[([^\]]*)\]/, arr); print arr[1]}\' | grep -i -v "libc\\." > linkedlibs.info')
-    print "     Adjusting redundant symbols"
+    print "     Applying adjustments for compilation"
     if ELF_utils.elf_arm():
-        reassemble(True)
-        if not modifyARM():
-            reassemble(True)
-            modifyARM()
+        i = 0
+        while not modifyARM() and i < 10: i += 1
     reassemble(True)
     errors = parse_error()
     modify(errors)

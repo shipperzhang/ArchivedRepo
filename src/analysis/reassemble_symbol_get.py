@@ -638,7 +638,7 @@ class reassemble(ailVisitor):
                     # Sometimes GCC changes idea and picks another register to load the address
                     destreg = instrs[i+tindex][1]
                 elif currinstr[1] == destreg:
-                    if currinstr[0].upper() == 'STR':
+                    if currinstr[0].upper().split('.')[0] == 'STR':
                         # Some other times GCC wants to have even more fun and changes register using the stack
                         tindex += 1
                         while tindex < config.ARM_maxDoublemovDist:

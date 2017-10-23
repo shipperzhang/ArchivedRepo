@@ -3,7 +3,7 @@ import time
 import random
 from disasm import Types
 from struct import pack, unpack
-from instrumentation import inlining
+from instrumentation import inlining, alignmentenforce
 from utils.ail_utils import ELF_utils, get_loc, Opcode_utils
 
 
@@ -27,15 +27,14 @@ class GfreeInstrumentation:
         gfree.findfreebranches()
         gfree.indirectprotection()
         gfree.returnprotection()
+        if not ELF_utils.elf_arm(): gfree.rewrite_instr()
         return gfree.instrs
 
-    badbytes = set(('\xc2', '\xc3', '\xca', '\xcb', '\xff'))
     def generatefuncID(self):
         while True:
             fid = pack('<I', random.getrandbits(32))
             if not fid in self.fIDset:
-                if not ELF_utils.elf_arm() and \
-                   next((b for b in fid if b in GfreeInstrumentation.badbytes), None) is not None:
+                if next((b for b in fid if b in alignmentenforce.badbytes), None) is not None:
                     continue
                 self.fIDset.add(fid)
                 return unpack('<HH', fid) if ELF_utils.elf_arm() \
@@ -119,3 +118,13 @@ class GfreeInstrumentation:
         random.seed(time.time())
         self.addinlining(self.indcalls, self.addframecookie)
 
+    def rewrite_instr(self):
+        i = 0
+        bswap_bad = set(('EDX', 'EBX', 'RDX', 'RBX'))
+        while i < len(self.instrs):
+            ins = self.instrs[i]
+            if ins[0].upper() == 'MOVNTI':
+                self.instrs[i] = type(ins)(('mov',) + ins[1:])
+            elif ins[0].upper() == 'BSWAP' and ins[1].upper() in bswap_bad:
+                self.instrs[i:i+1] = inlining.bswapsub(ins[1], get_loc(ins))
+            i += 1

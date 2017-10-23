@@ -215,7 +215,7 @@ if config.arch == config.ARCH_X86:
                        'FSUBS', 'FSUBR', 'FSTS', 'FSUBL', 'FCMOVNBE', 'FCMOVE', 'FCMOVNE',
                        'FCMOVB', 'FISTP', 'FCMOVNB', 'CMOVNP', 'STOS', 'STOSB', 'STOSW', 'STOSD',
                        'FIST', 'FFREE', 'MOVSWQ', 'ORQ', 'MOVDQU', 'MOVDQA',
-                       'MOVUPS', 'MOVD', 'MOVHLPS', 'MOVLHPS', 'MOVUPD',
+                       'MOVUPS', 'MOVD', 'MOVHLPS', 'MOVLHPS', 'MOVUPD', 'MOVNTI',
                        'PUNPCKHQDQ', 'PUNPCKLDQ', 'PUNPCKLBW', 'PINSRW', 'PEXTRW',
                        'PUNPCKLQDQ', 'PUNPCKLWD', 'MOVHPD', 'MOVLPD', 'LAHF', 'SAHF',
                        'RDTSC', 'VCVTSI2SD', 'VMOVDQU', 'VMOVDQA', 'VPBLENDW', 'VPUNPCKHQDQ',

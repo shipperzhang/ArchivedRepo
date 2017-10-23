@@ -1,7 +1,6 @@
 import config
 from disasm import Types
 from utils.ail_utils import ELF_utils, set_loc, get_loc
-from utils.pp_print import pp_print_instr
 
 
 if ELF_utils.elf_64():
@@ -238,3 +237,13 @@ else:
         tmp[3] = Types.TripleInstr(tmp[3])
         return set_inlineblocklocation(loc, tmp) + \
                [set_loc(curr_instr, Types.Loc('', loc.loc_addr, loc.loc_visible))]
+
+    def bswapsub(reg, loc):
+        sub = Types.RegClass('edi' if reg[0].lower() == 'e' else 'rdi')
+        return set_inlineblocklocation(loc, [
+            Types.DoubleInstr(('push', sub, None, False)),
+            Types.TripleInstr(('mov', sub, reg, None, False)),
+            Types.DoubleInstr(('bswap', sub, None, False)),
+            Types.TripleInstr(('mov', reg, sub, None, False)),
+            Types.DoubleInstr(('pop', sub, None, False)),
+        ])
