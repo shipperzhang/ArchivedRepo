@@ -25,7 +25,7 @@ and the following python packages (available through `pip` repositories):
 |:------------|--------:|
 | capstone    | ≥3.0.4  |
 | termcolor   | ≥1.1.0  |
-| ELF-Esteem  | ≥0.1    |
+| pyelftools  | ≥0.24   |
 
 ## Build
 

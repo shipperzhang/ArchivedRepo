@@ -333,10 +333,11 @@ class datahandler:
         if len(self.rodata_list) != 0:
             l, s = self.rodata_list[0]
             self.rodata_list[0] = ('s_dummy:\n' + l, s)
-        self.rodata_list.insert(0, ('.section .rodata', ''))
+        dataalign = '\n.align 16' if ELF_utils.elf_64() else ''
+        self.rodata_list.insert(0, ('.section .rodata' + dataalign, ''))
         self.got_list.insert(0, ('.section .got', ''))
-        self.data_list.insert(0, ('.section .data', ''))
-        self.bss_list.insert(0, ('.section .bss', ''))
+        self.data_list.insert(0, ('.section .data' + dataalign, ''))
+        self.bss_list.insert(0, ('.section .bss' + dataalign, ''))
         def createout(l):
             l = filter(lambda e: len(e[0]) + len(e[1]) > 0, l)
             return '\n'.join(map(lambda e: e[0] + e[1], l))

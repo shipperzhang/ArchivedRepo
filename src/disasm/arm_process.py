@@ -1,7 +1,8 @@
 import re
 import capstone
 from struct import unpack
-from elfesteem import elf, elf_init
+from elftools.elf.elffile import ELFFile
+
 
 def load_size(op, exp):
     # Return byte size of the memory load
@@ -49,12 +50,13 @@ def arm_process(filename):
 
     with open(filename, 'rb') as f:
         raw = f.read()
-    info = elf_init.ELF(raw)
+        f.seek(0)
+        textsec = ELFFile(f).get_section_by_name('.text')
+        textsec.addr = textsec.header['sh_addr']
+        textsec.size = textsec.header['sh_size']
+        textsec.offset = textsec.header['sh_offset']
 
-    voffset = filter(lambda h: elf.constants['PT'].get(h.ph.type, '') == 'LOAD' and h.ph.offset == 0, info.ph.phlist)
-    voffset = voffset[0].ph.vaddr
-    textsec = info.getsectionbyname('.text')
-    textraw = raw[textsec.addr - voffset : textsec.addr + textsec.size - voffset]
+    textraw = raw[textsec.offset : textsec.offset + textsec.size]
     with open('plts.info') as f:
         plts = {int(l.split()[0],16): ' ' + l.split()[1].rstrip(':') for l in f}
 

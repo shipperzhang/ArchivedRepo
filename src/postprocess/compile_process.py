@@ -1,7 +1,6 @@
 import os
 import re
 import config
-from sets import Set
 from utils.ail_utils import ELF_utils
 
 
@@ -12,9 +11,10 @@ def inferlibflags():
     except: return []
 
 
-def reassemble(saveerr=False, libs=[]):
+def reassemble(saveerr=False, libs=[], debug=False):
     if len(libs) == 0: libs = inferlibflags()
     return os.system(config.compiler + ' final.s '
+              + ('-g ' if debug else '')
               + ('-mthumb' if ELF_utils.elf_arm() else (' -Wa,-mindex-reg' + (' -m32' if ELF_utils.elf_32() else '')))
               + ' ' + config.gccoptions + ' ' + ' '.join(libs)
               + (' 2> final.error' if saveerr else ''))
@@ -28,7 +28,7 @@ def parse_error():
                 if 'In function' in l: pass
                 elif 'undefined reference' in l and 'S_0x' in l:
                     addrs.append(l.split()[-1][1:-1])
-        return Set(addrs)
+        return set(addrs)
 
 
 def modify(errors):
@@ -134,13 +134,13 @@ def modifyARM():
     return False
 
 
-def main(filepath):
+def main(filepath, libs=[], debug=False):
     # Dump linked shared libraries
     os.system('readelf -d ' + filepath + ' | awk \'/Shared/{match($0, /\[([^\]]*)\]/, arr); print arr[1]}\' | grep -i -v "libc\\." > linkedlibs.info')
     print "     Applying adjustments for compilation"
     if ELF_utils.elf_arm():
         i = 0
         while not modifyARM() and i < 10: i += 1
-    reassemble(True)
+    reassemble(True, libs, debug)
     errors = parse_error()
     modify(errors)

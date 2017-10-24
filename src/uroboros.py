@@ -10,9 +10,9 @@ from argparse import ArgumentParser, RawTextHelpFormatter
 def process(filepath, gfree=False, fexclude=''):
     import init
     import traceback
+    from postprocess import compile_process
     from disasm import main_discover, func_addr
     from instrumentation import plaincode, alignmentenforce
-    from postprocess import compile_process, post_process_data
 
     print "Starting to process binary '" + filepath + "'"
     try:
@@ -23,8 +23,6 @@ def process(filepath, gfree=False, fexclude=''):
 
         init.main(filepath, gfree)
         if not os.path.isfile("final.s"): return False
-
-        post_process_data.post_process_data()
 
         with open('final_data.s', 'a') as f:
             f.write('\n.section .eh_frame\n')
@@ -37,7 +35,6 @@ def process(filepath, gfree=False, fexclude=''):
 
         compile_process.main(filepath)
         if gfree: alignmentenforce.enforce_alignment()
-
         if compile_process.reassemble() != 0: return False
 
     except Exception as e:
