@@ -1,19 +1,11 @@
 import os
+import sys
+import config
+from itertools import imap
 from termcolor import colored
 from utils.ail_utils import ELF_utils
 from postprocess import compile_process
 from elftools.elf.elffile import ELFFile
-
-if ELF_utils.elf_arm():
-    badbytes = set(('\xbd', '\x47'))
-    badend = set([])
-    sled = 'mov r0,r0; '
-    barrier = ''
-else:
-    badbytes = set(('\xc2', '\xc3', '\xca', '\xcb', '\xff'))
-    badend = set(['\xff'])
-    sled = 'jmp .+11;' + ('nop;' * 9) + ' '
-    barrier = 'movl %eax,%eax;'
 
 
 def get_hex():
@@ -31,50 +23,97 @@ def get_hex():
     voff = textsec.header['sh_addr'] - textsec.header['sh_offset']
 
     curr_line = 0; curr_data = 0
-    res = [''] * lp[-1].state.line
+    res = [''] * (lp[-1].state.line + 1)
     f.seek(lp.pop(0).args[0] - voff, os.SEEK_SET)
 
     for e in lp:
         if len(e.args) == 0:
             curr_line = e.state.line - 1
         elif len(e.args) == 1:
-            res[curr_line] = f.read(e.args[0])
+            res[curr_line] += f.read(e.args[0])
         elif len(e.args) == 3:
             if e.args[0] == 0:
                 pc = voff + f.tell()
                 if pc < datas[curr_data] < pc + e.args[1]:
                     size = datas[curr_data] - pc
-                    res[curr_line] = f.read(size)
+                    res[curr_line] += f.read(size)
                 else:
                     size = 0
                 f.seek(e.args[1] - size, os.SEEK_CUR)
                 curr_line = e.state.line - 1
             else:
-                res[curr_line] = f.read(e.args[1])
+                res[curr_line] += f.read(e.args[1])
                 curr_line += e.args[0]
     f.close()
     return res
 
 
-def sled_insertion(lines):
-    hexvals = get_hex()
+if ELF_utils.elf_arm():
+    badbytes = set(('\xbd', '\x47'))
+    sled = '; mov r0,r0\n'
 
-    for i in xrange(len(hexvals)):
-        if hexvals[i]:
-            print i, lines[i].strip(), '->', map(lambda e: hex(ord(e)), hexvals[i])
-        # TODO: stuff
-    exit()
+    def sled_insertion(lines, fixed):
+        hexvals = get_hex()
+        nmodified = len(fixed)
 
-    with open('final.s', 'w') as f:
-        f.writelines(lines)
+        for i in xrange(len(hexvals)-1):
+            hv0 = hexvals[i]
+            if i not in fixed and hv0:
+                hv1 = next((hexvals[j] for j in xrange(i+1, len(hexvals)) if hexvals[j]), '')
+                if len(hv1) > 2 and any(imap(lambda b: b in badbytes, hv1[2:])):
+                    lines[i] = lines[i].replace('\n', sled)
+                    fixed.add(i)
 
-    return 0
+        with open('final.s', 'w') as f:
+            f.writelines(lines)
+
+        return len(fixed) > nmodified
+
+else:
+    badbytes = set(('\xc2', '\xc3', '\xca', '\xcb'))
+    badend = set(('\xff'))
+    branchenc = set(('\x72', '\x76', '\xe3', '\x7c', '\x7e', '\xe9', '\xeb', '\x73',
+                     '\x77', '\x7d', '\x7f', '\x71', '\x7b', '\x79', '\x75', '\x70',
+                     '\x7a', '\x78', '\x74'))
+    sled = 'jmp .+11;' + ('nop;' * 9) + ' '
+    barrier = '; mov %eax,%eax\n' if ELF_utils.elf_32() else '; mov %rax,%rax\n'
+    indcodes = set((2,3,4,5))
+
+    def sled_insertion(lines, fixed):
+        hexvals = get_hex()
+        nmodified = 0
+
+        for i in xrange(len(hexvals)):
+            hv = hexvals[i]
+            if i not in fixed and hv:
+                if hv[-1] in badend:
+                    hv1 = next((hexvals[j] for j in xrange(i+1, len(hexvals)) if hexvals[j]), '\x00')
+                    if ((ord(hv1[0]) >> 3) & 0b111) in indcodes:
+                        lines[i] = lines[i].replace('\n', barrier)
+                        nmodified += 1
+                if hv[0] in branchenc and hv[1] in badbytes:
+                    lines[i-1] = lines[i-1].replace('\n', ';nop\n')
+                    lines[i] = lines[i].replace('\n', ';nop\n')
+                elif hv[0] != '\xf3' and any(imap(lambda b: b in badbytes, hv[1:])):
+                    lines[i] = sled + lines[i]
+                    fixed.add(i)
+
+        with open('final.s', 'w') as f:
+            f.writelines(lines)
+
+        return nmodified > 0
 
 
 def enforce_alignment():
     print colored('6: ALIGNMENT ENFORCEMENT', 'green')
+    npass = 0
+    fixed = set()
     with open('final.s') as f:
         lines = f.readlines()
-    while True:
-        compile_process.reassemble(False, [], True)
-        if sled_insertion(lines) == 0: break
+    while npass < config.gfree_maxalignmentpass:
+        sys.stdout.write('\r     Passes: %d' % (npass+1))
+        sys.stdout.flush()
+        compile_process.reassemble(True, [], True)
+        if not sled_insertion(lines, fixed): break
+        npass += 1
+    sys.stdout.write('\n')

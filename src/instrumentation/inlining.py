@@ -240,10 +240,11 @@ else:
 
     def bswapsub(reg, loc):
         sub = Types.RegClass('edi' if reg[0].lower() == 'e' else 'rdi')
+        substack = Types.RegClass('edi' if ELF_utils.elf_32() else 'rdi')
         return set_inlineblocklocation(loc, [
-            Types.DoubleInstr(('push', sub, None, False)),
+            Types.DoubleInstr(('push', substack, None, False)),
             Types.TripleInstr(('mov', sub, reg, None, False)),
             Types.DoubleInstr(('bswap', sub, None, False)),
             Types.TripleInstr(('mov', reg, sub, None, False)),
-            Types.DoubleInstr(('pop', sub, None, False)),
+            Types.DoubleInstr(('pop', substack, None, False)),
         ])

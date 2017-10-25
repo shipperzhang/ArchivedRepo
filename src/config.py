@@ -26,6 +26,7 @@ gfree_keygenflagvar = 'keygenerated'
 gfree_failfuncname = 'gfree_fail'
 gfree_cookiestackvar = 'cookiestack'
 gfree_cookiestacksize = 2048 # KB
+gfree_maxalignmentpass = 100
 
 
 def setup(filepath, gccopt='', exdata=''):
