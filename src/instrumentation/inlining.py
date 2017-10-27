@@ -93,12 +93,12 @@ elif ELF_utils.elf_arm():
         Types.TripleInstr(('ldr', Types.RegClass('r1'), Types.UnOP('r1'), None, False)),
         Types.TripleInstr(('cmp', Types.RegClass('r0'), Types.RegClass('r1'), None, False)),
         Types.DoubleInstr(('bne', Types.Label(config.gfree_failfuncname), None, False)),
-        Types.TripleInstr(('movw', Types.RegClass('r0'), Types.Label('#:lower16:.text-1'), None, False)),
+        Types.TripleInstr(('movw', Types.RegClass('r0'), Types.Label('#:lower16:.text'), None, False)),
         Types.TripleInstr(('movt', Types.RegClass('r0'), Types.Label('#:upper16:.text'), None, False)),
         ['cmp', None, Types.RegClass('r0'), None, False],  # Fill with call register
         Types.DoubleInstr(('pop', Types.RegList((Types.RegClass('r0'), Types.RegClass('r1'))), None, False)),
-        Types.DoubleInstr(('it', Types.Label('hi'), None, False)),
-        ['orrhi', None, Types.Normal(1), None, False]      # Fill with call register
+        Types.DoubleInstr(('blo.n', Types.Label('.+0x6'), None, False)),
+        ['orr.w', None, Types.Normal(1), None, False]      # Fill with call register
     ]
 
     framecookietail = [
@@ -201,7 +201,7 @@ if ELF_utils.elf_arm():
 
     def translate_it_block(block):
         itloc = get_loc(block[0])
-        res = [Types.DoubleInstr(('b' + block[0][1], Types.Label('.IT_%X.T' % itloc.loc_addr), itloc, False))]
+        res = [Types.DoubleInstr(('b' + block[0][1], Types.Label('.LIT_%X.T' % itloc.loc_addr), itloc, False))]
         branches = {'t': [], 'e': []}
         for i in xrange(1, len(block[0][0])):
             op = block[i][0].split('.')
@@ -209,10 +209,10 @@ if ELF_utils.elf_arm():
             instr = type(block[i])(('.'.join(op), ) + block[i][1:])
             branches[block[0][0][i]].append(instr)
         endloc = get_loc(block[-1])
-        branches['e'].append(Types.DoubleInstr(('b', Types.Label(('.IT_%X.E' % itloc.loc_addr)), endloc, False)))
-        branches['t'][0][-2].loc_label += '.IT_%X.T: ' % itloc.loc_addr
+        branches['e'].append(Types.DoubleInstr(('b', Types.Label(('.LIT_%X.E' % itloc.loc_addr)), endloc, False)))
+        branches['t'][0][-2].loc_label += '.LIT_%X.T: ' % itloc.loc_addr
         res += branches['e'] + branches['t']
-        res.append(set_loc(block[-1], Types.Loc('.IT_%X.E: ' % itloc.loc_addr, endloc.loc_addr, True)))
+        res.append(set_loc(block[-1], Types.Loc('.LIT_%X.E: ' % itloc.loc_addr, endloc.loc_addr, True)))
         return res
 
 else:

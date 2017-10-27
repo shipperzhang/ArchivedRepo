@@ -16,6 +16,7 @@ def process(filepath, gfree=False, fexclude=''):
 
     print "Starting to process binary '" + filepath + "'"
     try:
+
         func_addr.func_addr(filepath, 0, fexclude)
 
         os.system(config.strip + ' ' + filepath)

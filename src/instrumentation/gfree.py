@@ -1,6 +1,7 @@
 import os
 import time
 import random
+import config
 from disasm import Types
 from struct import pack, unpack
 from instrumentation import inlining, alignmentenforce
@@ -20,6 +21,11 @@ class GfreeInstrumentation:
         if os.path.isfile('pic_thunk.info'):
             with open('pic_thunk.info') as f:
                 self.avoid = set(map(lambda l: int(l, 16), f))
+        # This is an attempt to solve issues with aeabi functions at the end of executables.
+        # These contain hardcoded jump table which get broken by the IT block translation.
+        tmp = filter(lambda f: f.func_name.startswith('__aeabi'), funcs)
+        tmp = sorted(tmp, key=lambda f: f.func_begin_addr)
+        self.itremlimit = tmp[0].func_begin_addr if len(tmp) > 0 else (1 << 32)
 
     @staticmethod
     def perform(instrs, funcs):
@@ -28,6 +34,7 @@ class GfreeInstrumentation:
         gfree.indirectprotection()
         gfree.returnprotection()
         if not ELF_utils.elf_arm(): gfree.rewrite_instr()
+        elif config.gfree_ARMITdelete: gfree.remove_its()
         return gfree.instrs
 
     def generatefuncID(self):
@@ -127,4 +134,14 @@ class GfreeInstrumentation:
                 self.instrs[i] = type(ins)(('mov',) + ins[1:])
             elif ins[0].upper() == 'BSWAP' and ins[1].upper() in bswap_bad:
                 self.instrs[i:i+1] = inlining.bswapsub(ins[1], get_loc(ins))
+            i += 1
+
+    def remove_its(self):
+        i = 0
+        while i < len(self.instrs):
+            ins = self.instrs[i]
+            if get_loc(ins).loc_addr > self.itremlimit: break
+            if ins[0].upper().startswith('IT'):
+                j = len(ins[0].strip()) + 1
+                self.instrs[i:i+j] = inlining.translate_it_block(self.instrs[i:i+j])
             i += 1

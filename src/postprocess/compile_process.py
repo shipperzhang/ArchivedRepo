@@ -58,7 +58,7 @@ def adjusttbb(pos):
         while '.byte (' not in lines[c]: c += 1
         while '.byte (' in lines[c]:
             lines[c] = lines[c].replace('.byte', '.short', 1)
-            if c == pos[i]: i += 1
+            if i < len(pos) and c == pos[i]: i += 1
             c += 1
     with open('final.s', 'w') as f:
         f.writelines(lines)
@@ -134,10 +134,11 @@ def modifyARM():
     return False
 
 
-def main(filepath, libs=[], debug=False):
+def main(filepath='', libs=[], debug=False):
     # Dump linked shared libraries
-    os.system('readelf -d ' + filepath + ' | awk \'/Shared/{match($0, /\[([^\]]*)\]/, arr); print arr[1]}\' | grep -i -v "libc\\." > linkedlibs.info')
-    print "     Applying adjustments for compilation"
+    if filepath:
+        os.system('readelf -d ' + filepath + ' | awk \'/Shared/{match($0, /\[([^\]]*)\]/, arr); print arr[1]}\' | grep -i -v "libc\\." > linkedlibs.info')
+        print "     Applying adjustments for compilation"
     if ELF_utils.elf_arm():
         i = 0
         while not modifyARM() and i < 10: i += 1

@@ -50,8 +50,6 @@ The startup Python script provides the following options:
 
 * `-g`
 
-    **IN DEVELOPMENT**
-
     Instrument the output binary against ROP attacks using an adaptation of the technique described in [\[2\]](#gfree).
 
 * `-gcc "parameters"`

@@ -27,6 +27,7 @@ gfree_failfuncname = 'gfree_fail'
 gfree_cookiestackvar = 'cookiestack'
 gfree_cookiestacksize = 2048 # KB
 gfree_maxalignmentpass = 100
+gfree_ARMITdelete = True
 
 
 def setup(filepath, gccopt='', exdata=''):

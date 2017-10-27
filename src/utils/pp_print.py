@@ -213,3 +213,6 @@ def pp_print_file(ilist):
         if ELF_utils.elf_arm(): f.write('.syntax unified\n.align 2\n.thumb\n')
         f.write('\n'.join(ilist))
         f.write('\n\n')
+
+def pp_print_hex(h):
+    return map(lambda e: hex(ord(e)), h)
