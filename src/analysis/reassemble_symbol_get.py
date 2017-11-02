@@ -333,7 +333,9 @@ class datahandler:
         if len(self.rodata_list) != 0:
             l, s = self.rodata_list[0]
             self.rodata_list[0] = ('s_dummy:\n' + l, s)
-        dataalign = '\n.align 16' if ELF_utils.elf_64() else ''
+        dataalign = '\n.align 16' if ELF_utils.elf_64() else (
+                    '\n.align 2' if ELF_utils.elf_arm() else ''
+        )
         self.rodata_list.insert(0, ('.section .rodata' + dataalign, ''))
         self.got_list.insert(0, ('.section .got', ''))
         self.data_list.insert(0, ('.section .data' + dataalign, ''))
