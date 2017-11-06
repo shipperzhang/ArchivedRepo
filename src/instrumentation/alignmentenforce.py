@@ -44,7 +44,7 @@ if ELF_utils.elf_arm():
                     update_line = True
                 else:
                     res[curr_line] += f.read(e.args[0])
-            elif len(e.args) == 3:
+            elif len(e.args) > 1:
                 pc = voff + f.tell()
                 if pc < datas[curr_data] < pc + e.args[1]:
                     size = datas[curr_data] - pc
@@ -105,7 +105,7 @@ else:
                 curr_line = e.state.line - 1
             elif len(e.args) == 1:
                 res[curr_line] += f.read(e.args[0])
-            elif len(e.args) == 3:
+            elif len(e.args) > 1:
                 if e.args[0] == 0:
                     f.seek(e.args[1], os.SEEK_CUR)
                     curr_line = e.state.line - 1
