@@ -1,7 +1,7 @@
 import config
 from disasm import Types
-from utils.ail_utils import get_loc, get_op, get_cf_des, Opcode_utils
 from termcolor import colored
+from utils.ail_utils import get_loc, Opcode_utils
 
 
 class stack_of_loc(object):
@@ -122,7 +122,8 @@ class dis_validator(object):
                     self.update_cfd(index, instrlist)
                     self.update_cft_track(i)
                 else:
-                    p = get_op(i); e = get_cf_des(i)
+                    p = i[0]
+                    e = i[1] if isinstance(i, Types.DoubleInstr) else None
                     if Opcode_utils.call_patt.match(p):  # @UndefinedVariable
                         print "detected call instruction in disassembly validator: " + str(i)
                         self.update_cfd(index + 1, instrlist)

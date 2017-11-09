@@ -1,3 +1,7 @@
+"""
+Generic utilities
+"""
+
 import re
 import time
 import config
@@ -5,15 +9,35 @@ from disasm import Types
 from operator import itemgetter
 
 def unify_int_list(intlist):
+    """
+    Remove duplicates and sort list of integers
+    :param intlist: list of integers
+    :return: sorted unique list
+    """
     return sorted(set(intlist))
 
 def unify_str_list(strlist):
+    """
+    Remove duplicates and sort list of strings
+    :param strlist: list of strings
+    :return: sorted unique list
+    """
     return sorted(set(strlist))
 
 def unify_funclist_by_name(funclist):
+    """
+    Remove duplicates by name from a list of function objects
+    :param funclist: list of function objects
+    :return: list of function objects with unique names
+    """
     return {f.func_name: f for f in funclist}.values()
 
 def unify_funclist_by_addr(funclist):
+    """
+    Remove duplicates by address from a sorted list of function objects
+    :param funclist: list of function objects
+    :return: list of function objects with unique address
+    """
     res = []
     for i in range(len(funclist)-1):
         h1 = funclist[i]
@@ -26,6 +50,11 @@ def unify_funclist_by_addr(funclist):
     return res
 
 def merge_intervals(intervals):
+    """
+    Merge overlapping items in a list of intervals
+    :param interval: list of tuples representing intervals
+    :return: list of non-overlapping intervals
+    """
     res = []
     if not intervals: return []
     sorted_intervals = sorted(intervals, key=itemgetter(0))
@@ -39,70 +68,117 @@ def merge_intervals(intervals):
     res.append((low, high))
     return res
 
-def string_to_int32(s):
-    return int(s)
-
-def compare_loc(l1, l2):
-    return l1.loc_addr == l2.loc_addr and l1.loc_label == l2.loc_label
-
 def get_loc(instr):
+    """
+    Retrieve location from instruction
+    :param instr: instruction tuple
+    :return: location of the instruction
+    """
     return instr[-2]
 
 def set_loc(instr, loc):
+    """
+    Set new location in an instruction
+    :param instr: target instruction
+    :param loc: location object to be set
+    :return: instruction with updated location
+    """
     t = type(instr)
     l = len(instr)
     return t(instr[:l-2] + (loc,) + instr[-1:])
 
 def get_addr(instr):
+    """
+    Get location address from instruction
+    :param instr: instruction tuple
+    :return: address of the instruction
+    """
     return get_loc(instr).loc_addr
 
 def get_label(instr):
+    """
+    Get location label from instruction
+    :param instr: instruction tuple
+    :return: label of the instruction
+    """
     return get_loc(instr).loc_label
 
 def update_label(instr, label):
+    """
+    Set new label in an instruction
+    :param instr: instruction tuple
+    :param label: label to be set
+    :return: instruction with updated label
+    """
     loc = get_loc(instr)
     loc.loc_label = label
     return set_loc(instr, loc)
 
 def increase_ptr(instr, pos, gap):
+    """
+    Increase indirect addressing offset in an instruction
+    :param instr: instruction tuple
+    :param pos: position of the indirect addressing in the instruction tuple
+    :param gap: value to be added to the offset
+    :return: instruction with updated addressing
+    """
     ptr = instr[pos]
     offset = ptr[-1] + (-gap if isinstance(ptr, Types.NegativePtr) else gap)
     ptr = type(ptr)(ptr[:-1] + (offset,))
     return type(instr)(instr[:pos] + (ptr,) + instr[pos+1:])
 
-def get_op(instr):
-    return instr[0]
-
-def get_cf_des(instr):
-    return instr[1] if isinstance(instr, Types.DoubleInstr) else None
-
-def get_exp_1(instr):
-    if isinstance(instr, Types.SingleInstr): raise Exception('No exp in single')
-    return instr[1]
-
 def read_file(filename):
+    """
+    Read whole file to list of stripped strings
+    :param filename: filepath
+    :return: list of strings
+    """
     with open(filename) as f:
         lines = f.readlines()
     return map(str.rstrip, lines)
 
 def dec_hex(val):
+    """
+    Format inteegr to hex
+    :param val: integer value
+    :return: string of hexadecimal representation
+    """
     return '0x%X' % val
 
 def print_loclist(loclist):
+    """
+    Print list of location objects
+    :param loclist: list of locations
+    """
     for loc in loclist:
         print loc.loc_label
         print dec_hex(loc.loc_addr)
 
 def print_addrlist(intlist):
+    """
+    Print list of integer addresses as hex
+    :param intlist: list of integers
+    """
     print '\n'.join(map(dec_hex, intlist))
 
-# zip already exists in python :D
-
 def cat_from(strlist, v, suf):
+    """
+    Concatenate sublist of strings
+    :param strlist: list of strings
+    :param v: sublist starting position
+    :param suf: glue string
+    :return: concatenated string
+    """
     # return ''.join(map(lambda s: s + suf, strlist[v:]))
     return suf.join(strlist[v:])
 
 def split_by_list(s, intlist):
+    """
+    Split iterable by a list of indices
+    :param s: iterable
+    :param intlist: list of indices
+    :return: list of splitted parts
+    """
     res = []
     points = [0] + intlist + [len(s)]
     for i in range(len(points)-1):
@@ -111,10 +187,20 @@ def split_by_list(s, intlist):
     return res
 
 def int_of_string_opt(s, base=10):
+    """
+    Convert string to integer without raising exceptions
+    :param s: integer string
+    :param base: numbering base
+    :return: integer value or None on failure
+    """
     try: return int(s, base)
     except: return None
 
 def print_exp_type(exp):
+    """
+    Print type of expression
+    :param exp: expression
+    """
     if isinstance(exp, Types.Const): print 'const'
     elif isinstance(exp, Types.Symbol): print 'symbol'
     elif isinstance(exp, Types.RegClass): print 'reg'
@@ -123,12 +209,27 @@ def print_exp_type(exp):
     elif isinstance(exp, Types.Label): print 'label'
 
 def print_instr_type(instr):
+    """
+    Print type of instruction
+    :param instr: instruction tuple
+    """
     print instr.__class__.__name__
 
 def sort_loc(loclist):
+    """
+    Sort list of location objects by address
+    :param loclist: list of locations
+    :return: sorted list of locations
+    """
     return sorted(loclist, cmp=lambda l1,l2: l1.loc_addr - l2.loc_addr)
 
 def get_instr_byloc(instrlist, loclist):
+    """
+    Filter sorted instruction list by a sorted list of locations
+    :param instrlist: sorted instruction list
+    :param loclist: sorted location list
+    :return: list of matching instrctions
+    """
     res = []
     i = 0; j = 0
     while j < len(loclist):
@@ -140,14 +241,29 @@ def get_instr_byloc(instrlist, loclist):
     return res
 
 def recover_addr_from_label(lab):
+    """
+    Get address from generated label (e.g. S_0x400400)
+    :param lab: label string
+    :return: integer address
+    """
     try: return int(lab.strip()[2:], 16)
     except: return -1
 
 def get_next_bb(sn):
+    """
+    Increment BB_ label numbering
+    :param sn: BB label string
+    :return: incremented label string
+    """
     assert('BB_' in sn)
     return 'BB_' + str(int(sn.strip()[3:]) + 1)
 
 def memo(f):
+    """
+    Generate function with result memory
+    :param f: basic function
+    :return: function with result memory
+    """
     m = {}
     def func(x):
         if x in m: return m[x]
@@ -155,52 +271,13 @@ def memo(f):
         return m[x]
     return func
 
-def get_end_addr_sec(section):
-    def addr_folder(acc, l):
-        items = l.split()
-        if items[0] == section:
-            acc = int(items[1], 16) + int(items[3], 16)
-        return acc
-    lines = read_file('text_sec.info') + read_file('sections.info')
-    with open('sec_all.info', 'w') as fw:
-        fw.writelines(lines)
-    return reduce(addr_folder, lines, 0)
-
-def sec_end_memo():
-    return memo(get_end_addr_sec)
-
-def get_bbl(cfg):
-    return unify_str_list(map(lambda e: e[0], cfg))
-
-def f_instr(func, instrs):
-    beg = func.func_begin_addr
-    end = func.func_begin_addr
-    return filter(lambda i: beg <= get_loc(i).loc_addr < end, instrs)
-
-def bb_successors(cfg, b):
-    res = []
-    for e in cfg:
-        if e[0] == b: res.insert(0, e[1][1])
-    return unify_str_list(res)
-
-def bb_predecessors(cfg, b):
-    res = []
-    for e in cfg:
-        if e[1][1] == b: res.insert(0, e[0])
-    return unify_str_list(res)
-
-def bb_instrs(block, instrs):
-    beg = block.bblock_begin_loc.loc_addr
-    end = block.bblock_end_loc.loc_addr
-    return filter(lambda i: beg <= get_loc(i).loc_addr <= end, instrs)
-
-def remove_over_once(l):
-    m = {}
-    for ele in l:
-        m[ele] = m.get(ele, 0) + 1
-    return filter(lambda e: m[e] <= 1, l)
-
 def bbn_byloc(e, ls):
+    """
+    Binary search value in list of integers
+    :param e: needle
+    :param ls: haystack
+    :return: True if found, False otherwise
+    """
     def bs(low, up):
         if low > up: return False
         mid = (low + up) >> 1
@@ -211,69 +288,123 @@ def bbn_byloc(e, ls):
 
 
 class ELF_utils(object):
+    """
+    Utilities for targeted ELF file info
+    """
 
     @staticmethod
     def elf_check(key):
+        """
+        Find keyword in unix file description
+        :param key: keyword string
+        :return: True if found
+        """
         with open('elf.info') as f:
             line = f.readline()
         return key in line
 
     @staticmethod
     def elf_32():
+        """
+        :return: True if analyzing 32bit binary
+        """
         return config.is_32
 
     @staticmethod
     def elf_64():
+        """
+        :return: True if analyzing 64bit binary
+        """
         return not config.is_32
 
     @staticmethod
     def elf_dynamic():
+        """
+        :return: True if binary is dynamically linked
+        """
         return config.is_dynamic
 
     @staticmethod
     def elf_static():
+        """
+        :return: True if binary is statically linked
+        """
         return not config.is_dynamic
 
     @staticmethod
     def elf_unstrip():
+        """
+        :return: True if binary is not stripped
+        """
         return ELF_utils.elf_check('not stripped')
 
     @staticmethod
     def elf_strip():
+        """
+        :return: True if binary is stripped
+        """
         return not ELF_utils.elf_unstrip()
 
     @staticmethod
     def elf_lib():
+        """
+        :return: True if binary is a shared library
+        """
         return config.is_lib
 
     @staticmethod
     def elf_exe():
+        """
+        :return: True if binary is executable
+        """
         return not config.is_lib
 
     @staticmethod
     def elf_arm():
+        """
+        :return: True if binary is compiled for ARM Thumb
+        """
         return config.arch == config.ARCH_ARMT
 
 
 class Opcode_utils(object):
+    """
+    Utilities for instruction analysis
+    """
 
     if config.arch == config.ARCH_ARMT:
+        # ARM specific definitions
 
+        # Pattern for function call operator
         call_patt = re.compile('^blx?([a-z]{2})?$', re.I)
+
+        # Pattern for indirect branch operator
         indjmp_patt = re.compile('^bl?x([a-z]{2})?$', re.I)
 
         @staticmethod
         def is_cp(op):
+            """
+            :param op: operator string
+            :return: True if control flow operator
+            """
             parts = op.split('.')
             return parts[0] in Types.ControlOp or (parts[0][-2:] in Types.CondSuff and parts[0][:-2] in Types.ControlOp)
 
         simplejumps = set(['B', 'BX'])
         @staticmethod
         def is_jmp(op):
+            """
+            :param op: operator string
+            :return: True if unconditional jump
+            """
             return op.split('.')[0].upper() in Opcode_utils.simplejumps
 
         @staticmethod
         def is_cond_jmp(op):
+            """
+            :param op: operator string
+            :return: True if conditional jump
+            """
             parts = op.split('.')
             return parts[0][-2:] in Types.CondSuff \
                 and parts[0][:-2] in Types.ControlOp \
@@ -282,14 +413,26 @@ class Opcode_utils(object):
         simplemovs = set(['MOV', 'MOVS', 'MOVW', 'MOVT'])
         @staticmethod
         def is_mov(op):
+            """
+            :param op: operator string
+            :return: True if move operator
+            """
             return op.split('.')[0].upper() in Opcode_utils.simplemovs
 
         @staticmethod
         def is_call(op):
+            """
+            :param op: operator string
+            :return: True if function calling operator
+            """
             return Opcode_utils.call_patt.match(op) is not None
 
         @staticmethod
         def is_ret(instr):
+            """
+            :param instr: instruction tuple
+            :return: True if function return operation
+            """
             op, exp1, exp2 = instr[:3]
             if op.upper().startswith('POP') and isinstance(exp1, Types.RegList):
                 return 'PC' in map(str.upper, exp1)
@@ -302,41 +445,75 @@ class Opcode_utils(object):
 
         @staticmethod
         def is_cmp_op(op):
+            """
+            :param op: operator string
+            :return: True if comparison operator
+            """
             return op.split('.')[0] in Types.CompareOp
 
         @staticmethod
         def is_assign(op):
+            """
+            :param op: operator string
+            :return: True if assignment operator
+            """
             return op.split('.')[0] in Types.AssignOp
 
     else:
+        # x86 specific definitions
 
+        # Pattern for function call operator
         call_patt = re.compile('^callq?$', re.I)
 
         @staticmethod
         def is_cp(op):
+            """
+            :param op: operator string
+            :return: True if control flow operator
+            """
             return op in Types.JumpOp or op.upper().startswith('CALL')
 
         simplejumps = set(['JMP', 'JMPQ'])
         @staticmethod
         def is_jmp(op):
+            """
+            :param op: operator string
+            :return: True if unconditional jump
+            """
             return op.upper() in Opcode_utils.simplejumps
 
         @staticmethod
         def is_cond_jmp(op):
+            """
+            :param op: operator string
+            :return: True if conditional jump
+            """
             return not Opcode_utils.is_jmp(op) and op in Types.JumpOp
 
         simplemovs = set(['MOV', 'MOVL'])
         @staticmethod
         def is_mov(op):
+            """
+            :param op: operator string
+            :return: True if move operator
+            """
             return op.upper() in Opcode_utils.simplemovs
 
         @staticmethod
         def is_call(op):
+            """
+            :param op: operator string
+            :return: True if function calling operator
+            """
             return op.upper().startswith('CALL')
 
         retstatements = set(['RET', 'RETN', 'RETQ'])
         @staticmethod
         def is_ret(instr):
+            """
+            :param instr: instruction tuple
+            :return: True if function return operation
+            """
             op = instr[0].upper()
             exp1 = instr[1]
             return op in Opcode_utils.retstatements or \
@@ -344,52 +521,101 @@ class Opcode_utils(object):
 
         @staticmethod
         def is_cmp_op(op):
+            """
+            :param op: operator string
+            :return: True if comparison operator
+            """
             return op in Types.CompareOp
 
         @staticmethod
         def is_assign(op):
+            """
+            :param op: operator string
+            :return: True if assignment operator
+            """
             return op in Types.AssignOp
 
     @staticmethod
     def is_control_des(i):
+        """
+        :param i: instruction tuple
+        :return: True if branch destination
+        """
         return ':' in get_label(i)
 
     @staticmethod
     def is_func(e):
+        """
+        :param e: expression
+        :return: True if function call destination
+        """
         return isinstance(e, Types.CallDes)
 
     @staticmethod
     def is_mem_exp(e):
+        """
+        :param e: expression
+        :return: True if indirect addressing expression
+        """
         if isinstance(e, Types.StarDes):
             return Opcode_utils.is_mem_exp(e.content)
         return isinstance(e, Types.Ptr)
 
     @staticmethod
     def is_push(op):
+        """
+        :param op: operator
+        :return: True if push operator
+        """
         return op.upper().startswith('PUSH')
 
     @staticmethod
     def is_pop(op):
+        """
+        :param op: operator
+        :return: True if pop operator
+        """
         return op.upper().startswith('POP')
 
     @staticmethod
     def is_subtraction(op):
+        """
+        :param op: operator
+        :return: True if subtraction operator
+        """
         return op.upper().startswith('SUB')
 
     @staticmethod
     def is_stack_op(op):
+        """
+        :param op: operator
+        :return: True if stack operator
+        """
         return op in Types.StackOp
 
     @staticmethod
     def is_indirect(s):
+        """
+        :param s: symbol
+        :return: True if indirect branch operand
+        """
         return isinstance(s, Types.StarDes)
 
     @staticmethod
     def is_any_jump(op):
+        """
+        :param op: operator
+        :return: True if jump operator
+        """
         return Opcode_utils.is_jmp(op) or Opcode_utils.is_cond_jmp(op)
 
     @staticmethod
     def is_control_transfer_op(op, exp1):
+        """
+        :param op: operator
+        :param exp1: first operand
+        :return: True if control transfer operator
+        """
         return Opcode_utils.is_call(op) \
             or Opcode_utils.is_jmp(op) \
             or Opcode_utils.is_cond_jmp(op) \
@@ -397,356 +623,58 @@ class Opcode_utils(object):
 
 
 class Exp_utils(object):
+    """
+    Utilities for expression analysis
+    """
 
     @staticmethod
     def is_reg(e):
+        """
+        :param e: expression
+        :return: True if register
+        """
         return isinstance(e, Types.RegClass)
 
     @staticmethod
     def is_const(e):
+        """
+        :param e: expression
+        :return: True if constant
+        """
         return isinstance(e, Types.Const)
 
     @staticmethod
     def is_mem(e):
+        """
+        :param e: expression
+        :return: True if indirect addressing
+        """
         return isinstance(e, Types.Ptr)
 
 
-class Instr_utils(object):
-
-    @staticmethod
-    def sort_it_update(instrs_update):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def set_update_fold(i, l, acc):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def sub_update_fold(i, l, i1, acc):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def eliminate_label(i):
-        return update_label(i, '')
-
-    @staticmethod
-    def tem(i):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def insert_instrument_instrs(il, il_update):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def sub_single_instr(i1, il_update, il):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def instrument_update(il_update, il):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def instrument_instrs_func(il, il_update, update_func):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def insert_instr_list(d, il_update, il):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def insert_single_instr(d, loc, il_update, il):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def get_bb_by_last_instr(i, bbl):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def gen_nop(loc):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def gen_4_lea(loc):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def gen_6_lea(loc):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def is_mem_write_instr(i):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def is_jmp_instr(i):
-        #TODO: stub
-        pass
-
-
-class Instr_visitor(object):
-
-    @staticmethod
-    def map_instr(judge, visitor, il):
-        def aux(i):
-            t = judge(i)
-            if t is None: return i
-            return visitor(i, t)
-        return map(aux, il)
-
-
-class Instr_template(object):
-
-    @staticmethod
-    def gen_logging_instrs(i, iloc):
-        #TODO: stub
-        pass
-
-
-class BB_utils(object):
-
-    @staticmethod
-    def bb_map(bbl, instrs):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def bb_instrs(b, instrs):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def bbl_sort(bbl):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def get_range(b):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def start_with_fallthrough(b, bmap):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def start_with_cft(b, bmap):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def end_with_fallthrough(b, bmap):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def end_with_cft(b, bmap):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def start_with_jmp(b, bmap):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def start_with_mem_write(b, bmap):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def end_with_jmp(b, bmap):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def end_with_mem_write(b, bmap):
-        #TODO: stub
-        pass
-
-
-
-class Bblock_visitor(object):
-
-    @staticmethod
-    def map_bblock(judge, visitor, bbl):
-        def aux(i):
-            t = judge(i)
-            if t is None: return i
-            return visitor(i, t)
-        return map(aux, bbl)
-
-
-class Func_utils(object):
-
-    @staticmethod
-    def func_map(fl, instrs):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def func_sort(fl):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def get_range(f):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def start_with_fallthrough(f, fmap):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def start_with_cft(f, fmap):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def end_with_fallthrough(f, fmap):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def end_with_cft(f, fmap):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def start_with_jmp(f, fmap):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def start_with_mem_write(f, fmap):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def end_with_jmp(f, fmap):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def end_with_mem_write(f, fmap):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def caller_collect(fn, instrs):
-        #TODO: stub
-        pass
-
-
-class Function_visitor(object):
-
-    @staticmethod
-    def map_function(judge, visitor, fl):
-        def aux(i):
-            t = judge(i)
-            if t is None: return i
-            return visitor(i, t)
-        return map(aux, fl)
-
-
-class Cfg_utils(object):
-
-    @staticmethod
-    def mergeable_bb(cfg):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def map_jmp(visitor, instrs):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def map_mem_write(visitor, instrs):
-        #TODO: stub
-        pass
-
-
-class Cg_utils(object):
-
-    @staticmethod
-    def show_call_graph(cg):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def show_cfi_specified_graph(cfi_cg):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def map_cfi_des(cfi_cg, fn, visit):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def map_cfi_des_cond(cfi_cg, fn, visit, judge):
-        #TODO: stub
-        pass
-
-
-class Parallel(object):
-
-    @staticmethod
-    def pmap(ncores, f, il):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def piter(ncores, f, il):
-        #TODO: stub
-        pass
-
-    @staticmethod
-    def pfold(ncores, concat, f, il, acc):
-        #TODO: stub
-        pass
-
-
 class Time_Record(object):
+    """
+    Time utilities
+    """
 
     @staticmethod
     def stamp():
+        """
+        Print seconds from epoc
+        """
         print 'stamp : %f sec' % time.time()
 
     @staticmethod
     def get_utime():
+        """
+        :return: floating point seconds from epoc
+        """
         return time.time()
 
     @staticmethod
     def elapsed(t):
+        """
+        Print elapsed time
+        :param t: start instant
+        """
         print 'execution elapsed time: %f sec' % (time.time() - t)
-
-
-class UIO(object):
-
-    @staticmethod
-    def lines_from_file(filename):
-        return read_file(filename)
-
-    @staticmethod
-    def write_file(ll, fn):
-        with open(fn, 'a') as f:
-            f.writelines(ll)

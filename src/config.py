@@ -1,36 +1,54 @@
 from subprocess import check_output
 
+# constants
 ARCH_ARMT = 'thumb'
 ARCH_X86 = 'x86'
 X86_TOOL = ''
 ARM_TOOL = 'arm-linux-gnueabihf-'
 
-# Defaults
+# executable type configuration
 is_32 = False
 is_lib = False
 is_dynamic = True
 is_unstrip = False
 arch = ARCH_X86
+
+# binutils configuration
 objdump = 'objdump'
 toolprefix = ''
 strip = 'strip'
 compiler = 'gcc'
-ARM_maxDoublemovDist = 40
-ARM_maxAddPcDist = 8
+
+# ARM specific configurations
+ARM_maxDoublemovDist = 40   # Maximum search distance between movw and movt
+ARM_maxAddPcDist = 8        # Maximum search distance for indirect PC relative loads
+
+# additional options
 gccoptions = ''
 excludedata = ''
 
+# gfree configuration
+# symbol names
 gfree_xorkeyvar = 'xorkey'
 gfree_cookiekeyvar = 'cookiekey'
 gfree_keygenflagvar = 'keygenerated'
 gfree_failfuncname = 'gfree_fail'
 gfree_cookiestackvar = 'cookiestack'
+# size of cookie stack
 gfree_cookiestacksize = 2048 # KB
+# maximum number of passes for alignment enforcement
 gfree_maxalignmentpass = 100
+# True to translate all IT block in ARM binaries
 gfree_ARMITdelete = True
 
 
 def setup(filepath, gccopt='', exdata=''):
+    """
+    Setup global configuration values
+    :param filepath: executable filepath
+    :param gccopt: additional gcc options
+    :param exdata: exclusion range file
+    """
     global is_32
     global is_lib
     global is_dynamic

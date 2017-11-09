@@ -70,7 +70,7 @@ The startup Python script provides the following options:
 
     Assumption two reqires to put data sections (.data, .rodata and .bss) to its original starting addresses. Linker scripts can be used during reassembling (`gcc -T ld_script.sty final.s`). Users may write their own linker script, some examples are given at `ld_script` folder.
 
-    Assumption three requires to know the function starting addresses (work will be done on function splitting in order to avoid this requirement). To obtain this information, Uroboros can take unstripped binaries as input. The function starting address information is obtained from the input, which is then stripped before disassembling.
+    Assumption three requires to know the function starting addresses. To obtain this information, Uroboros can take unstripped binaries as input. The function starting address information is obtained from the input, which is then stripped before disassembling.
 
     These assumptions can also be used at the same time (`python uroboros.py path_to_bin -a 3 -a 2`)
 
