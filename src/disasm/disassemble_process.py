@@ -10,6 +10,9 @@ from utils.ail_utils import Time_Record as TR, read_file
 
 
 class Disam(object):
+    """
+    Disassembly recovery skeleton
+    """
 
     @staticmethod
     def disasm_skip(filepath, ba, ea):
@@ -21,10 +24,21 @@ class Disam(object):
 
     @staticmethod
     def get_userfuncs(funcs):
+        """
+        Filter out library functions
+        :param funcs: list of functions
+        """
         return filter(lambda f: not f.is_lib, funcs)
 
     @staticmethod
     def disassemble(filepath, funcs, secs):
+        """
+        Read disassemble dump, parse instrctions and reconstruct symbolic information
+        :param filepath: path to target executable
+        :param funcs: list of functions
+        :param secs: list of sections
+        :return: instruction list, updated function list, symbol reconstruction object
+        """
         ailpar = AilParser()
         re = reassemble()
         dis_valid = dis_validator()

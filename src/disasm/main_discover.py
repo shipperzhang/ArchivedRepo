@@ -1,9 +1,17 @@
+"""
+Discover main function address
+"""
+
 import os
 import config
 from utils.ail_utils import ELF_utils
 
 
 def main_discover(filename):
+    """
+    Find main function address and store it to file
+    :param filename: path to target executable
+    """
     os.system('file ' + filename + ' > elf.info')
     if ELF_utils.elf_exe():
 

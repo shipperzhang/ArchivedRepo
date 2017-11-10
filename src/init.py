@@ -1,3 +1,7 @@
+"""
+Workfiles initialization
+"""
+
 import os
 import sys
 import ail
@@ -8,11 +12,20 @@ from disasm import pic_process, extern_symbol_process, arm_process
 
 
 class Init(object):
+    """
+    Processing initializer
+    """
 
     def __init__(self, filepath):
+        """
+        :param filepath: path to executable
+        """
         self.file = filepath
 
     def disassemble(self):
+        """
+        Dump .text, .rodata, .data, .eh_frame, .got to file
+        """
         print colored('1: DISASSEMBLE', 'green')
         ret = os.system(config.objdump + ' -Dr -j .text ' + self.file + ' > ' + self.file + '.temp')
         self.checkret(ret, self.file + '.temp')
@@ -33,6 +46,9 @@ class Init(object):
         os.system(config.objdump + " -s -j .got " + self.file + " | grep \"^ \" | cut -d \" \" -f3,4,5,6 > got.info")
 
     def process(self):
+        """
+        Process sections
+        """
         self.pltProcess()
         self.textProcess()
         self.sectionProcess()
@@ -41,6 +57,9 @@ class Init(object):
         self.userFuncProcess()
 
     def bssHandler(self):
+        """
+        Generate .bss dump and extract global bss symbols
+        """
         with open("sections.info") as f:
             bssinfo = next((l for l in f if '.bss' in l), None)
             size = int(bssinfo.split()[3], 16) if bssinfo is not None else 0
@@ -50,6 +69,9 @@ class Init(object):
         os.system('readelf -rW ' + self.file + ' | grep _GLOB_DAT | grep -v __gmon_start__ | awk \'{print $1,$5}\' > gotglobals.info')
 
     def textProcess(self):
+        """
+        Code disassembly dump
+        """
         # useless_func_del.main(self.file)
         if ELF_utils.elf_arm(): arm_process.arm_process(self.file)
         else:
@@ -58,10 +80,16 @@ class Init(object):
         os.system("cut -f 1 instrs.info > text_mem.info")
 
     def userFuncProcess(self):
+        """
+        Dump function symbols
+        """
         os.system("cat " + self.file + ".temp | grep \"<\" | grep \">:\" > userfuncs.info")
         os.system("cat fl | grep -v \"<S_0x\" >> userfuncs.info")
 
     def sectionProcess(self):
+        """
+        Dump section boundaries
+        """
         badsec = '.got.plt' if ELF_utils.elf_32() else'.data.rel.ro'
         os.system("readelf -SW " + self.file + " | awk \'/data|bss|got/ {print $2,$4,$5,$6} \' | awk \ '$1 != \"" + badsec + "\" {print $1,$2,$3,$4}\' > sections.info")
         os.system("readelf -SW " + self.file + " | awk \'/text/ {print $2,$4,$5,$6} \' > text_sec.info")
@@ -70,29 +98,45 @@ class Init(object):
         os.system(config.objdump + " -s -j .init_array " + self.file + " >> init_array.info 2>&1")
         os.system("readelf -SW " + self.file + " | awk '$2==\".plt\" {print $2,$4,$5,$6}' > plt_sec.info")
 
-    def check_disassemble(self):
-        if os.system("grep \"(bad)\" " + self.file + ".temp > /dev/null") == 0:
-            raise Exception('detected disassembly error')
-
     def export_tbl_dump(self):
+        """
+        Dump global symbols
+        """
         os.system("readelf -s " + self.file + " | grep GLOBAL > export_tbl.info")
 
     def pltProcess(self):
+        """
+        Dump plt section
+        """
         os.system(config.objdump + " -j .plt -Dr " + self.file + " | grep \">:\" > plts.info")
 
     def ailProcess(self, gfree=False):
+        """
+        Invoke processing skeleton
+        :param gfree: True to apply gfree instrumentation
+        """
         processor = ail.Ail(self.file)
         processor.sections()
         processor.userfuncs()
         processor.global_bss()
-        processor.instrProcess_2(gfree)
+        processor.instrProcess(gfree)
 
     def checkret(self, ret, path):
+        """
+        Check return of dump operation
+        :param ret: shell return code
+        :param path: dump file path
+        """
         if ret != 0 and os.path.isfile(path):
             os.remove(path)
 
 
 def main(filepath, gfree=False):
+    """
+    Init processing
+    :param filepath: path to executable
+    :param gfree: True to apply gfree instrumentation
+    """
     if ELF_utils.elf_strip() and ELF_utils.elf_exe():
         init = Init(filepath)
         init.disassemble()

@@ -1,3 +1,7 @@
+"""
+Processing skeleton
+"""
+
 from termcolor import colored
 from disasm import pre_process
 from disasm.Types import Func, Section
@@ -8,8 +12,14 @@ from instrumentation.gfree import GfreeInstrumentation
 
 
 class Ail(object):
+    """
+    Processing skeleton
+    """
 
     def __init__(self, filepath):
+        """
+        :param filepath: path to executable
+        """
         self.file = filepath
         self.funcs = []
         self.secs = []
@@ -17,6 +27,9 @@ class Ail(object):
         self.g_bss = []
 
     def sections(self):
+        """
+        Load section info
+        """
         def sec_mapper(line):
             items = line.split()
             return Section(items[0], int(items[1], 16), int(items[3], 16))
@@ -24,6 +37,9 @@ class Ail(object):
             self.secs += map(sec_mapper,f)
 
     def externfuncs(self):
+        """
+        Load library functions
+        """
         def func_mapper(line):
             items = line.split()
             return Func(items[1], int(items[0], 16), 0, True)
@@ -31,6 +47,9 @@ class Ail(object):
             self.funcs += map(func_mapper, f)
 
     def userfuncs(self):
+        """
+        Load function symbols
+        """
         def func_mapper(line):
             items = line.split()
             return Func(items[1][1:-2].split('@')[0], int(items[0], 16), 0, False)
@@ -39,39 +58,49 @@ class Ail(object):
                 filter(lambda line: not ('-0x' in line or '+0x' in line), f))
 
     def get_userfuncs(self):
+        """
+        Get functions
+        """
         return filter(lambda f: not f.is_lib, self.funcs)
 
     def global_bss(self):
+        """
+        Load global bss symbols
+        """
         def bss_mapper(line):
             items = line.split()
             return (items[0][1:].upper(), items[1].strip())
         with open('globalbss.info') as f:
             self.g_bss += map(bss_mapper, f)
 
-    def ail_dump(self):
-        dump = ''.join(map(lambda f: 'extern %s\n'.format(f),
-                filter(lambda f: f.func_name != '__' and f.is_lib, self.funcs)))
-        with open('final.s', 'a') as fin:
-            fin.write(dump)
-
     def ehframe_dump(self):
+        """
+        Write eh_frame to file
+        """
         with open('eh_frame.data') as eh:
             with open('final.s', 'a') as f:
                 f.write(eh.read())
 
-    def excpt_tbl_dump(self):
-        with open('gcc_exception_table.data') as ex:
-            with open('final.s', 'a') as f:
-                f.write(ex.read())
-
     def post_process(self, gfree=False):
+        """
+        Post processing
+        :param gfree: True to apply gfree instrumentation
+        """
         post_process.main(gfree)
         post_process_lib.main()
 
     def pre_process(self):
+        """
+        Pre processing
+        """
         pre_process.main()
 
-    def instrProcess_2(self, gfree=False, docfg=False):
+    def instrProcess(self, gfree=False, docfg=False):
+        """
+        Process instructions
+        :param gfree: True to apply gfree instrumentation
+        :param docfg: True to evaluate control flow graph
+        """
         self.pre_process()
         il, fl, re = Disam.disassemble(self.file, self.funcs, self.secs)
 

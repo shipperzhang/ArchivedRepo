@@ -1,3 +1,7 @@
+"""
+ARM executable disassembler
+"""
+
 import re
 import capstone
 from struct import unpack
@@ -5,7 +9,12 @@ from elftools.elf.elffile import ELFFile
 
 
 def load_size(op, exp):
-    # Return byte size of the memory load
+    """
+    Return byte size of the memory load
+    :param op: load operator string
+    :param exp: load expression string
+    :return: size of loaded data
+    """
     op = op.lower()
     if op.startswith('vldr'):
         return 4 if exp.startswith('s') else 8
@@ -17,7 +26,13 @@ def load_size(op, exp):
     return 4
 
 def tb_process(offsize, pc, buf, filehandle):
-    # tb[hb] jumptable
+    """
+    Manage tb[hb] jumptable
+    :param offsize: jump table entry size
+    :param pc: current program counter
+    :param buf: raw data containing jump offsets
+    :param filehandle: file handle for code dump
+    """
     i = 0
     unpacker = '<H' if offsize == 2 else '<B'
     datatype = ('.short' if offsize == 2 else '.byte').ljust(7)
@@ -27,6 +42,13 @@ def tb_process(offsize, pc, buf, filehandle):
         i += offsize
 
 def eval_tb_size(op, last_cmp, reg):
+    """
+    Evaluate jump table size
+    :param op: jump table operator
+    :param last_cmp: last compare operation
+    :param reg: jump table index register
+    :return: tuple of jump table entry size and byte size of table
+    """
     if reg != last_cmp[0]: raise Exception('Unhandled jumptable case')
     offsize = 4 if op.startswith('ldr') else (2 if op[-1] == 'h' else 1)
     tablesize = (int(last_cmp[1].strip()[1:], 16) + 1) * offsize
@@ -34,20 +56,24 @@ def eval_tb_size(op, last_cmp, reg):
     return (offsize, tablesize)
 
 def arm_process(filename):
-    # Disassemble the binary processing PC relative loads
-    #     ldr.w   ip, [pc, #16]
-    # library function invokations
-    #     blx     #0x10a40 <strcmp@plt>
-    # inline jump tables
-    #     tbh     [pc, r3, lsl #1]
-    #      .short  0x0123
-    #       ...
-    #  or
-    #     add     r2, pc, #4
-    #     ldr     pc, [r2, r3, lsl #2]
-    #      .word   0x00010545
-    #      ...
+    """
+    Disassemble the binary processing PC relative loads
+        ldr.w   ip, [pc, #16]
+    library function invokations
+        blx     #0x10a40 <strcmp@plt>
+    inline jump tables
+        tbh     [pc, r3, lsl #1]
+         .short  0x0123
+          ...
+     or
+        add     r2, pc, #4
+        ldr     pc, [r2, r3, lsl #2]
+         .word   0x00010545
+         ...
+    :param filename: path to target executable
+    """
 
+    # Open ELF executable, read info and read raw binary .text section
     with open(filename, 'rb') as f:
         raw = f.read()
         f.seek(0)
@@ -77,6 +103,8 @@ def arm_process(filename):
     offtableop = set(('tbb', 'tbh'))
     f = open('instrs.info', 'w')
     curr_off = 0
+
+    # Linearly disassemble
     while curr_off < textsec.size:
         for e in dis.disasm_lite(textraw[curr_off:], textsec.addr + curr_off):
             curr_off += e[1]
@@ -147,6 +175,7 @@ def arm_process(filename):
             curr_off += size
 
         if secondpass and curr_off >= textsec.size and negpcrel:
+            # If some PC relative load with negative offsets are found, a second pass is necessary
             secondpass = False
             curr_off = 0
             last_cmp = ('', '')

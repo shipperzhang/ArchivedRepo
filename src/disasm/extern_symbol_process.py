@@ -1,15 +1,22 @@
+"""
+Process external symbols from shared libraries
+"""
+
 import re
 import os
 import config
 from subprocess import check_output
 
-# this code aims at solving glibc global variables issue
-#
-# some of the code contains comments like this:
-# 401599:       48 8b 3d 70 6c 20 00    mov    0x206c70(%rip),%rdi        # 608210 <stdout>
-# instructions like this should be translated into
-#    mov stdout,%rdi
+
 def globalvar(filepath):
+    """
+    This code aims at solving glibc global variables issue some of the code contains comments like this:
+        401599:       48 8b 3d 70 6c 20 00    mov    0x206c70(%rip),%rdi        # 608210 <stdout>
+    instructions like this should be translated into:
+        mov stdout,%rdi
+    :param filepath: path to target executable
+    """
+
     with open(filepath + '.temp') as f:
         lines = f.readlines()
 
@@ -33,7 +40,10 @@ def globalvar(filepath):
 
 
 def pltgot(filepath):
-    # Handle library functions linked through .plt.got
+    """
+    Handle library functions linked through .plt.got and substitute them with correct symbols
+    :param filepath: path to target executable
+    """
     with open('plts.info') as f:
         f.seek(-2, os.SEEK_END)
         while f.read(1) != '\n': f.seek(-2, os.SEEK_CUR)

@@ -1,3 +1,7 @@
+"""
+Main module
+"""
+
 import os
 import sys
 import glob
@@ -8,8 +12,15 @@ from argparse import ArgumentParser, RawTextHelpFormatter
 
 
 def process(filepath, gfree=False, fexclude=''):
+    """
+    Start file processing
+    :param filepath: path to executable
+    :param gfree: True to apply gfree instrumentation
+    :param fexclude: path to file of symbol exclusions
+    :return: True if everything ok
+    """
     import init
-    import traceback
+    # import traceback
     from postprocess import compile_process
     from disasm import main_discover, func_addr
     from instrumentation import plaincode, alignmentenforce
@@ -40,13 +51,21 @@ def process(filepath, gfree=False, fexclude=''):
 
     except Exception as e:
         print e
-        traceback.print_exc()
+        # traceback.print_exc()
         return False
 
     return True
 
 
 def check(filepath, assumptions, gccopt='', excludedata=''):
+    """
+    Perform basic check on analyzed executable and set configuration values
+    :param filepath: path to executable
+    :param assumptions: list of assumption codes
+    :param gccopt: additional options for the compiler
+    :param excludedata: path to file of address exclusions
+    :return: True if everything ok
+    """
     if not assumptions: assumptions = []
 
     if not os.path.isfile(filepath):
@@ -78,10 +97,13 @@ def check(filepath, assumptions, gccopt='', excludedata=''):
 
 
 def set_assumption (assumptions):
-    # 2 -> assumption two: fix data section starting address
-    # Note that assumption two require linker script to reassemble!
-    # Some of the examples can be found at ./ld_scripts/*
-    # 3 -> assumption three: function starting address + jump table
+    """
+    Save assumptions to file
+    2 -> assumption two: fix data section starting address
+    3 -> assumption three: function starting address + jump table
+    :param assumptions: list of assumptions codes
+    :return: True if everything ok
+    """
     if not assumptions:
         with open('assumption_set.info', 'w') as f:
             f.write('1\n')
@@ -97,6 +119,9 @@ def set_assumption (assumptions):
 
 
 def main():
+    """
+    Main function
+    """
     p = ArgumentParser(formatter_class=RawTextHelpFormatter)
     p.add_argument("binary", help="path to the input binary")
     p.add_argument("-o", "--output", help="destination output file")

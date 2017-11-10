@@ -1,3 +1,7 @@
+"""
+Templates for gfree return address encryption and frame cookie
+"""
+
 import config
 from disasm import Types
 from utils.ail_utils import ELF_utils, set_loc, get_loc
@@ -155,6 +159,11 @@ else:
 
 
 def set_inlineblocklocation(loc, block):
+    """
+    Set location for code block
+    :param loc: location object
+    :param block: list of instructions
+    """
     return [set_loc(block[0], loc)] + \
         map(lambda i: set_loc(i, Types.Loc('', loc.loc_addr, loc.loc_visible)), block[1:])
 
@@ -162,20 +171,34 @@ def set_inlineblocklocation(loc, block):
 if ELF_utils.elf_arm():
     # ARM
     def get_returnenc(curr_instr, popcookie=False):
+        """
+        Get code block for return address encryption
+        :param curr_instr: return instruction
+        :param popcookie: True if also frame cookie must be removed
+        :return: return encryption instruction list
+        """
         pre = list(framecookietail) if popcookie else []
         loc = get_loc(curr_instr)
         if curr_instr[0].upper().startswith('POP'):
+            # pop {...,pc}
             i = map(str.upper, curr_instr[1]).index('PC')
             rlist = curr_instr[1][:i] + ('lr',) + curr_instr[1][i+1:]
             pre.insert(0, Types.DoubleInstr((curr_instr[0], Types.RegList(rlist), None, False)))
             curr_instr = Types.DoubleInstr(('bx', Types.RegClass('lr'), None, False))
         elif curr_instr[0].upper().startswith('LDR') and curr_instr[1].upper() == 'PC':
+            # ldr pc, [sp], #4
             pre.insert(0, type(curr_instr)((curr_instr[0], Types.RegClass('lr')) + curr_instr[2:]))
             curr_instr = Types.DoubleInstr(('bx', Types.RegClass('lr'), None, False))
         return set_inlineblocklocation(loc, pre + returnenc) + \
                [set_loc(curr_instr, Types.Loc('', loc.loc_addr, loc.loc_visible))]
 
     def get_framecookiehead(curr_instr, funcID):
+        """
+        Get function header code block for frame cookie insertion
+        :param curr_instr: function entry instruction
+        :param funcID: generated function ID tuple
+        :return: frame cookie insertion instruction list
+        """
         loc = get_loc(curr_instr)
         tmp = list(framecookiehead)
         tmp[9][2] = Types.Normal(funcID[0])
@@ -186,6 +209,12 @@ if ELF_utils.elf_arm():
                [set_loc(curr_instr, Types.Loc('', loc.loc_addr, loc.loc_visible))]
 
     def get_framecookiecheck(curr_instr, funcID):
+        """
+        Get code block for frame cookie check
+        :param curr_instr: indirect branch instruction
+        :param funcID: generated function ID tuple
+        :return: frame cookie check instruction list
+        """
         loc = get_loc(curr_instr)
         tmp = list(framecookiecheck)
         tmp[9][2] = Types.Normal(funcID[0])
@@ -200,6 +229,11 @@ if ELF_utils.elf_arm():
                [set_loc(curr_instr, Types.Loc('', loc.loc_addr, loc.loc_visible))]
 
     def translate_it_block(block):
+        """
+        Translate IT block using normal branches
+        :param block: instruction list of IT block
+        :return: instruction list with normal branches
+        """
         itloc = get_loc(block[0])
         res = [Types.DoubleInstr(('b' + block[0][1], Types.Label('.LIT_%X.T' % itloc.loc_addr), itloc, False))]
         branches = {'t': [], 'e': []}
@@ -218,11 +252,23 @@ if ELF_utils.elf_arm():
 else:
     # x86
     def get_returnenc(curr_instr, popcookie=False):
+        """
+        Get code block for return address encryption
+        :param curr_instr: return instruction
+        :param popcookie: True if also frame cookie must be removed
+        :return: return encryption instruction list
+        """
         loc = get_loc(curr_instr)
         return set_inlineblocklocation(loc, framecookietail + returnenc if popcookie else returnenc) + \
                [set_loc(curr_instr, Types.Loc('', loc.loc_addr, loc.loc_visible))]
 
     def get_framecookiehead(curr_instr, funcID):
+        """
+        Get function header code block for frame cookie insertion
+        :param curr_instr: function entry instruction
+        :param funcID: generated function ID
+        :return: frame cookie insertion instruction list
+        """
         loc = get_loc(curr_instr)
         tmp = list(framecookiehead)
         tmp[5][2] = Types.Normal(funcID)
@@ -231,6 +277,12 @@ else:
                [set_loc(curr_instr, Types.Loc('', loc.loc_addr, loc.loc_visible))]
 
     def get_framecookiecheck(curr_instr, funcID):
+        """
+        Get code block for frame cookie check
+        :param curr_instr: indirect branch instruction
+        :param funcID: generated function ID
+        :return: frame cookie check instruction list
+        """
         loc = get_loc(curr_instr)
         tmp = list(framecookiecheck)
         tmp[3][2] = Types.Normal(funcID)
@@ -239,6 +291,12 @@ else:
                [set_loc(curr_instr, Types.Loc('', loc.loc_addr, loc.loc_visible))]
 
     def bswapsub(reg, loc):
+        """
+        Replace target register in bswap containing ret encoding bytes
+        :param reg: bswapped register
+        :param loc: instuction location
+        :return: instruction list with replaced bswap
+        """
         sub = Types.RegClass('edi' if reg[0].lower() == 'e' else 'rdi')
         substack = Types.RegClass('edi' if ELF_utils.elf_32() else 'rdi')
         return set_inlineblocklocation(loc, [

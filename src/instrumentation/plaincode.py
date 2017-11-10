@@ -1,3 +1,7 @@
+"""
+Assembler code for gfree key generation and failure routine
+"""
+
 import config
 from utils.ail_utils import ELF_utils
 

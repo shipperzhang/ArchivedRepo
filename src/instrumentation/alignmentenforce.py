@@ -1,3 +1,7 @@
+"""
+Module for enforcement of aligned execution
+"""
+
 import os
 import sys
 import config
@@ -11,6 +15,9 @@ from elftools.elf.elffile import ELFFile
 if ELF_utils.elf_arm():
 
     def get_hex():
+        """
+        Get byte encodings corresponding to each source code line
+        """
         f = open('a.out', 'rb')
         info = ELFFile(f)
         dwarf = info.get_dwarf_info()
@@ -65,6 +72,9 @@ if ELF_utils.elf_arm():
     sled = '; mov r0,r0\n'
 
     def sled_insertion(fixed):  # @UnusedVariable
+        """
+        Insert alignment enforcing sleds
+        """
         hexvals = get_hex()
         nmodified = 0
 
@@ -87,6 +97,9 @@ if ELF_utils.elf_arm():
 else:
 
     def get_hex():
+        """
+        Get byte encodings corresponding to each source code line
+        """
         f = open('a.out', 'rb')
         info = ELFFile(f)
         dwarf = info.get_dwarf_info()
@@ -125,6 +138,10 @@ else:
     indcodes = set((2,3,4,5))
 
     def sled_insertion(fixed):
+        """
+        Insert alignment enforcing sleds
+        :param fixed: set of lines already fixed
+        """
         hexvals = get_hex()
         nmodified = 0
 
@@ -153,6 +170,9 @@ else:
 
 
 def enforce_alignment():
+    """
+    Apply alignment enforcement inserting sleds in assembler source code
+    """
     print colored('6: ALIGNMENT ENFORCEMENT', 'green')
     npass = 0
     fixed = set()

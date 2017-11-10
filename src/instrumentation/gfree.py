@@ -1,3 +1,7 @@
+"""
+Module to apply gfree instrumentation
+"""
+
 import os
 import time
 import random
@@ -11,6 +15,10 @@ from utils.ail_utils import ELF_utils, get_loc, Opcode_utils
 class GfreeInstrumentation:
 
     def __init__(self, instrs, funcs):
+        """
+        :param instrs: list of program's instruction
+        :param funcs: list of function objects
+        """
         self.instrs = instrs
         self.funcs = {f.func_begin_addr: f for f in funcs}.values()
         self.funcs.sort(key=lambda f: f.func_begin_addr)
@@ -29,6 +37,12 @@ class GfreeInstrumentation:
 
     @staticmethod
     def perform(instrs, funcs):
+        """
+        Perform gfree instrumentation
+        :param instrs: list of program's instruction
+        :param funcs: list of function objects
+        :return: instrumented list of instructions
+        """
         gfree = GfreeInstrumentation(instrs, funcs)
         gfree.findfreebranches()
         gfree.indirectprotection()
@@ -38,6 +52,10 @@ class GfreeInstrumentation:
         return gfree.instrs
 
     def generatefuncID(self):
+        """
+        Generate unique function identifier
+        :return: integer for x86, integer tuple for ARM
+        """
         while True:
             fid = pack('<I', random.getrandbits(32))
             if not fid in self.fIDset:
@@ -48,6 +66,9 @@ class GfreeInstrumentation:
                        else unpack('<i', fid)[0]
 
     def findfreebranches(self):
+        """
+        Locate free branches in program's code for each function
+        """
         j = 0; curr_func = self.funcs[0]
         for ins in self.instrs:
             loc_addr = get_loc(ins).loc_addr
@@ -73,6 +94,12 @@ class GfreeInstrumentation:
 
 
     def addxorcanary(self, i, func):
+        """
+        Apply return address encryption
+        :param i: starting instruction index
+        :param func: current funtion
+        :return: instruction index after last inserted block
+        """
         if func.func_begin_addr in self.avoid: return i + 1
         if len(self.indcalls[func.func_begin_addr]) == 0:
             header = inlining.get_returnenc(self.instrs[i])
@@ -97,6 +124,12 @@ class GfreeInstrumentation:
         return i
 
     def addframecookie(self, i, func):
+        """
+        Apply frame cookie
+        :param i: starting instruction index
+        :param func: current function
+        :return: instruction index after last inserted block
+        """
         if len(self.rets[func.func_begin_addr]) == 0: return i + 1
         fID = self.generatefuncID()
         header = inlining.get_framecookiehead(self.instrs[i], fID)
@@ -110,6 +143,11 @@ class GfreeInstrumentation:
         return i
 
     def addinlining(self, locations, instrumenter):
+        """
+        Apply inlining
+        :param locations: list of code locations to modify
+        :param instrumenter: function applying inlining
+        """
         i = 0; j = 0
         while i < len(self.instrs):
             loc_addr = get_loc(self.instrs[i]).loc_addr
@@ -119,13 +157,22 @@ class GfreeInstrumentation:
             else: i += 1
 
     def returnprotection(self):
+        """
+        Apply return address encryption
+        """
         self.addinlining(self.rets, self.addxorcanary)
 
     def indirectprotection(self):
+        """
+        Apply indirect branch frame cookie protection
+        """
         random.seed(time.time())
         self.addinlining(self.indcalls, self.addframecookie)
 
     def rewrite_instr(self):
+        """
+        Rewrite x86 instruction containing bytes encoding ret
+        """
         i = 0
         bswap_bad = set(('EDX', 'EBX', 'RDX', 'RBX'))
         while i < len(self.instrs):
@@ -137,6 +184,9 @@ class GfreeInstrumentation:
             i += 1
 
     def remove_its(self):
+        """
+        Remove IT block from ARM code
+        """
         i = 0
         while i < len(self.instrs):
             ins = self.instrs[i]

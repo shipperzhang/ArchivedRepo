@@ -1,8 +1,16 @@
+"""
+Process PC relative addressing
+"""
+
 import re
 from subprocess import check_output
 from utils.ail_utils import ELF_utils
 
 def info_collect(f):
+    """
+    Retrieve info about .got.plt section
+    :param f: path to target executable
+    """
     info = check_output("readelf -S " + f + " | awk '$2==\".got.plt\" {print $2,$4,$5,$6}'", shell=True).strip()
     with open('gotplt.info', 'w') as f: f.write(info)
     def mapper(l):
@@ -12,6 +20,11 @@ def info_collect(f):
     return dict(map(mapper, info.split('\n')))
 
 def thunk_identify(ls):
+    """
+    Find x86 32bit thunk routines retriving program counter
+    :param ls: assembler lines
+    :return: list of virtual addresses
+    """
     res = set()
     thunkre = re.compile('\(\%esp\)\,\%e(ax|bx|cx|bp|si|di)', re.I)
 
@@ -27,6 +40,10 @@ def thunk_identify(ls):
     return tuple(res)
 
 def text_process_strip(f):
+    """
+    Find thunk PC invocations and substitute .got.plt offsets with _GLOBAL_OFFSET_TABLE_ symbol
+    :param f: path to target executable
+    """
     sec_symb = {'.got.plt': '$_GLOBAL_OFFSET_TABLE_'}
     pic_map = info_collect(f)
     with open(f + '.temp') as fd:
@@ -59,24 +76,28 @@ def text_process_strip(f):
 
 
 def picprocess32(filepath):
-    # PC relative operation in x86 32 bit code such as:
-    #  call   804c452 <__x86.get_pc_thunk.bx>
-    #  add    $0x2b8e,%ebx
-    #  mov    $0x10, (%ebx)
-    # This operation usually loads into %ebx the address of the _GLOBAL_OFFSET_TABLE_
-    # Further adjustments are operated in the analysis phase
+    """
+    PC relative operation in x86 32 bit code such as:
+     call   804c452 <__x86.get_pc_thunk.bx>
+     add    $0x2b8e,%ebx
+     mov    $0x10, (%ebx)
+    This operation usually loads into %ebx the address of the _GLOBAL_OFFSET_TABLE_
+    Further adjustments are operated in the analysis phase
+    :param filepath: path to target executable
+    """
     if ELF_utils.elf_32() and ELF_utils.elf_exe() and not ELF_utils.elf_arm():
         text_process_strip(filepath)
 
 
 def picprocess64(filepath):
-    # PC relative operations in x86 64 bit code
-    # typical instruction disassembled by objdump like this
-    #     4005c9:    48 8b 05 58 08 20 00     mov    0x200858(%rip),%rax        # 600e28 <__libc_start_main@plt+0x200a28>
-    # should be rewritten in this format
-    #     4005c9:   ...................     mov    S_0x600e28(%rip), %rax
-    # also leave a symbol in file rip_symbols.txt
-    #     600e28
+    """
+    PC relative operations in x86 64 bit code
+    typical instruction disassembled by objdump like this
+        4005c9:    48 8b 05 58 08 20 00     mov    0x200858(%rip),%rax        # 600e28 <__libc_start_main@plt+0x200a28>
+    should be rewritten in this format
+        4005c9:   ...................     mov    S_0x600e28(%rip), %rax
+    :param filepath: path to target executable
+    """
     if not ELF_utils.elf_64(): return
 
     with open(filepath + '.temp') as f:

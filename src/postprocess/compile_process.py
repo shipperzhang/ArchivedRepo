@@ -1,3 +1,7 @@
+"""
+Compile assembly source
+"""
+
 import os
 import re
 import config
@@ -5,6 +9,9 @@ from utils.ail_utils import ELF_utils
 
 
 def inferlibflags():
+    """
+    Infer linked libraries from original executable elf info
+    """
     try:
         with open('linkedlibs.info') as f:
             return map(lambda l: '-l' + l.split('.')[0].lstrip('lib'), f)
@@ -12,6 +19,12 @@ def inferlibflags():
 
 
 def reassemble(saveerr=False, libs=[], debug=False):
+    """
+    Invoke compiler
+    :param saveerr: True to store compilation error to file
+    :param libs: list of linked libraries
+    :param debug: True to compile with debug symbols
+    """
     if len(libs) == 0: libs = inferlibflags()
     return os.system(config.compiler + ' final.s '
               + ('-g ' if debug else '')
@@ -21,6 +34,9 @@ def reassemble(saveerr=False, libs=[], debug=False):
 
 
 def parse_error():
+    """
+    Find undefined label errors
+    """
     if os.path.isfile('final.error'):
         addrs = []
         with open("final.error") as ferror:
@@ -32,6 +48,9 @@ def parse_error():
 
 
 def modify(errors):
+    """
+    Correct undefined labels
+    """
     if len(errors) == 0: return
     with open("final.s") as f:
         lines = f.readlines()
@@ -47,6 +66,10 @@ def modify(errors):
         f.writelines(lines)
 
 def adjusttbb(pos):
+    """
+    Routine to fix tbb value overflow
+    :param pos: error line number
+    """
     i = 0
     pos.sort()
     with open('final.s') as f:
@@ -64,11 +87,18 @@ def adjusttbb(pos):
         f.writelines(lines)
 
 def badinstrmapper(bad):
+    """
+    Get routine to delete bad instructions
+    :param bad: bad instruction string
+    """
     def mapper(line):
         return line.replace(bad, '')
     return mapper
 
 def cbzmapper():
+    """
+    Get routine to translate out of range cbz
+    """
     cbzpatt = re.compile('([^\:]+\s*\:\s*)?(cbn?z)\s+([^,]+),([^\n]+)', re.I)
     def mapper(line):
         m = cbzpatt.match(line)
@@ -80,6 +110,9 @@ def cbzmapper():
     return mapper
 
 def outofrangemapper():
+    """
+    Get routing to translate out of range vldr
+    """
     oorpatt = re.compile('([^\:]+\s*\:\s*)?vldr\s+([^,]+),(S_0x[A-F0-9]+)', re.I)
     def mapper(line):
         m = oorpatt.match(line)
@@ -95,8 +128,13 @@ pop {{r0}}
     return mapper
 
 def modifyARM():
-    # final.s:xx: Error: branch out of range
-    # final.s:xx: Error: selected processor does not support `XXX' in Thumb mode
+    """
+    Fix errors:
+    - branch out of range
+    - selected processor does not support `XXX' in Thumb mode
+    - too large for field
+    - co-processor offset out of range
+    """
     reassemble(True)
     if not os.path.isfile('final.error'): return True
     with open('final.error') as f:
@@ -135,8 +173,14 @@ def modifyARM():
 
 
 def main(filepath='', libs=[], debug=False):
-    # Dump linked shared libraries
+    """
+    Compile recovered assembler source and fix some errors
+    :param filepath: original executable filepath
+    :param libs: list of linked libraries
+    :param debug: True to compile with debug symbols
+    """
     if filepath:
+        # Dump linked shared libraries
         os.system('readelf -d ' + filepath + ' | awk \'/Shared/{match($0, /\[([^\]]*)\]/, arr); print arr[1]}\' | grep -i -v "libc\\." > linkedlibs.info')
         print "     Applying adjustments for compilation"
     if ELF_utils.elf_arm():

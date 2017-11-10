@@ -1,3 +1,3 @@
 """
-Module for utilities
+Package for utilities
 """

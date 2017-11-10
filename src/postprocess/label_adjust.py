@@ -1,22 +1,24 @@
-# in the diversifying transformation, BB_XX label is inserted to the beginning
-# of certain instructions. However, as they are inserted in front of function
-# label, function label would not be assembled into binary. For example:
-#
-# BB_xxx:
-# S_0xxxx:  -> this is a function name
-# mov ...
-#
-# after assembling and disassembing on the unstripped binary, only BB_xxx can
-# be found
-#
-# <BB_xxx>:
-# mov ...
-#
-# we want to keep the function label instead of BB label, so let's adjust it in
-# this way
-# S_0xxxx:
-# BB_xxx:
-# mov ...
+"""
+in the diversifying transformation, BB_XX label is inserted to the beginning
+of certain instructions. However, as they are inserted in front of function
+label, function label would not be assembled into binary. For example:
+
+BB_xxx:
+S_0xxxx:  -> this is a function name
+mov ...
+
+after assembling and disassembing on the unstripped binary, only BB_xxx can
+be found
+
+<BB_xxx>:
+mov ...
+
+we want to keep the function label instead of BB label, so let's adjust it in
+this way
+S_0xxxx:
+BB_xxx:
+mov ...
+"""
 
 import re
 

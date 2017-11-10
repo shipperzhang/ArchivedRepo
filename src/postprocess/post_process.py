@@ -1,3 +1,7 @@
+"""
+Code post processing
+"""
+
 import os
 import inline_update
 from utils.ail_utils import ELF_utils
@@ -5,6 +9,10 @@ from instrumentation import plaincode
 
 
 def main(gfree=False):
+    """
+    Transform malformed code and add main symbol
+    :param gfree: True to insert gfree initialization
+    """
 
     with open("final.s") as f:
         lines = f.readlines()

@@ -1,12 +1,20 @@
+"""
+Types for code parsing
+"""
+
 import config
 
 class RecSet(frozenset):
+    """
+    Set with recursive element search
+    """
+
     def __init__(self, elems, final=False):
         self.final = final
         elems = map(lambda e: e.upper() if isinstance(e, str) else e, elems)
         super(RecSet, self).__init__(elems)
 
-    def __new__(cls, elems, final=False):
+    def __new__(cls, elems, final=False):  # @UnusedVariable
         elems = map(lambda e: e.upper() if isinstance(e, str) else e, elems)
         return super(RecSet, cls).__new__(cls, elems)
 
@@ -19,6 +27,9 @@ class RecSet(frozenset):
         return False
 
 class Container(object):
+    """
+    Simple container object
+    """
     def __init__(self, content):
         self.content = content
     def __repr__(self):
@@ -27,6 +38,9 @@ class Container(object):
         return str(self.content)
 
 class Func(object):
+    """
+    Function object
+    """
     def __init__(self, name, begin, end, is_lib):
         self.func_name = name
         self.func_begin_addr = begin
@@ -38,6 +52,9 @@ class Func(object):
         return self.func_name + '@0x%X-0x%X' % (self.func_begin_addr, self.func_end_addr)
 
 class Section(object):
+    """
+    Section object
+    """
     def __init__(self, name, begin, size):
         self.sec_name = name
         self.sec_begin_addr = begin
@@ -46,6 +63,9 @@ class Section(object):
         return 'section(' + self.sec_name + ':0x%X-0x%X)' % (self.sec_begin_addr, self.sec_begin_addr+self.sec_size)
 
 class Loc(object):
+    """
+    Code location object
+    """
     def __init__(self, label, addr, visible):
         self.loc_label = label
         self.loc_addr = addr
@@ -54,6 +74,9 @@ class Loc(object):
         return 'LOC:' + self.loc_label.replace('\n', ' ') + '@0x%X' % self.loc_addr
 
 class Bblock(object):
+    """
+    Basic block object
+    """
     def __init__(self, bf_name, bblock_name, bblock_begin_loc, bblock_end_loc, bblock_head_instr):
         self.bf_name = bf_name
         self.bblock_name = bblock_name
@@ -68,6 +91,7 @@ class control(object): pass
 class J(control): pass
 class F(control): pass
 
+# Instruction classes
 class Instr(tuple): pass
 class SingleInstr(Instr):
     def __init__(self, items):
@@ -90,6 +114,7 @@ class FiveInstr(Instr):
         if len(items) != 7: raise Exception('Invalid five')
         super(FiveInstr, self).__init__(items)
 
+# Symbol and expressions
 class Symbol(object): pass
 class Exp(object): pass
 class SegClass(str): pass
@@ -110,7 +135,7 @@ class BinOP_Generic(tuple, Ptr):
     def __init__(self, items, preind=False):
         self.preind = preind
         super(BinOP_Generic, self).__init__(items)
-    def __new__(cls, items, preind=False):
+    def __new__(cls, items, preind=False):  # @UnusedVariable
         return super(BinOP_Generic, cls).__new__(cls, items)
     def __repr__(self):
         return super(BinOP_Generic, self).__repr__() + ('!' if self.preind else '')

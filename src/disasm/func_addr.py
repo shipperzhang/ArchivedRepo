@@ -4,10 +4,13 @@ import shutil
 import config
 
 
-def func_addr(filename, count, fexclude=""):
-
-    #fn = sys.argv[1]
-    #c = int(sys.argv[2])
+def func_addr(filename, count, fexclude=''):
+    """
+    Dump function symbols and addresses
+    :param filename: path to target executable
+    :param count: unused
+    :param fexclude: path to file of function symbols to exclude from dump
+    """
 
     os.system(config.objdump + ' -Dr -j .text ' + filename + ' > dump.s')
     os.system('grep ">:" dump.s > fl')

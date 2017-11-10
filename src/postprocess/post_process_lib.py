@@ -1,33 +1,34 @@
-# this is a post modifying script of (shared) library code
+"""
+This is a post modifying script of (shared) library code
 
-# four tasks are handled:
-#    1. callq xxxx <puts@plt> is transformed as callq puts in AIL, however, in
-#    lib we have to use this format:
-#            callq puts@plt
-#    We parse the plts.info file and create a set, containing all the symbols
-#    (function names) that should be rewritten in above format
-#
-#    2. some of the symbols should be removed. They are attached by the
-#    original compile  process and they are rejected by the linker as they are
-#    somehow not PIC symbols.
-#    target symbol list:
-#    __bss_start
-#
+four tasks are handled:
+   1. callq xxxx <puts@plt> is transformed as callq puts in AIL, however, in
+   lib we have to use this format:
+           callq puts@plt
+   We parse the plts.info file and create a set, containing all the symbols
+   (function names) that should be rewritten in above format
 
-#    3. we should scan the symbol table to collect all the exported symbols
-#    (functions, global variables), and adding .globl macro for them
-#
-#
-#    4. type macro should also be updated for each exported symbol.
-#    for functions, insert a macro like this:  .type   func_name, @function
-#    for variables , insert a macro like this:  .type   variable_name, @variable
-#
-#
-#    5. when scanning the data sections (probably just .data section), identify
-#    certain memory address label and substitue it with variable names
-#    according to export datas.
-#
-#
+   2. some of the symbols should be removed. They are attached by the
+   original compile  process and they are rejected by the linker as they are
+   somehow not PIC symbols.
+   target symbol list:
+   __bss_start
+
+
+   3. we should scan the symbol table to collect all the exported symbols
+   (functions, global variables), and adding .globl macro for them
+
+
+   4. type macro should also be updated for each exported symbol.
+   for functions, insert a macro like this:  .type   func_name, @function
+   for variables , insert a macro like this:  .type   variable_name, @variable
+
+
+   5. when scanning the data sections (probably just .data section), identify
+   certain memory address label and substitue it with variable names
+   according to export datas.
+"""
+
 
 import re
 from utils.ail_utils import ELF_utils
