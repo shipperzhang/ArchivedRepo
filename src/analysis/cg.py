@@ -5,19 +5,24 @@ from utils.ail_utils import dec_hex, Opcode_utils
 
 
 class cg(ailVisitor):
+    """
+    A Call Graph construction impelmentation.
+    Constructs simple CG based on direct control flow transfer (call/jump)
+    """
 
-    cg_tbl = {}
-    cfi_tbl = {}
+    def __init__(self):
+        self.cg_tbl = {}
+        self.cfi_tbl = {}
 
     def update_cgtbl(self, l, func):
-        ll = cg.cg_tbl.get(l.loc_addr, [])
+        ll = self.cg_tbl.get(l.loc_addr, [])
         ll.insert(0, func)
-        cg.cg_tbl[l.loc_addr] = ll
+        self.cg_tbl[l.loc_addr] = ll
 
     def update_cfitbl(self, func, l):
-        ll = cg.cfi_tbl.get(func.func_name, [])
+        ll = self.cfi_tbl.get(func.func_name, [])
         ll.insert(0, l)
-        cg.cfi_tbl[func.func_name] = ll
+        self.cfi_tbl[func.func_name] = ll
 
     def func_info(self, l):
         for h in self.funcs:
@@ -45,26 +50,26 @@ class cg(ailVisitor):
         return self.vinst_tail(instrs)
 
     def cfi_specified_tbl(self):
-        for k,v in cg.cg_tbl.iteritems():
+        for k,v in self.cg_tbl.iteritems():
             for f in v:
                 self.update_cfitbl(f, k)
 
     def print_cg_graph(self):
-        for k,v in cg.cfi_tbl.iteritems():
+        for k,v in self.cfi_tbl.iteritems():
             sys.stdout.write(dec_hex(k))
             for f in v:
                 print '    ' + f.func_name
 
     def print_cfi_specified_graph(self):
         self.cfi_specified_tbl()
-        for k,v in cg.cfi_tbl.iteritems():
+        for k,v in self.cfi_tbl.iteritems():
             print k
             for l in v:
                 print '    ' + dec_hex(l)
 
     def get_cg_table(self):
-        return cg.cg_tbl
+        return self.cg_tbl
 
     def get_cfi_tbl(self):
         self.cfi_specified_tbl()
-        return cg.cfi_tbl
+        return self.cfi_tbl

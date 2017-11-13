@@ -1,17 +1,11 @@
 import os
 import config
-import spliter
-import export_data
-import parse_init_array
 from visit import ailVisitor
 from share_lib_helper import lib32_helper
-from disasm import Types, exception_process
-from utils.ail_utils import get_loc, read_file, ELF_utils, dec_hex, set_loc,\
-                            unify_int_list, bbn_byloc, merge_intervals
+from disasm import Types, exception_process, spliter, export_data, parse_init_array
+from utils.ail_utils import get_loc, read_file, ELF_utils, dec_hex, set_loc, unify_int_list,\
+                            bbn_byloc, merge_intervals
 
-
-def rev_map(f, l):
-    return map(f, l)[::-1]
 
 class ft(object):
     def __init__(self, fn, fbaddr, feaddr):
@@ -21,8 +15,14 @@ class ft(object):
 
 
 class datahandler:
+    """
+    Data sections analyzer
+    """
 
     def __init__(self, label):
+        """
+        :param label: list of labels corresponding to data sections addresses
+        """
         self.sec = {}
         self.plt_symbols = {}
 
@@ -57,6 +57,10 @@ class datahandler:
         self.exclude = []
 
     def set_datas(self, funcs):
+        """
+        Load data values and perform analysis
+        :param funcs: function list
+        """
         self.section_collect()
         self.data_collect()
 
@@ -80,12 +84,18 @@ class datahandler:
         else: self.data_refer_solve_64()
 
     def set_assumption_flag(self):
+        """
+        Load assumptions
+        """
         with open('assumption_set.info') as f:
             l = f.readline()
             self.assumption_two = '2' in l
             self.assumption_three = '3' in l
 
     def set_excluded_ranges(self):
+        """
+        Load excluded data ranges
+        """
         if config.excludedata != '':
             def rangemapper(l):
                 items = l.strip().split('-')
@@ -97,11 +107,19 @@ class datahandler:
         return self.text_labels
 
     def text_sec_collect(self):
+        """
+        Load .text section info
+        """
         with open('text_sec.info') as f:
             items = f.readline().split()
             self.text_sec = (int(items[1], 16), int(items[3], 16))
 
     def check_text(self, addr):
+        """
+        Check if address in .text section
+        :param addr: integer address
+        :return: True if included
+        """
         if addr == 0xffff: return False
         b = self.text_sec[0]
         e = b + self.text_sec[1]
@@ -118,6 +136,11 @@ class datahandler:
             f.write('\n')
 
     def traverse64(self, l, startaddr):
+        """
+        Traverse data section, find pointers using 64bit alignment and substitute them with labels
+        :param l: .byte declaration list
+        :param startaddr: section start address
+        """
         i = 0
         holei = 0
         while holei < len(self.exclude) and startaddr > self.exclude[holei][1]: holei += 1
@@ -155,12 +178,19 @@ class datahandler:
             else: i += 8
 
     def data_refer_solve_64(self):
+        """
+        Check .data, .rodata and .got (for 64bit binaries)
+        """
         self.add_data_label()
         self.traverse64(self.data_list, self.section_addr('.data'))
         self.traverse64(self.rodata_list, self.section_addr('.rodata'))
         self.traverse64(self.got_list, self.section_addr('.got'))
 
     def checkifprobd2dARM(self, val):
+        """
+        Heuristic for ARM to evaluate if a value in data section is a pointer
+        :param val: integer value
+        """
         # Assume 2 byte alignment
         if val & 1 != 0: return False
         low = val & 0xffff; hi = val >> 16
@@ -168,6 +198,11 @@ class datahandler:
         return abs(low - hi) >= 8
 
     def traverse32(self, l, startaddr):
+        """
+        Traverse data section, find pointers using 32bit alignment and substitute them with labels
+        :param l: .byte declaration list
+        :param startaddr: section start address
+        """
         i = 0
         holei = 0
         while holei < len(self.exclude) and startaddr > self.exclude[holei][1]: holei += 1
@@ -206,6 +241,9 @@ class datahandler:
             else: i += 4
 
     def data_refer_solve(self):
+        """
+        Check .data and .rodata (for 32bit binaries)
+        """
         self.add_data_label()
         self.traverse32(self.data_list, self.section_addr('.data'))
         self.traverse32(self.rodata_list, self.section_addr('.rodata'))
@@ -237,6 +275,9 @@ class datahandler:
         except: return False
 
     def section_collect(self):
+        """
+        Load sections info
+        """
         def secmapper(l):
             items = l.split()
             return items[0], Types.Section(items[0], int(items[1], 16), int(items[3], 16))
@@ -251,16 +292,32 @@ class datahandler:
                 self.plt_symbols[int(items[0], 16)] = items[1].split('@')[0][1:]
 
     def section_offset(self, name, addr):
+        """
+        Get address offset from section start
+        :param name: section name
+        :param addr: integer address
+        :return: integer offset
+        :raise Exception: if invalid section name
+        """
         if name in self.sec:
             return addr - self.sec[name].sec_begin_addr
         raise Exception('failed to find section offset')
 
     def section_addr(self, name):
+        """
+        Get section by name
+        :param name: section name
+        :return: section object
+        :raise Exception: if invalid section name
+        """
         if name in self.sec:
             return self.sec[name].sec_begin_addr
         raise Exception('failed to find section ' + name)
 
     def data_collect(self):
+        """
+        Load data sections .byte declarations
+        """
         spliter.main()
         self.data_list = self.collect('data_split.info')
         self.rodata_list = self.collect('rodata_split.info')
@@ -268,6 +325,11 @@ class datahandler:
         self.bss_list = self.collect('bss.info')
 
     def collect(self, name):
+        """
+        Load .byte declaration file
+        :param name: filename
+        :return: list of .byte declaration strings
+        """
         if os.path.isfile(name):
             with open(name) as f:
                 return map(lambda l: ('', l.strip()), f)[::-1]
@@ -279,6 +341,11 @@ class datahandler:
         return '.rodata'
 
     def check_sec(self, addr):
+        """
+        Find the section an address belongs to
+        :param addr: address
+        :return: section object, None on failure
+        """
         for h in self.sec.values():
             b = h.sec_begin_addr
             e = b + h.sec_size
@@ -299,6 +366,11 @@ class datahandler:
                 self.rodata_list[l] = (dec_hex(l+rodataoff), self.rodata_list[l][1])
 
     def process(self, lbs, withoff=False):
+        """
+        Add labels in the corresponding addresses of data sections
+        :param lbs: list of tuples (section name, absolute address or offset)
+        :param withoff: if True lbs contains absolute addresses
+        """
         ds = {'.data': self.data_list, '.rodata': self.rodata_list,
               '.got': self.got_list, '.bss': self.bss_list}
         for i in xrange(len(lbs)):
@@ -312,6 +384,9 @@ class datahandler:
                 ds[n][off] = ('S_' + dec_hex(l) + ': ', ds[n][off][1])
 
     def gotexternals(self):
+        """
+        Replace external symbols in .got
+        """
         with open('gotglobals.info') as f:
             def mapper(l):
                 items = l.split()
@@ -327,6 +402,9 @@ class datahandler:
             self.got_list[off+1:off+1+skiplen] = [('', '')] * skiplen
 
     def data_output(self):
+        """
+        Save data sections to files
+        """
         self.process(self.locations)
         self.process(self.data_labels, True)
         self.gotexternals()
@@ -351,16 +429,29 @@ class datahandler:
 
 
 class instrhandler(object):
+    """
+    Add labels in code locations
+    """
 
     def __init__(self, instr_list, des):
+        """
+        :param instr_list: list of instructions
+        :param des: list of S_ labels
+        """
         self.des = des
         self.locs = []
         self.instr_list = instr_list
 
     def get_instr_list(self):
+        """
+        Get instruction list
+        """
         return map(lambda e: set_loc(e[0],e[1]), zip(self.instr_list, self.locs))
 
-    def set_instr_list(self):
+    def set_loc_list(self):
+        """
+        Load code locations from instructions
+        """
         self.locs = map(get_loc, self.instr_list)
 
     def clean_sort(self, ll):
@@ -369,6 +460,9 @@ class instrhandler(object):
         return unify_int_list(ll)
 
     def process(self):
+        """
+        Traverse instruction list and insert generated S_ labels in the correct positions
+        """
         do_update = lambda s,n: s if n in s else s + '\n' + n
         des1 = self.clean_sort(self.des)
         i = 0; j = 0
@@ -393,15 +487,17 @@ class instrhandler(object):
 
 
 class reassemble(ailVisitor):
-
-    data_set = {}
-    plt_hash = {}
-    pic_hash = {}
-    text_set = {}
+    """
+    Symbolic information reconstructor
+    """
 
     def __init__(self):
         super(reassemble, self).__init__()
         self.label = []
+        self.data_set = {}
+        self.plt_hash = {}
+        self.pic_hash = {}
+        self.text_set = {}
         # collect relocation info
         self.deslist = []
         # only collect the relocated symbol
@@ -430,6 +526,9 @@ class reassemble(ailVisitor):
         self.ARMvldrtargets = []
 
     def section_collect(self):
+        """
+        Load sections information
+        """
         def secmapper(l):
             items = l.split()
             return Types.Section(items[0], int(items[1], 16), int(items[3], 16))
@@ -438,32 +537,40 @@ class reassemble(ailVisitor):
         self.text_mem_addrs = map(str.strip, read_file('text_mem.info'))
 
     def plt_collect(self):
+        """
+        Load extenal functions information
+        """
         lines = read_file('plts.info')
         for l in lines:
             items = l.split()
             addr = int(items[0][1:], 16)
             name = items[1].split('@')[0][1:]
-            reassemble.plt_hash[addr] = name
-
-    def pic_collect(self):
-        lines = read_file('pic_secs.info')
-        for l in lines:
-            items = l.split()
-            reassemble.pic_hash[items[0]] = (int(items[1], 16), int(items[3], 16))
+            self.plt_hash[addr] = name
 
     def text_sec_collect(self):
+        """
+        Load .text information
+        """
         lines = read_file('text_sec.info')
         for l in lines:
             items = l.split()
             self.text_sec = (int(items[1], 16), int(items[3], 16))
 
     def plt_sec_collect(self):
+        """
+        Load .plt information
+        """
         lines = read_file('plt_sec.info')
         for l in lines:
             items = l.split()
             self.plt_sec = (int(items[1], 16), int(items[3], 16))
 
     def check_sec(self, addr):
+        """
+        Find the section an address belongs to
+        :param addr: address
+        :return: section object, None on failure
+        """
         if addr in self.exclusionset: return None
         for s in self.sec:
             b = s.sec_begin_addr
@@ -472,18 +579,28 @@ class reassemble(ailVisitor):
         return None
 
     def check_text(self, addr):
+        """
+        Check if address in .text section
+        :param addr: integer address
+        :return: True if included
+        """
         if addr == 0xffff or addr in self.exclusionset: return False
         return self.text_sec[0] <= addr < sum(self.text_sec)
 
-    def check_text_abd(self, addr):
-        if addr in self.exclusionset: return False
-        return self.text_sec[0] <= addr <= sum(self.text_sec)
-
     def check_plt(self, addr):
+        """
+        Check if address in .plt section
+        :param addr: integer address
+        :return: True if included
+        """
         if addr in self.exclusionset: return False
         return self.plt_sec[0] <= addr < sum(self.plt_sec)
 
     def parse_const(self, c):
+        """
+        Check if expression is a constant and return value
+        :param c: expression
+        """
         if isinstance(c, Types.Const): return c
         raise Exception("Not a constant")
 
@@ -495,7 +612,7 @@ class reassemble(ailVisitor):
             return reassemble.normal_char + 'S_' + dec_hex(c)
 
     def build_plt_symbol(self, c):
-        n = reassemble.plt_hash[c]
+        n = self.plt_hash[c]
         if isinstance(c, Types.Point):
             return n
         elif isinstance(c, Types.Normal):
@@ -503,16 +620,35 @@ class reassemble(ailVisitor):
         raise Exception("Failed plt symbol")
 
     def insert_text(self, l, exp):
-        if exp not in reassemble.text_set:
-            reassemble.text_set[exp] = ''
+        """
+        Insert new label to the set of .text labels
+        :param l: label
+        :param exp: address value
+        """
+        if exp not in self.text_set:
+            self.text_set[exp] = ''
             self.deslist.append(l)
 
     def insert_data(self, sec, exp):
-        if exp not in reassemble.data_set:
-            reassemble.data_set[exp] = ''
+        """
+        Insert new label to the set of data labels
+        :param sec: data section object to which the address belongs
+        :param exp: address value
+        """
+        if exp not in self.data_set:
+            self.data_set[exp] = ''
             self.label.append((sec, exp))
 
     def v_exp2(self, exp, instr, f, chk):
+        """
+        Analyze expression and determine if it represent an address.
+        If so substitute if with a corresponding symbolic expression using labels
+        :param exp: expression
+        :param instr: instruction tuple to which the expression belongs to
+        :param f: unused
+        :param chk: True if instruction is TEST (x86)
+        :return: modified expression if matching, original one otherwise
+        """
         if isinstance(exp, Types.Const):
             if isinstance(exp, Types.Normal) and chk: return exp
             s = self.check_sec(exp)
@@ -532,8 +668,8 @@ class reassemble(ailVisitor):
                     s_label = 'S_' + dec_hex(exp)
                     self.insert_text(s_label, exp)
                     return Types.Label(s_label)
-                elif self.check_plt(exp) and exp in reassemble.plt_hash:
-                    return Types.Label(reassemble.plt_hash[exp])
+                elif self.check_plt(exp) and exp in self.plt_hash:
+                    return Types.Label(self.plt_hash[exp])
             elif isinstance(exp, Types.StarDes):
                 return Types.StarDes(self.v_exp2(exp.content, instr, f, chk))
             elif isinstance(exp, Types.CallDes):
@@ -545,8 +681,8 @@ class reassemble(ailVisitor):
                         return Types.Label(s_label)
                     elif self.check_plt(addr):
                         off = 0
-                        while not reassemble.plt_hash.get(addr - off, None): off += 2
-                        return Types.Label(reassemble.plt_hash[addr - off])
+                        while not self.plt_hash.get(addr - off, None): off += 2
+                        return Types.Label(self.plt_hash[addr - off])
                 else: self.symbol_list.insert(0, exp.func_begin_addr)
         elif isinstance(exp, Types.Ptr):
             if isinstance(exp, (Types.BinOP_PLUS, Types.BinOP_MINUS)):
@@ -592,6 +728,11 @@ class reassemble(ailVisitor):
         return exp
 
     def vinst2(self, f, instr):
+        """
+        Analize instruction (x86)
+        :param f: unsused
+        :param instr: instruction tuple
+        """
         if isinstance(instr, Types.SingleInstr): return instr
         elif isinstance(instr, Types.DoubleInstr):
             return Types.DoubleInstr((instr[0], self.v_exp2(instr[1], instr, f, False),
@@ -610,6 +751,10 @@ class reassemble(ailVisitor):
         return instr
 
     def vinst2ARM(self, iv):
+        """
+        Analize instruction (ARM)
+        :param iv: instruction tuple
+        """
         instr = iv[1]
         if instr[0].upper().startswith('MOVW'): self.ARMmovs.append(iv[0])
         if isinstance(instr, Types.DoubleInstr):
@@ -627,9 +772,12 @@ class reassemble(ailVisitor):
         return instr
 
     def doublemovARM(self, instrs):
-        # insert labels for double mov operations
-        #  movw r0, #0x102c -> movw r0, #:lower16:S_0x2102c
-        #  movt r0, #0x2    -> movt r0, #:upper16:S_0x2102c
+        """
+        insert labels for double mov operations
+          movw r0, #0x102c -> movw r0, #:lower16:S_0x2102c
+          movt r0, #0x2    -> movt r0, #:upper16:S_0x2102c
+        :param instrs: instruction list
+        """
         for i in self.ARMmovs:
             mw = list(instrs[i])
             destreg = mw[1]
@@ -675,14 +823,17 @@ class reassemble(ailVisitor):
         self.ARMmovs = []
 
     def pcreloffARM(self, instrs):
-        # Trying to handle this mess
-        #  ldr r7, label           -> ldr r7, label
-        #  ...                     -> ...
-        #  add r7,pc               -> add r7, #0
-        #  ...                     -> ...
-        #  ldr r1, [r7]            -> ldr r1, [r7]
-        #  ...                     -> ...
-        #  label: .word 0xoffset   -> label: .word (0xoffset + pc)
+        """
+        Trying to handle this mess
+          ldr r7, label           -> ldr r7, label
+          ...                     -> ...
+          add r7,pc               -> add r7, #0
+          ...                     -> ...
+          ldr r1, [r7]            -> ldr r1, [r7]
+          ...                     -> ...
+          label: .word 0xoffset   -> label: .word (0xoffset + pc)
+        :param instrs: instruction list
+        """
         i = 0
         offsets = {}
         inlen = len(instrs)
@@ -710,6 +861,11 @@ class reassemble(ailVisitor):
             i += 1
 
     def visit_heuristic_analysis(self, instrs):
+        """
+        Reconstruct symbolic information
+        :param instrs: instruction list
+        :return: instruction list with labels
+        """
         func = lambda i: self.check_text(get_loc(i).loc_addr)
         self.instr_list = instrs
         if ELF_utils.elf_arm():
@@ -720,13 +876,12 @@ class reassemble(ailVisitor):
         self.symbol_list = map(lambda l: int(l.split('x')[1], 16), self.deslist) + self.symbol_list
         return instrs
 
-    def visit_type_infer_analysis(self, instrs):
-        self.instr_list = instrs
-        f = lambda: True
-        return map(self.vinst2ARM, enumerate(instrs)) if ELF_utils.elf_arm() \
-               else map(lambda i: self.vinst2(f, i), instrs)
-
     def lib32_processing(self, instrs, funcs):
+        """
+        Process PC relative code for x86 32 binaries
+        :param instrs: instruction list
+        :param funcs: function list
+        """
         if ELF_utils.elf_32() and not ELF_utils.elf_arm():
             helper = lib32_helper(instrs, funcs)
             self.label += map(lambda addr: (self.check_sec(addr).sec_name, addr), helper.traverse())
@@ -747,19 +902,34 @@ class reassemble(ailVisitor):
             f.write('\n'.join(map(dec_hex, dl)))
 
     def adjust_loclabel(self, instr_list):
+        """
+        Add labels from code to corresponding code locations
+        :param instr_list: instruction list
+        :return: instruction list withh location labels
+        """
         self.update_deslist_with_initarray()
         p = instrhandler(instr_list, self.init_array_list + self.deslist)
-        p.set_instr_list()
+        p.set_loc_list()
         p.process()
         return p.get_instr_list()
 
     def adjust_jmpref(self, instr_list):
+        """
+        Add labels from data to corresponding code locations
+        :param instr_list: instruction list
+        :return: instruction list withh location labels
+        """
         p = instrhandler(instr_list, self.jmpreflist)
-        p.set_instr_list()
+        p.set_loc_list()
         p.process()
         return p.get_instr_list()
 
     def adjust_globallabel(self, g_bss, instr_list):
+        """
+        Add labels for global external variables (e.g. stderr)
+        :param g_bss: list of global .bss symbols (address, name)
+        :param instr_list: instruction list
+        """
         # g_bss = filter(lambda e: '@' in e[1], g_bss)
         g_bss = filter(lambda e: int(e[0], 16) != 0, g_bss)
         gbss_hs = {'S_0x' + e[0].lstrip('0'): e[1].split('@')[0] if '@' in e[1] else e[1] for e in g_bss}
@@ -772,6 +942,10 @@ class reassemble(ailVisitor):
         return map(mapper, instr_list)
 
     def data_dump(self, funcs):
+        """
+        Analyze data sections and save them to file
+        :param funcs: function list
+        """
         t = self.label + self.export_data_dump()
         p = datahandler(t)
         p.text_sec_collect()
@@ -801,6 +975,12 @@ class reassemble(ailVisitor):
         self.init_array_dump()
 
     def add_func_label(self, ufuncs, instrs):
+        """
+        Insert function labels
+        :param ufuncs: function list
+        :param instrs: instruction list
+        :return: instruction list with function declarations
+        """
         i = 0; j = 0
         while True:
             if i == len(ufuncs) or j == len(instrs):
@@ -849,6 +1029,10 @@ class reassemble(ailVisitor):
         return instrs
 
     def alignvldrARM(self, instrs):
+        """
+        Insert alignment compiler instruction for vldr targets (ARM)
+        :param instrs: instruction list
+        """
         self.ARMvldrtargets = sorted(set(self.ARMvldrtargets))
         i = 0; j = 0
         while True:

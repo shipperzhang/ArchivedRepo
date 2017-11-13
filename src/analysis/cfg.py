@@ -11,12 +11,15 @@ class tb(object):
 
 
 class cfg(ailVisitor):
+    """
+    A CFG construction impelmentation
+    """
 
-    cfg_table = {}
-    cfg_bdiv_table = {}
     counter = 0
 
     def __init__(self):
+        self.cfg_table = {}
+        self.cfg_bdiv_table = {}
         self.found_entry = False
         self.skip_entry = False
         self.entry_loc = Types.Loc('', 0, True)
@@ -28,11 +31,10 @@ class cfg(ailVisitor):
 
     def cfg_exp(self, e, l):
         if isinstance(e, Types.JumpDes):
-            cfg.cfg_table[l.loc_addr] = e
+            self.cfg_table[l.loc_addr] = e
         elif isinstance(e, Types.CallDes) and not e.is_lib:
-            cfg.cfg_table[l.loc_addr] = e.func_begin_addr
+            self.cfg_table[l.loc_addr] = e.func_begin_addr
 
-    exit_op = Types.RecSet(('CALL', 'RET', 'RETN'), True)
     def bb_exit(self, op, exp1):
         return Opcode_utils.is_cp(op) or Opcode_utils.is_ret(op, exp1)
 
@@ -105,7 +107,7 @@ class cfg(ailVisitor):
         return il1
 
     def get_fbl(self):
-        return cfg.cfg_bdiv_table
+        return self.cfg_bdiv_table
 
     def get_bbl(self):
         return self.bl
@@ -113,9 +115,9 @@ class cfg(ailVisitor):
     def fb_list(self, bl):
         for b in bl:
             fn = b.bf_name
-            e = cfg.cfg_bdiv_table.get(fn, [])
+            e = self.cfg_bdiv_table.get(fn, [])
             e.append(b)
-            cfg.cfg_bdiv_table[fn] = e
+            self.cfg_bdiv_table[fn] = e
 
     def update_bl(self):
         self.bl = []
@@ -189,7 +191,7 @@ class cfg(ailVisitor):
             return acc
 
         res = []
-        for f, bl in cfg.cfg_bdiv_table.iteritems():
+        for f, bl in self.cfg_bdiv_table.iteritems():
             bnl = map(lambda b: b.bblock_name, bl)
             cfg_l = sort_loc(map(lambda b: b.bblock_end_loc, bl))
             cfg_l = get_instr_byloc(self.instrs, cfg_l)

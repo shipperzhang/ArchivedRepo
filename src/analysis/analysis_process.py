@@ -4,9 +4,15 @@ from utils.ail_utils import read_file, ELF_utils
 from utils.pp_print import pp_print_list, pp_print_file
 
 class Analysis(object):
+    """
+    Code analysis skeleton
+    """
 
     @staticmethod
     def global_bss():
+        """
+        Load external bss variable information
+        """
         lines = read_file('globalbss.info')
         def mapper(l):
             items = l.strip().split()
@@ -14,7 +20,15 @@ class Analysis(object):
         return map(mapper, lines)
 
     @staticmethod
-    def analyze_one(il, fl, re, docfg=False):
+    def analyze(il, fl, re, docfg=False):
+        """
+        Analyze code
+        :param il: instruction list
+        :param fl: function list
+        :param re: symbol reconstruction object
+        :param docfg: True to evaluate call graph and cfg
+        :return: [fbl, block labels, CFG table, CG table,] instruction list, symbol reconstruction object
+        """
         u_fl = filter(lambda f: not f.is_lib, fl)
 
         if docfg:
@@ -38,6 +52,11 @@ class Analysis(object):
 
     @staticmethod
     def post_analyze(il, re):
+        """
+        Make final adjustments and write code to file
+        :param il: instruction list
+        :param re: symbol reconstruction object
+        """
         il = re.unify_loc(il)
         if ELF_utils.elf_arm(): il = re.alignvldrARM(il)
         ils = pp_print_list(il)

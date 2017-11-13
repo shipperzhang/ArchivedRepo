@@ -105,7 +105,7 @@ class Ail(object):
         il, fl, re = Disam.disassemble(self.file, self.funcs, self.secs)
 
         print colored('3: ANALYSIS', 'green')
-        fbl, bbl, cfg_t, cg, il, re = Analysis.analyze_one(il, fl, re, docfg)  # @UnusedVariable
+        fbl, bbl, cfg_t, cg, il, re = Analysis.analyze(il, fl, re, docfg)  # @UnusedVariable
 
         if gfree:
             print colored('4: INSTRUMENTATION', 'green')

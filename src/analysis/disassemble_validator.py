@@ -30,6 +30,11 @@ class simple_queue(object):
 
 
 def is_des(e):
+    """
+    Get address from symbolic expression
+    :param e: expression
+    :return: integer address if jump or call constant target, None otherwise
+    """
     if isinstance(e, Types.JumpDes): return e
     elif isinstance(e, Types.CallDes) and not e.is_lib:
         try: return int(e.func_name[2:], 16)
@@ -38,6 +43,11 @@ def is_des(e):
 
 
 class dis_validator(object):
+    """
+    Checks for disassembly errors:
+    - invalid instructions
+    - invalid control transfers destinations
+    """
 
     icf_stack = stack_of_loc()
 
@@ -51,6 +61,9 @@ class dis_validator(object):
         self.five_q = simple_queue()
 
     def text_sec_collect(self):
+        """
+        Load .text section info
+        """
         def secmapper(l):
             items = l.split()
             return (int(items[1], 16), int(items[3], 16))
@@ -60,9 +73,19 @@ class dis_validator(object):
             self.text_secs += map(secmapper, f)
 
     def invalid_opcode(self, instr):
+        """
+        Check for bad instruction disassembly (x86 only)
+        :param instr: instruction tuple
+        :return: True if invalid
+        """
         return instr[0] in Types.ErrorOp
 
     def invalid_transfer(self, instr):
+        """
+        Check if instruction is a branch and its target is valid
+        :param instr: instruction tuple
+        :return: True if invalid
+        """
         is_outside = lambda d: all(map(lambda e: d < e[0] or d >= e[0] + e[1], self.text_secs))
         if isinstance(instr, Types.DoubleInstr) and Opcode_utils.is_cp(instr[0]):
             res = is_des(instr[1])
@@ -70,6 +93,10 @@ class dis_validator(object):
         return False
 
     def visit(self, instrlist):
+        """
+        Check disassbled code
+        :param instrlist: list of instruction objects
+        """
         self.text_sec_collect()
         self.locs = filter(lambda i: self.invalid_opcode(i) or self.invalid_transfer(i), instrlist)
         self.locs = map(lambda i: get_loc(i).loc_addr, self.locs)

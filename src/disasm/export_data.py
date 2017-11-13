@@ -1,5 +1,6 @@
-# this function select export data from export table and dump their memory
-# addresses
+"""
+Selects export data from export table and dump their memory addresses
+"""
 
 
 def main():
