@@ -211,7 +211,7 @@ if config.arch == config.ARCH_X86:
                        'PFSUB', 'PFSUBR', 'VPHADDD', 'PALIGNR', 'PHADDD', 'VPMULLD',
                        'PMULLD', 'VPABSD', 'VPMADDWD', 'VPMULDQ', 'VPSUBD', 'PABSD', 'PMULDQ',
                        'FYL2X', 'F2XM1', 'FSCALE', 'MAXPS', 'SQRTPS', 'VMULPS', 'VSQRTPS',
-                       'VMAXPS', 'VADDPS', 'VSUBPS'
+                       'VMAXPS', 'VADDPS', 'VSUBPS', 'ADCQ'
 
     ], True)
     LogicOp = RecSet(['AND', 'ANDB', 'OR', 'XOR', 'PXOR', 'NOT', 'ANDL', 'NOTL', 'ORW',
@@ -240,7 +240,7 @@ if config.arch == config.ARCH_X86:
                        'FSUBS', 'FSUBR', 'FSTS', 'FSUBL', 'FCMOVNBE', 'FCMOVE', 'FCMOVNE',
                        'FCMOVB', 'FISTP', 'FCMOVNB', 'CMOVNP', 'STOS', 'STOSB', 'STOSW', 'STOSD',
                        'FIST', 'FFREE', 'MOVSWQ', 'ORQ', 'MOVDQU', 'MOVDQA',
-                       'MOVUPS', 'MOVD', 'MOVHLPS', 'MOVLHPS', 'MOVUPD', 'MOVNTI',
+                       'MOVUPS', 'MOVD', 'MOVHLPS', 'MOVLHPS', 'MOVUPD', 'MOVNTI', 'MOVSL',
                        'PUNPCKHQDQ', 'PUNPCKLDQ', 'PUNPCKLBW', 'PINSRW', 'PEXTRW',
                        'PUNPCKLQDQ', 'PUNPCKLWD', 'MOVHPD', 'MOVLPD', 'LAHF', 'SAHF',
                        'RDTSC', 'VCVTSI2SD', 'VMOVDQU', 'VMOVDQA', 'VPBLENDW', 'VPUNPCKHQDQ',
@@ -255,7 +255,7 @@ if config.arch == config.ARCH_X86:
                         'BT', 'TESTW', 'CMPNLESS', 'CMPLTSS', 'CMPNLTSS', 'TESTQ', 'CMPNLTSD',
                         'PCMPGTD', 'PCMPGTB', 'PCMPEQD', 'CMPLTSD', 'PCMPEQW', 'CMPEQSS', 'PCMPEQB',
                         'CMPLESD', 'CMPUNORDSS', 'CMPLESS', 'CMPNLESD', 'COMISD', 'COMISS', 'FCOMI',
-                        'FCOMIP'
+                        'FCOMIP', 'FUCOMP', 'FUCOMPP', 'FUCOM'
     ], True)
     SetOp = RecSet(['SETA', 'SETAE', 'SETB', 'SETBE', 'SETC',
                     'SETNBE', 'SETNC', 'SETNG', 'SETNE',

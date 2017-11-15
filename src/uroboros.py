@@ -57,13 +57,14 @@ def process(filepath, gfree=False, fexclude=''):
     return True
 
 
-def check(filepath, assumptions, gccopt='', excludedata=''):
+def check(filepath, assumptions, gccopt='', excludedata='', gfree=False):
     """
     Perform basic check on analyzed executable and set configuration values
     :param filepath: path to executable
     :param assumptions: list of assumption codes
     :param gccopt: additional options for the compiler
     :param excludedata: path to file of address exclusions
+    :param gfree: True if gfree enabled
     :return: True if everything ok
     """
     if not assumptions: assumptions = []
@@ -85,13 +86,12 @@ def check(filepath, assumptions, gccopt='', excludedata=''):
     config.setup(filepath, gccopt, excludedata)
 
     if config.is_lib:
-        print "Uroboros doesn't support shared library"
+        sys.stderr.write("Uroboros doesn't support shared libraries\n")
         return False
 
-    # if assumption three is utilized, then input binary must be unstripped.
-    if '3' in assumptions and not config.is_unstrip:
-        print 'Uroboros does not support stripped binaries when using assumption three'
-        return False
+    # if assumption three is utilized, then input binary should be unstripped.
+    if ('3' in assumptions or gfree) and not config.is_unstrip:
+        print colored('Warning:', 'yellow'), 'binary is stripped, function boundaries evaluation may not be precise'
 
     return True
 
@@ -148,7 +148,7 @@ a label or an address range of data section to exclude from symbol search""")
     if not os.path.isdir(workdir): os.mkdir(workdir)
     os.chdir(workdir)
 
-    if check(filepath, args.assumption, args.gccopt, exclude) and set_assumption(args.assumption):
+    if check(filepath, args.assumption, args.gccopt, exclude, args.gfree) and set_assumption(args.assumption):
         if process(os.path.basename(filepath), args.gfree, fexclude):
             print colored("Processing succeeded", "blue")
             if outpath is not None: shutil.copy('a.out', outpath)

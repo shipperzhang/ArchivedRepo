@@ -16,7 +16,8 @@ def main():
         # typical instruction pattern can be found in objdump produced assembly code like this:
         #  8049391:       data32 data32 data32 data32 data32 nopw %cs:0x0(%eax,%eax,1)
         # I strongly suspect it is a data padding, let's just remove it now
-        if "data32" in l: l = ""
+        if 'data32' in l or 'data16' in l:
+            return ''
         return l
     lines = map(helpf, lines)
 
