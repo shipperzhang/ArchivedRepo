@@ -2,6 +2,9 @@
 Configuration
 """
 
+import pkgutil
+import importlib
+from termcolor import colored
 from subprocess import check_output
 
 # constants
@@ -31,6 +34,10 @@ ARM_maxAddPcDist = 8        # Maximum search distance for indirect PC relative l
 gccoptions = ''
 excludedata = ''
 
+# List of instrumentation modules (leave empty to apply all in alphabetic order)
+# If only a subset of instrumentors needs to be used, add their package names as string to the list
+instrumentors = []
+
 # gfree configuration
 # symbol names
 gfree_xorkeyvar = 'xorkey'
@@ -46,7 +53,7 @@ gfree_maxalignmentpass = 100
 gfree_ARMITdelete = True
 
 
-def setup(filepath, gccopt='', exdata=''):
+def setup(filepath, gccopt='', exdata='', instrument=False):
     """
     Setup global configuration values
     :param filepath: executable filepath
@@ -85,3 +92,29 @@ def setup(filepath, gccopt='', exdata=''):
         print ('32 bit' if is_32 else '64 bit') + ' x86 binary detected'
     else:
         raise Exception("Unkwown architecture type")
+    if instrument: loadInstrumentors()
+
+
+def loadInstrumentors():
+    """
+    Load instrumentation modules
+    """
+    global instrumentors
+    import instrumentation
+    if len(instrumentors) == 0:
+        pkgiter = pkgutil.iter_modules(instrumentation.__path__)
+        instrumentors = sorted(map(lambda e: e[1], filter(lambda e: e[2], pkgiter)))
+    def checker(i):
+        if not (hasattr(i['main'], 'perform') and
+                hasattr(i['main'], 'aftercompile') and
+                hasattr(i['plain'], 'beforemain') and
+                hasattr(i['plain'], 'aftercode') and
+                hasattr(i['plain'], 'instrdata')):
+            print colored('Warning:', 'yellow'), 'instrumentor \'' + i['name'] + '\' is not correctly constructed and was discarded'
+            return False
+        return True
+    instrumentors = filter(checker, map(lambda name: {
+        'name': name,
+        'main': importlib.import_module('instrumentation' + ('.' + name) * 2),
+        'plain': importlib.import_module('instrumentation.' + name + '.plaincode')
+    }, instrumentors))

@@ -6,9 +6,10 @@ import os
 import time
 import random
 import config
+import inlining
+import alignmentenforce
 from disasm import Types
 from struct import pack, unpack
-from instrumentation import inlining, alignmentenforce
 from utils.ail_utils import ELF_utils, get_loc, Opcode_utils
 
 
@@ -34,22 +35,6 @@ class GfreeInstrumentation:
         tmp = filter(lambda f: f.func_name.startswith('__aeabi'), funcs)
         tmp = sorted(tmp, key=lambda f: f.func_begin_addr)
         self.itremlimit = tmp[0].func_begin_addr if len(tmp) > 0 else (1 << 32)
-
-    @staticmethod
-    def perform(instrs, funcs):
-        """
-        Perform gfree instrumentation
-        :param instrs: list of program's instruction
-        :param funcs: list of function objects
-        :return: instrumented list of instructions
-        """
-        gfree = GfreeInstrumentation(instrs, funcs)
-        gfree.findfreebranches()
-        gfree.indirectprotection()
-        gfree.returnprotection()
-        if not ELF_utils.elf_arm(): gfree.rewrite_instr()
-        elif config.gfree_ARMITdelete: gfree.remove_its()
-        return gfree.instrs
 
     def generatefuncID(self):
         """
@@ -85,13 +70,11 @@ class GfreeInstrumentation:
                     or int(ins[1].lstrip('S_'), 16) in self.rets)) \
                   or Opcode_utils.is_func(ins[1]):
                     self.rets[curr_func.func_begin_addr].append(loc_addr)
-
         # Logging
-        with open('exitpoints.info', 'w') as f:
-            f.writelines(str(hex(e)) + ': ' + str(map(hex, self.rets[e])) + '\n' for e in self.rets if len(self.rets[e]) > 0)
-        with open('indcalls.info', 'w') as f:
-            f.writelines(str(hex(e)) + ': ' + str(map(hex, self.indcalls[e])) + '\n' for e in self.indcalls if len(self.indcalls[e]) > 0)
-
+        # with open('exitpoints.info', 'w') as f:
+        #     f.writelines(str(hex(e)) + ': ' + str(map(hex, self.rets[e])) + '\n' for e in self.rets if len(self.rets[e]) > 0)
+        # with open('indcalls.info', 'w') as f:
+        #     f.writelines(str(hex(e)) + ': ' + str(map(hex, self.indcalls[e])) + '\n' for e in self.indcalls if len(self.indcalls[e]) > 0)
 
     def addxorcanary(self, i, func):
         """
@@ -195,3 +178,23 @@ class GfreeInstrumentation:
                 j = len(ins[0].strip()) + 1
                 self.instrs[i:i+j] = inlining.translate_it_block(self.instrs[i:i+j])
             i += 1
+
+
+def perform(instrs, funcs):
+    """
+    Perform gfree instrumentation
+    :param instrs: list of program's instruction
+    :param funcs: list of function objects
+    :return: instrumented list of instructions
+    """
+    gfree = GfreeInstrumentation(instrs, funcs)
+    gfree.findfreebranches()
+    gfree.indirectprotection()
+    gfree.returnprotection()
+    if not ELF_utils.elf_arm(): gfree.rewrite_instr()
+    elif config.gfree_ARMITdelete: gfree.remove_its()
+    return gfree.instrs
+
+
+def aftercompile():
+    alignmentenforce.enforce_alignment()

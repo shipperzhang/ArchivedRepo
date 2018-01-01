@@ -11,19 +11,18 @@ from termcolor import colored
 from argparse import ArgumentParser, RawTextHelpFormatter
 
 
-def process(filepath, gfree=False, fexclude=''):
+def process(filepath, instrument=False, fexclude=''):
     """
     Start file processing
     :param filepath: path to executable
-    :param gfree: True to apply gfree instrumentation
+    :param instrument: True to apply instrumentation
     :param fexclude: path to file of symbol exclusions
     :return: True if everything ok
     """
     import init
-    # import traceback
+    import traceback
     from postprocess import compile_process
     from disasm import main_discover, func_addr
-    from instrumentation import plaincode, alignmentenforce
 
     print "Starting to process binary '" + filepath + "'"
     try:
@@ -33,7 +32,7 @@ def process(filepath, gfree=False, fexclude=''):
         os.system(config.strip + ' ' + filepath)
         main_discover.main_discover(filepath)
 
-        init.main(filepath, gfree)
+        init.main(filepath, instrument)
         if not os.path.isfile("final.s"): return False
 
         with open('final_data.s', 'a') as f:
@@ -43,28 +42,30 @@ def process(filepath, gfree=False, fexclude=''):
             with open('eh_frame_hdr_split.info') as eh: f.write(eh.read())
         with open('final.s', 'a') as f:
             with open('final_data.s', 'r') as fd: f.write(fd.read())
-            if gfree: f.write(plaincode.instrdata)
+            if instrument: f.write('\n\n'.join(map(lambda e: e['plain'].instrdata, config.instrumentors)))
 
         compile_process.main(filepath)
-        if gfree: alignmentenforce.enforce_alignment()
+        if instrument:
+            for worker in config.instrumentors:
+                worker['main'].aftercompile()
         if compile_process.reassemble() != 0: return False
 
     except Exception as e:
         print e
-        # traceback.print_exc()
+        traceback.print_exc()
         return False
 
     return True
 
 
-def check(filepath, assumptions, gccopt='', excludedata='', gfree=False):
+def check(filepath, assumptions, gccopt='', excludedata='', instrument=False):
     """
     Perform basic check on analyzed executable and set configuration values
     :param filepath: path to executable
     :param assumptions: list of assumption codes
     :param gccopt: additional options for the compiler
     :param excludedata: path to file of address exclusions
-    :param gfree: True if gfree enabled
+    :param instrument: True if instrumentation enabled
     :return: True if everything ok
     """
     if not assumptions: assumptions = []
@@ -83,14 +84,14 @@ def check(filepath, assumptions, gccopt='', excludedata='', gfree=False):
         shutil.copy(filepath, '.')
 
     os.system('file ' + filepath + ' > elf.info')
-    config.setup(filepath, gccopt, excludedata)
+    config.setup(filepath, gccopt, excludedata, instrument)
 
     if config.is_lib:
         sys.stderr.write("Uroboros doesn't support shared libraries\n")
         return False
 
     # if assumption three is utilized, then input binary should be unstripped.
-    if ('3' in assumptions or gfree) and not config.is_unstrip:
+    if ('3' in assumptions or instrument) and not config.is_unstrip:
         print colored('Warning:', 'yellow'), 'binary is stripped, function boundaries evaluation may not be precise'
 
     return True
@@ -125,7 +126,7 @@ def main():
     p = ArgumentParser(formatter_class=RawTextHelpFormatter)
     p.add_argument("binary", help="path to the input binary")
     p.add_argument("-o", "--output", help="destination output file")
-    p.add_argument("-g", "--gfree", action='store_true', help="instrument output")
+    p.add_argument("-g", "--instrument", action='store_true', help="apply instrumentations to output")
     p.add_argument("-a", "--assumption", action="append",
                    help='''this option configures three addtional assumption,
 note that two basic assumptions and addtional assumption one
@@ -148,8 +149,8 @@ a label or an address range of data section to exclude from symbol search""")
     if not os.path.isdir(workdir): os.mkdir(workdir)
     os.chdir(workdir)
 
-    if check(filepath, args.assumption, args.gccopt, exclude, args.gfree) and set_assumption(args.assumption):
-        if process(os.path.basename(filepath), args.gfree, fexclude):
+    if check(filepath, args.assumption, args.gccopt, exclude, args.instrument) and set_assumption(args.assumption):
+        if process(os.path.basename(filepath), args.instrument, fexclude):
             print colored("Processing succeeded", "blue")
             if outpath is not None: shutil.copy('a.out', outpath)
         else: print colored("Processing failed", "red")

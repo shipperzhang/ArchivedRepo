@@ -2,13 +2,13 @@
 Processing skeleton
 """
 
+import config
 from termcolor import colored
 from disasm import pre_process
 from disasm.Types import Func, Section
 from disasm.disassemble_process import Disam
 from analysis.analysis_process import Analysis
 from postprocess import post_process, post_process_lib
-from instrumentation.gfree import GfreeInstrumentation
 
 
 class Ail(object):
@@ -81,12 +81,12 @@ class Ail(object):
             with open('final.s', 'a') as f:
                 f.write(eh.read())
 
-    def post_process(self, gfree=False):
+    def post_process(self, instrument=False):
         """
         Post processing
-        :param gfree: True to apply gfree instrumentation
+        :param instrument: True to apply instrumentations
         """
-        post_process.main(gfree)
+        post_process.main(instrument)
         post_process_lib.main()
 
     def pre_process(self):
@@ -95,10 +95,10 @@ class Ail(object):
         """
         pre_process.main()
 
-    def instrProcess(self, gfree=False, docfg=False):
+    def instrProcess(self, instrument=False, docfg=False):
         """
         Process instructions
-        :param gfree: True to apply gfree instrumentation
+        :param instrument: True to apply instrumentations
         :param docfg: True to evaluate control flow graph
         """
         self.pre_process()
@@ -107,10 +107,11 @@ class Ail(object):
         print colored('3: ANALYSIS', 'green')
         fbl, bbl, cfg_t, cg, il, re = Analysis.analyze(il, fl, re, docfg)  # @UnusedVariable
 
-        if gfree:
+        if instrument:
             print colored('4: INSTRUMENTATION', 'green')
-            il = GfreeInstrumentation.perform(il, fl)
+            for worker in config.instrumentors:
+                il = worker['main'].perform(il, fl)
 
-        print colored(('5' if gfree else '4') + ': POST-PROCESSING', 'green')
+        print colored(('5' if instrument else '4') + ': POST-PROCESSING', 'green')
         Analysis.post_analyze(il, re)
-        self.post_process(gfree)
+        self.post_process(instrument)

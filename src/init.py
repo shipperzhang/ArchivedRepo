@@ -110,16 +110,16 @@ class Init(object):
         """
         os.system(config.objdump + " -j .plt -Dr " + self.file + " | grep \">:\" > plts.info")
 
-    def ailProcess(self, gfree=False):
+    def ailProcess(self, instrument=False):
         """
         Invoke processing skeleton
-        :param gfree: True to apply gfree instrumentation
+        :param instrument: True to apply instrumentations
         """
         processor = ail.Ail(self.file)
         processor.sections()
         processor.userfuncs()
         processor.global_bss()
-        processor.instrProcess(gfree)
+        processor.instrProcess(instrument)
 
     def checkret(self, ret, path):
         """
@@ -131,16 +131,16 @@ class Init(object):
             os.remove(path)
 
 
-def main(filepath, gfree=False):
+def main(filepath, instrument=False):
     """
     Init processing
     :param filepath: path to executable
-    :param gfree: True to apply gfree instrumentation
+    :param instrument: True to apply instrumentation
     """
     if ELF_utils.elf_strip() and ELF_utils.elf_exe():
         init = Init(filepath)
         init.disassemble()
         init.process()
-        init.ailProcess(gfree)
+        init.ailProcess(instrument)
     else:
         sys.stderr.write('Error: binary is not stripped or is a shared library\n')

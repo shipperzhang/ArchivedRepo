@@ -5,6 +5,7 @@ Assembler code for gfree key generation and failure routine
 import config
 from utils.ail_utils import ELF_utils
 
+
 keygenfunction = ''
 keysize = 'long'
 failfunction = ''
@@ -180,9 +181,9 @@ call exit
 '''
 
 
-keygenfunction = keygenfunction.format(config.gfree_failfuncname, config.gfree_xorkeyvar,
+beforemain = keygenfunction.format(config.gfree_failfuncname, config.gfree_xorkeyvar,
                                        config.gfree_cookiekeyvar, config.gfree_keygenflagvar)
-failfunction = failfunction.format(config.gfree_failfuncname, config.gfree_keygenflagvar)
+aftercode = failfunction.format(config.gfree_failfuncname, config.gfree_keygenflagvar)
 instrdata = '''
 .section .rodata
 .LC0: .string "Fatal GFree Error\\n"

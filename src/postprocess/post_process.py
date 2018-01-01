@@ -3,15 +3,15 @@ Code post processing
 """
 
 import os
+import config
 import inline_update
 from utils.ail_utils import ELF_utils
-from instrumentation import plaincode
 
 
-def main(gfree=False):
+def main(instrument=False):
     """
     Transform malformed code and add main symbol
-    :param gfree: True to insert gfree initialization
+    :param instrument: True to insert instrumentation code
     """
 
     with open("final.s") as f:
@@ -35,7 +35,8 @@ def main(gfree=False):
                     l = l.replace('jmpq ', 'jmp ')
                 if main_symbol1 + ' :' in l:
                     rep = '.globl main\nmain : '
-                    if gfree: rep += plaincode.keygenfunction
+                    if instrument:
+                        rep += '\n'.join(map(lambda e: e['plain'].beforemain, config.instrumentors)) + '\n'
                     l = l.replace(main_symbol1 + ' : ', rep)
                 elif main_symbol1 in l:
                     l = l.replace(main_symbol1, 'main')
@@ -44,7 +45,7 @@ def main(gfree=False):
 
     with open("final.s", 'w') as f:
         f.writelines(lines)
-        if gfree: f.write(plaincode.failfunction)
+        if instrument: f.write('\n'.join(map(lambda e: e['plain'].aftercode, config.instrumentors)) + '\n')
 
     if os.path.isfile('inline_symbols.txt'):
         inline_update.main()
