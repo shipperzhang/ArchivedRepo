@@ -86,9 +86,9 @@ def check(filepath, assumptions, gccopt='', excludedata='', instrument=False):
     os.system('file ' + filepath + ' > elf.info')
     config.setup(filepath, gccopt, excludedata, instrument)
 
-    if config.is_lib:
-        sys.stderr.write("Uroboros doesn't support shared libraries\n")
-        return False
+    # if config.is_lib: 
+        # sys.stderr.write("Uroboros doesn't support shared libraries\n")
+        # return False
 
     # if assumption three is utilized, then input binary should be unstripped.
     if ('3' in assumptions or instrument) and not config.is_unstrip:

@@ -3,14 +3,17 @@ Assembler parsing
 """
 
 import re
-import Types
+from disasm import Types
 import config
 from utils.ail_utils import Opcode_utils
-from lex import Lloc, Lop, Lexp, prefix_sub, lexer
+from disasm.lex import Lloc, Lop, Lexp, prefix_sub, lexer
 
 class InvalidOpException(Exception):
+    def __init__(self, message):
+        self.op = message.split(':')[1].strip()
+    
     def getop(self):
-        return self.message.split(':')[1].strip()
+        return self.op
 
 class base_parser(object):
     """
@@ -424,7 +427,7 @@ class parseARM(base_parser):
             return Types.RegList(map(Types.RegClass, sym[1:-1].split(',')))
         return None
 
-    tb_matcher = re.compile('\((S_0x[0-9a-f]+)\-(S_0x[0-9a-f]+)\)\/2', re.I)
+    tb_matcher = re.compile(r'\((S_0x[0-9a-f]+)\-(S_0x[0-9a-f]+)\)\/2', re.I)
     def tb_symb(self, sym):
         """
         Parse jump table entry: (S_0x100400 - S_0x100100)/2

@@ -26,9 +26,9 @@ def thunk_identify(ls):
     :return: list of virtual addresses
     """
     res = set()
-    thunkre = re.compile('\(\%esp\)\,\%e(ax|bx|cx|bp|si|di)', re.I)
+    thunkre = re.compile(r'\(\%esp\)\,\%e(ax|bx|cx|bp|si|di)', re.I)
 
-    for i in xrange(len(ls)):
+    for i in range(len(ls)):
         l = ls[i]
         if thunkre.search(l) and "mov" in l:
             t = ls[i+1]
@@ -50,7 +50,7 @@ def text_process_strip(f):
         ls = fd.readlines()
     pc_thunk_addr = thunk_identify(ls)
 
-    for i in xrange(1,len(ls)):
+    for i in range(1,len(ls)):
         l = ls[i]
         if "call" in l and next((addr for addr in pc_thunk_addr if addr in l), None):
             t = ls[i+1]
@@ -65,7 +65,7 @@ def text_process_strip(f):
             except: continue
             addr = int(addr_s, 16)
             baddr = addr + off
-            for key, value in pic_map.iteritems():
+            for key, value in iter(pic_map.items()):
                 if value[0] == baddr:
                     ls[i+1] = t.replace('$'+off_s, sec_symb[key])
                 elif value[0] < baddr < value[0] + value[1]:
@@ -105,7 +105,7 @@ def picprocess64(filepath):
 
     pat = re.compile(r'0x[0-9a-f]+\(%rip\)')
 
-    for i in xrange(len(lines)):
+    for i in range(len(lines)):
         l = lines[i]
         if "#" in l:
             m = pat.search(l)

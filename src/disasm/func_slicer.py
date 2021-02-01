@@ -1,6 +1,6 @@
-import Types
-import init_sec_adjust
-from Types import Func
+from disasm import Types
+from disasm import init_sec_adjust
+from disasm.Types import Func
 from utils.ail_utils import read_file, unify_int_list, get_loc, dec_hex
 
 

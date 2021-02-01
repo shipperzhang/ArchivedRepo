@@ -69,7 +69,7 @@ def main(fn):
     def pat_match3(s):
         def helper(t,n):
             s = ""
-            for i in range(0,int(t,16)):
+            for _ in range(0,int(t,16)):
                 s += n + ", "
             return s[:-2]
         pat1 = r'\d+ dup\(\d\)'

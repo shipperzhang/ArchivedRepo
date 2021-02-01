@@ -1,5 +1,5 @@
-from cg import cg
-from cfg import cfg
+from analysis.cg import cg
+from analysis.cfg import cfg
 from utils.ail_utils import read_file, ELF_utils
 from utils.pp_print import pp_print_list, pp_print_file
 

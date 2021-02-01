@@ -619,7 +619,7 @@ class Opcode_utils(object):
         return Opcode_utils.is_call(op) \
             or Opcode_utils.is_jmp(op) \
             or Opcode_utils.is_cond_jmp(op) \
-            or Opcode_utils.is_ret(op, exp1)
+            or Opcode_utils.is_ret((op, exp1))
 
 
 class Exp_utils(object):

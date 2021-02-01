@@ -1,7 +1,7 @@
 import os
 import config
-from visit import ailVisitor
-from share_lib_helper import lib32_helper
+from analysis.visit import ailVisitor
+from analysis.share_lib_helper import lib32_helper
 from disasm import Types, exception_process, spliter, export_data, parse_init_array
 from utils.ail_utils import get_loc, read_file, ELF_utils, dec_hex, set_loc, unify_int_list,\
                             bbn_byloc, merge_intervals
@@ -70,16 +70,16 @@ class datahandler:
         self.label_arr = sorted(self.label_set)
 
         fl = sorted(funcs, cmp=lambda f1,f2: f1.func_begin_addr - f2.func_begin_addr)
-        self.fl_sort = map(lambda f: ft(f.func_name, f.func_begin_addr, f.func_end_addr), fl)
+        self.fl_sort = list(map(lambda f: ft(f.func_name, f.func_begin_addr, f.func_end_addr), fl))
 
-        self.text_mem_addrs = map(lambda a: int(a.strip().rstrip(':'), 16), read_file('text_mem.info'))
+        self.text_mem_addrs = list(map(lambda a: int(a.strip().rstrip(':'), 16), read_file('text_mem.info')))
         self.text_mem_arr = self.text_mem_addrs
 
         self.label_mem_arr = sorted(self.label_mem_addrs)
         self.set_assumption_flag()
         self.set_excluded_ranges()
 
-        self.begin_addrs = map(lambda f: f.func_begin_addr, funcs)
+        self.begin_addrs = list(map(lambda f: f.func_begin_addr, funcs))
         if ELF_utils.elf_32(): self.data_refer_solve()
         else: self.data_refer_solve_64()
 
@@ -101,7 +101,7 @@ class datahandler:
                 items = l.strip().split('-')
                 return (int(items[0], 16), int(items[1], 16))
             with open(config.excludedata) as f:
-                self.exclude = merge_intervals(map(rangemapper, filter(lambda l: '-' in l, f)))
+                self.exclude = merge_intervals(list(map(rangemapper, filter(lambda l: '-' in l, f))))
 
     def get_textlabel(self):
         return self.text_labels
@@ -332,7 +332,7 @@ class datahandler:
         """
         if os.path.isfile(name):
             with open(name) as f:
-                return map(lambda l: ('', l.strip()), f)[::-1]
+                return list(map(lambda l: ('', l.strip()), f))[::-1]
         return []
 
     def sec_transform(self, s):
@@ -373,7 +373,7 @@ class datahandler:
         """
         ds = {'.data': self.data_list, '.rodata': self.rodata_list,
               '.got': self.got_list, '.bss': self.bss_list}
-        for i in xrange(len(lbs)):
+        for i in range(len(lbs)):
             n, l = lbs[i]
             if n in ds:
                 if withoff:
@@ -533,8 +533,8 @@ class reassemble(ailVisitor):
             items = l.split()
             return Types.Section(items[0], int(items[1], 16), int(items[3], 16))
         lines = read_file('sections.info')
-        self.sec = map(secmapper, lines)[::-1]
-        self.text_mem_addrs = map(str.strip, read_file('text_mem.info'))
+        self.sec = list(map(secmapper, lines))[::-1]
+        self.text_mem_addrs = list(map(str.strip, read_file('text_mem.info')))
 
     def plt_collect(self):
         """
@@ -953,14 +953,14 @@ class reassemble(ailVisitor):
         self.jmpreflist = map(lambda l: 'S_' + dec_hex(l), p.get_textlabel())
         p.data_output()
 
-    def init_array_dump(self):
-        return # This seems creating problems rather than solving them
-        if len(self.init_array_list) != 0 and not ELF_utils.elf_arm():
-            with open('final_data.s', 'a') as f:
-                f.write('\n\n.section .ctors,"aw",@progbits\n')
-                f.write('.align 4\n')
-                f.write('\n'.join(map(lambda s: '.long ' + s.strip(), self.init_array_list)))
-                f.write('\n')
+    # def init_array_dump(self):
+    #     return # This seems creating problems rather than solving them
+    #     if len(self.init_array_list) != 0 and not ELF_utils.elf_arm():
+    #         with open('final_data.s', 'a') as f:
+    #             f.write('\n\n.section .ctors,"aw",@progbits\n')
+    #             f.write('.align 4\n')
+    #             f.write('\n'.join(map(lambda s: '.long ' + s.strip(), self.init_array_list)))
+    #             f.write('\n')
 
     def export_data_dump(self):
         def mapper(l):
@@ -972,7 +972,7 @@ class reassemble(ailVisitor):
 
     def reassemble_dump(self, u_funcs):
         self.data_dump(u_funcs)
-        self.init_array_dump()
+        # self.init_array_dump()
 
     def add_func_label(self, ufuncs, instrs):
         """
@@ -1020,7 +1020,7 @@ class reassemble(ailVisitor):
 
     def unify_loc(self, instrs):
         last_label = ''
-        for i in xrange(len(instrs)):
+        for i in range(len(instrs)):
             lo = get_loc(instrs[i])
             if lo.loc_label != '' and lo.loc_label == last_label:
                 instrs[i] = set_loc(instrs[i], Types.Loc('', lo.loc_addr, True))

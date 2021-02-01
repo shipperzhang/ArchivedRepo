@@ -63,7 +63,7 @@ def pltgot(filepath):
         dest = int(items[4] if '#' in items else items[2].lstrip('*'), 16)
         return (int(items[0].rstrip(':'), 16), dest)
     pltgottargets = dict(map(pltgotmapper, pltgottargets.strip().split('\n')))
-    pltgottargets = {e[0]: '<' + pltgotsym[e[1]] + '@plt>' for e in pltgottargets.iteritems() if e[1] in pltgotsym}
+    pltgottargets = {e[0]: '<' + pltgotsym[e[1]] + '@plt>' for e in iter(pltgottargets.items()) if e[1] in pltgotsym}
     if len(pltgottargets) == 0: return
 
     pltgotre = re.compile(lastplt[1] + '\+(0x[0-9a-f]+)\>', re.I)

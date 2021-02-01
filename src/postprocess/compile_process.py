@@ -55,7 +55,7 @@ def modify(errors):
     with open("final.s") as f:
         lines = f.readlines()
     def help_err(l):
-        e = filter(lambda e : e in l, errors)
+        e = list(filter(lambda e : e in l, errors))
         if e != []:
             addr = e[0][2:]
             #print "undefined label : "+addr
@@ -99,7 +99,7 @@ def cbzmapper():
     """
     Get routine to translate out of range cbz
     """
-    cbzpatt = re.compile('([^\:]+\s*\:\s*)?(cbn?z)\s+([^,]+),([^\n]+)', re.I)
+    cbzpatt = re.compile(r'([^\:]+\s*\:\s*)?(cbn?z)\s+([^,]+),([^\n]+)', re.I)
     def mapper(line):
         m = cbzpatt.match(line)
         if not m: return line
@@ -113,7 +113,7 @@ def outofrangemapper():
     """
     Get routing to translate out of range vldr
     """
-    oorpatt = re.compile('([^\:]+\s*\:\s*)?vldr\s+([^,]+),(S_0x[A-F0-9]+)', re.I)
+    oorpatt = re.compile(r'([^\:]+\s*\:\s*)?vldr\s+([^,]+),(S_0x[A-F0-9]+)', re.I)
     def mapper(line):
         m = oorpatt.match(line)
         if not m: return line
@@ -144,14 +144,14 @@ def modifyARM():
     tbb = filter(lambda l: 'too large for field of 1 bytes at' in l, lines)
     outrange = filter(lambda l: 'co-processor offset out of range' in l, lines)
     if sum(map(len, (cbz, bad, tbb, outrange))) == 0: return True
-    patt = re.compile('final\.s\:([0-9]+)\:', re.I)
+    patt = re.compile(r'final\.s\:([0-9]+)\:', re.I)
     errors = {}
     if len(cbz) > 0:
         cbz = map(lambda l: int(patt.match(l).group(1))-1, cbz)
         for c in cbz:
             errors[c] = cbzmapper()
     if len(bad) > 0:
-        bpatt = re.compile("final\.s\:([0-9]+)\:[^`]+`([^']+)'", re.I)
+        bpatt = re.compile(r"final\.s\:([0-9]+)\:[^`]+`([^']+)'", re.I)
         bad = map(lambda l: bpatt.match(l).groups(), bad)
         for b in bad:
             errors[int(b[0])-1] = badinstrmapper(b[1])

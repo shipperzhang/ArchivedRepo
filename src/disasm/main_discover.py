@@ -24,7 +24,7 @@ def main_discover(filename):
         main_symbol = ""
 
         if config.arch == config.ARCH_X86:
-            for i in xrange(ll):
+            for i in range(ll):
                 l = lines[i]
                 # when not using O2 to compile the original binary, we will remove all the _start code,
                 # including the routine attached on the original program. In that case, we can not discover the
@@ -59,7 +59,7 @@ def main_discover(filename):
             ## 10364:       f7ff efe8       blx     10338 <abort@plt>
             ## ...
             ## 1036c:       0001052d
-            for i in xrange(ll):
+            for i in range(ll):
                 l = lines[i]
                 if '<__libc_start_main@plt>' in l:
                     j = i - 1

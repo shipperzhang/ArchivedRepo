@@ -4,7 +4,7 @@ Code post processing
 
 import os
 import config
-import inline_update
+from postprocess import inline_update
 from utils.ail_utils import ELF_utils
 
 

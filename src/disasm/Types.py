@@ -12,7 +12,7 @@ class RecSet(frozenset):
     def __init__(self, elems, final=False):
         self.final = final
         elems = map(lambda e: e.upper() if isinstance(e, str) else e, elems)
-        super(RecSet, self).__init__(elems)
+        frozenset.__init__(elems)
 
     def __new__(cls, elems, final=False):  # @UnusedVariable
         elems = map(lambda e: e.upper() if isinstance(e, str) else e, elems)
@@ -127,7 +127,7 @@ class CallDes(Func, Symbol):
         super(CallDes, self).__init__(func.func_name,
             func.func_begin_addr, func.func_end_addr, func.is_lib)
 class StarDes(Exp, Symbol, Container): pass
-class Const(long, Exp): pass
+class Const(int, Exp): pass
 class Point(Const): pass
 class Normal(Const): pass
 

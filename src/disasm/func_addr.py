@@ -82,10 +82,10 @@ def useless_func_discover(filename):
         lines = f.readlines()
 
     lines.append('')
-    start_addr = 0
-    end_addr = 0
+    start_addr = ''
+    end_addr = ''
     in_func = 'NULL'
-    last_addr = 0
+    last_addr = ''
 
     def check (l):
         for b in black_list:

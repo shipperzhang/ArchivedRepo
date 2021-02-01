@@ -1,5 +1,6 @@
+from functools import reduce
 from disasm import Types
-from visit import ailVisitor
+from analysis.visit import ailVisitor
 from utils.pp_print import p_exp
 from utils.ail_utils import get_loc, Opcode_utils, sort_loc, get_instr_byloc,\
                             get_next_bb, recover_addr_from_label
@@ -36,7 +37,7 @@ class cfg(ailVisitor):
             self.cfg_table[l.loc_addr] = e.func_begin_addr
 
     def bb_exit(self, op, exp1):
-        return Opcode_utils.is_cp(op) or Opcode_utils.is_ret(op, exp1)
+        return Opcode_utils.is_cp(op) or Opcode_utils.is_ret((op, exp1))
 
     def bb_entry(self, i):
         return ':' in get_loc(i).loc_label
@@ -155,7 +156,7 @@ class cfg(ailVisitor):
 
     def recover_cfg(self):
         def aux(bnl, acc, i):
-            if isinstance(i, Types.SingleInstr) and Opcode_utils.is_ret(i[0], i[1]):
+            if isinstance(i, Types.SingleInstr) and Opcode_utils.is_ret((i[0], i[1])):
                 bn = self.bbn_byloc(get_loc(i).loc_addr)
                 acc.insert(0, (bn, (Types.J(), 'RET')))
             elif isinstance(i, Types.DoubleInstr):
@@ -191,7 +192,7 @@ class cfg(ailVisitor):
             return acc
 
         res = []
-        for f, bl in self.cfg_bdiv_table.iteritems():
+        for f, bl in iter(self.cfg_bdiv_table.items()):
             bnl = map(lambda b: b.bblock_name, bl)
             cfg_l = sort_loc(map(lambda b: b.bblock_end_loc, bl))
             cfg_l = get_instr_byloc(self.instrs, cfg_l)

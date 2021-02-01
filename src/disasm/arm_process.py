@@ -95,10 +95,10 @@ def arm_process(filename):
     last_cmp = ('', '')
     last_adr_dest = 0
     last_adr_reg = None
-    pcrelre = re.compile('\[pc,\s*\#(\-?0x[0-9a-f]+)\]', re.I)
-    pcreltblre = re.compile('\[pc,\s*(r[0-9]+)(,\s*lsl \#1)?\]|pc,\s*\[r[0-9]+,\s*(r[0-9]+|fp|lr|sb|sl),\s*lsl\s*\#2\]', re.I)
-    pcreladdre = re.compile('^(r[0-9]+|fp|lr|sb|sl),\s*pc,\s*\#(0x[0-9a-f]+)$', re.I)
-    baseregre = re.compile('\[([^,]+),?.*\]', re.I)
+    pcrelre = re.compile(r'\[pc,\s*\#(\-?0x[0-9a-f]+)\]', re.I)
+    pcreltblre = re.compile(r'\[pc,\s*(r[0-9]+)(,\s*lsl \#1)?\]|pc,\s*\[r[0-9]+,\s*(r[0-9]+|fp|lr|sb|sl),\s*lsl\s*\#2\]', re.I)
+    pcreladdre = re.compile(r'^(r[0-9]+|fp|lr|sb|sl),\s*pc,\s*\#(0x[0-9a-f]+)$', re.I)
+    baseregre = re.compile(r'\[([^,]+),?.*\]', re.I)
     calls = set(('bl', 'blx'))
     offtableop = set(('tbb', 'tbh'))
     f = open('instrs.info', 'w')
@@ -142,7 +142,7 @@ def arm_process(filename):
                     if offsize > 2:
                         # ldr jumptable
                         last_adr_reg = None
-                        for i in xrange(0, tablesize, 4): inlinedata[last_adr_dest + i] = 4
+                        for i in range(0, tablesize, 4): inlinedata[last_adr_dest + i] = 4
                     else:
                         # tb jumptable
                         tb_process(offsize, curr_off + textsec.addr, textraw[curr_off:curr_off + tablesize], f)

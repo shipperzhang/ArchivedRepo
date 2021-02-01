@@ -151,9 +151,9 @@ def main():
         with open('final.s') as f:
             contents = f.readlines()
 
-        task1()
-        task2()
-        contents = task3_4()
+        task1(contents)
+        task2(contents)
+        contents = task3_4(contents)
         # task5()
 
         # write back

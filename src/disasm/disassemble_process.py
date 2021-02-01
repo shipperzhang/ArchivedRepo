@@ -1,9 +1,9 @@
 import os
 import config
-import filter_nop
-import useless_func_del
+from disasm import filter_nop
+from disasm import useless_func_del
 from termcolor import colored
-from ail_parser import AilParser
+from disasm.ail_parser import AilParser
 from analysis.reassemble_symbol_get import reassemble
 from analysis.disassemble_validator import dis_validator
 from utils.ail_utils import Time_Record as TR, read_file

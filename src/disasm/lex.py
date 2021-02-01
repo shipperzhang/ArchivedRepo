@@ -2,7 +2,7 @@
 Lexer
 """
 
-import Types
+from disasm import Types
 import config
 from utils.ail_utils import cat_from, split_by_list
 

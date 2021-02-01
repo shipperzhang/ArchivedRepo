@@ -1,5 +1,5 @@
-from Parser import parse
-from func_slicer import func_slicer
+from disasm.Parser import parse
+from disasm.func_slicer import func_slicer
 from utils.pp_print import pp_print_instr
 from disasm.Parser import InvalidOpException
 from utils.ail_utils import unify_funclist_by_name, unify_funclist_by_addr, int_of_string_opt
@@ -98,7 +98,7 @@ class AilParser(object):
         p.set_funclist(self.funcs)
         p.set_seclist(self.secs)
         for i in ilist:
-            items = filter(len, i.split(':'))
+            items = list(filter(len, i.split(':')))
             if len(items) > 1:
                 loc = items[0]
                 instr = ':'.join(items[1:])

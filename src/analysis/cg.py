@@ -1,6 +1,6 @@
 import sys
 from disasm import Types
-from visit import ailVisitor
+from analysis.visit import ailVisitor
 from utils.ail_utils import dec_hex, Opcode_utils
 
 
@@ -50,19 +50,19 @@ class cg(ailVisitor):
         return self.vinst_tail(instrs)
 
     def cfi_specified_tbl(self):
-        for k,v in self.cg_tbl.iteritems():
+        for k,v in iter(self.cg_tbl.items()):
             for f in v:
                 self.update_cfitbl(f, k)
 
     def print_cg_graph(self):
-        for k,v in self.cfi_tbl.iteritems():
+        for k,v in iter(self.cfi_tbl.items()):
             sys.stdout.write(dec_hex(k))
             for f in v:
                 print('    ' + f.func_name)
 
     def print_cfi_specified_graph(self):
         self.cfi_specified_tbl()
-        for k,v in self.cfi_tbl.iteritems():
+        for k,v in iter(self.cfi_tbl.items()):
             print(k)
             for l in v:
                 print('    ' + dec_hex(l))
