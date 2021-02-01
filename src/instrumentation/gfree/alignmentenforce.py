@@ -173,7 +173,7 @@ def enforce_alignment():
     """
     Apply alignment enforcement inserting sleds in assembler source code
     """
-    print colored('6: ALIGNMENT ENFORCEMENT', 'green')
+    print(colored('6: ALIGNMENT ENFORCEMENT', 'green'))
     npass = 0
     fixed = set()
     while npass < config.gfree_maxalignmentpass:

@@ -57,11 +57,11 @@ class Disam(object):
             il = re.lib32_processing(il, fl)
             il = re.add_func_label(Disam.get_userfuncs(fl), il)
 
-            print colored('2: DISASSEMBLY VALIDATION', 'green')
+            print(colored('2: DISASSEMBLY VALIDATION', 'green'))
             dis_valid.visit(il)
             adjust_list = dis_valid.trim_results()
             if len(adjust_list) != 0:
-                print '     disassembly error found!'
+                print('     disassembly error found!')
                 if config.arch == config.ARCH_ARMT: exit('Not implemented')
                 Disam.disasm_skip(filepath, adjust_list[0][0], adjust_list[0][1])
                 total += TR.elapsed(once)

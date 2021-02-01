@@ -112,7 +112,7 @@ class AilParser(object):
         """
         Print instructions
         """
-        print '\n'.join(map(pp_print_instr, self.instrs[::-1]))
+        print('\n'.join(map(pp_print_instr, self.instrs[::-1])))
 
     def get_instrs(self):
         """

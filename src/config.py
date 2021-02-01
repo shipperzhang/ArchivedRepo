@@ -81,7 +81,7 @@ def setup(filepath, gccopt='', exdata='', instrument=False):
         global toolprefix
         entry = check_output('readelf -h ' + filepath + ' | grep Entry', shell=True)
         entry = int(entry.split()[3], 16)
-        if entry & 1: print 'Thumb binary detected'
+        if entry & 1: print('Thumb binary detected')
         else: raise Exception('Only thumb supported')
         arch = ARCH_ARMT
         toolprefix = ARM_TOOL
@@ -89,7 +89,7 @@ def setup(filepath, gccopt='', exdata='', instrument=False):
         strip = ARM_TOOL + strip
         compiler = ARM_TOOL + compiler
     elif 'x86-64' in elf_info or 'Intel 80386' in elf_info:
-        print ('32 bit' if is_32 else '64 bit') + ' x86 binary detected'
+        print(('32 bit' if is_32 else '64 bit') + ' x86 binary detected')
     else:
         raise Exception("Unkwown architecture type")
     if instrument: loadInstrumentors()
@@ -110,7 +110,7 @@ def loadInstrumentors():
                 hasattr(i['plain'], 'beforemain') and
                 hasattr(i['plain'], 'aftercode') and
                 hasattr(i['plain'], 'instrdata')):
-            print colored('Warning:', 'yellow'), 'instrumentor \'' + i['name'] + '\' is not correctly constructed and was discarded'
+            print(colored('Warning:', 'yellow'), 'instrumentor \'' + i['name'] + '\' is not correctly constructed and was discarded')
             return False
         return True
     instrumentors = filter(checker, map(lambda name: {

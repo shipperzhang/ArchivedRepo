@@ -34,7 +34,7 @@ def thunk_identify(ls):
             t = ls[i+1]
             if "ret" in t.split()[-1]:
                 res.add(l.split(":")[0].strip())
-    if len(res) == 0: print "PIC position location can not be found!!"
+    if len(res) == 0: print("PIC position location can not be found!!")
     with open('pic_thunk.info', 'w') as f:
         for e in res: f.write(e + '\n')
     return tuple(res)
@@ -69,7 +69,7 @@ def text_process_strip(f):
                 if value[0] == baddr:
                     ls[i+1] = t.replace('$'+off_s, sec_symb[key])
                 elif value[0] < baddr < value[0] + value[1]:
-                    print "Unhandled PIC situation at 0x" + addr_s
+                    print("Unhandled PIC situation at 0x" + addr_s)
 
     with open(f + '.temp', 'w') as fd:
         fd.writelines(ls)

@@ -102,10 +102,10 @@ class dis_validator(object):
         self.locs = map(lambda i: get_loc(i).loc_addr, self.locs)
         if len(self.locs) != 0:
             if config.arch == config.ARCH_ARMT:
-                print colored('     Warning:', 'yellow'), 'instructions at this locations were probably misinterpreted:'
-                print '     ' + str(map(hex, self.locs))
+                print(colored('     Warning:', 'yellow'), 'instructions at this locations were probably misinterpreted:')
+                print('     ' + str(map(hex, self.locs)))
             else:
-                print map(hex, self.locs)
+                print(map(hex, self.locs))
                 exit()
                 self.validate(instrlist)
 
@@ -152,7 +152,7 @@ class dis_validator(object):
                     p = i[0]
                     e = i[1] if isinstance(i, Types.DoubleInstr) else None
                     if Opcode_utils.call_patt.match(p):  # @UndefinedVariable
-                        print "detected call instruction in disassembly validator: " + str(i)
+                        print("detected call instruction in disassembly validator: " + str(i))
                         self.update_cfd(index + 1, instrlist)
                         if self.is_icf(p, e): self.update_cft_stack(i)
                     elif self.is_icf(p, e):

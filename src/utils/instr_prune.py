@@ -64,14 +64,14 @@ for i in range(len(lines)):
     elif found_sec_pattern == True and detect_sec_pattern == True and 'nop' in l:
         e2 = i
         detect_sec_pattern = False
-        print "     identify function __do_global_ctors_aux"
+        print("     identify function __do_global_ctors_aux")
     elif found_first_pattern == False and detect_first_pattern == True and jcr in l:
         s1 = i - 5
         found_first_pattern = True
     elif '__libc_start_main' in l and detect_first_pattern == True:
         detect_first_pattern = False
         e1 = i + 12
-        print "     identify function _start; __do_global_dtors_aux; frame_dummy"
+        print("     identify function _start; __do_global_dtors_aux; frame_dummy")
 
 
 if s1 != 0 and e1 != 0:
@@ -82,7 +82,7 @@ if s2 != 0 and e2 != 0:
     for i in range(s2, e2+1):
         lines[i] = ""
 
-print "   remove these useless functions"
+print("   remove these useless functions")
 
 lines.reverse()
 

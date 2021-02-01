@@ -26,7 +26,7 @@ class Init(object):
         """
         Dump .text, .rodata, .data, .eh_frame, .got to file
         """
-        print colored('1: DISASSEMBLE', 'green')
+        print(colored('1: DISASSEMBLE', 'green'))
         ret = os.system(config.objdump + ' -Dr -j .text ' + self.file + ' > ' + self.file + '.temp')
         self.checkret(ret, self.file + '.temp')
 

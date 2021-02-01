@@ -151,15 +151,15 @@ def print_loclist(loclist):
     :param loclist: list of locations
     """
     for loc in loclist:
-        print loc.loc_label
-        print dec_hex(loc.loc_addr)
+        print(loc.loc_label)
+        print(dec_hex(loc.loc_addr))
 
 def print_addrlist(intlist):
     """
     Print list of integer addresses as hex
     :param intlist: list of integers
     """
-    print '\n'.join(map(dec_hex, intlist))
+    print('\n'.join(map(dec_hex, intlist)))
 
 def cat_from(strlist, v, suf):
     """
@@ -201,19 +201,19 @@ def print_exp_type(exp):
     Print type of expression
     :param exp: expression
     """
-    if isinstance(exp, Types.Const): print 'const'
-    elif isinstance(exp, Types.Symbol): print 'symbol'
-    elif isinstance(exp, Types.RegClass): print 'reg'
-    elif isinstance(exp, Types.AssistOpClass): print 'assist'
-    elif isinstance(exp, Types.Ptr): print 'ptr'
-    elif isinstance(exp, Types.Label): print 'label'
+    if isinstance(exp, Types.Const): print('const')
+    elif isinstance(exp, Types.Symbol): print('symbol')
+    elif isinstance(exp, Types.RegClass): print('reg')
+    elif isinstance(exp, Types.AssistOpClass): print('assist')
+    elif isinstance(exp, Types.Ptr): print('ptr')
+    elif isinstance(exp, Types.Label): print('label')
 
 def print_instr_type(instr):
     """
     Print type of instruction
     :param instr: instruction tuple
     """
-    print instr.__class__.__name__
+    print(instr.__class__.__name__)
 
 def sort_loc(loclist):
     """
@@ -662,7 +662,7 @@ class Time_Record(object):
         """
         Print seconds from epoc
         """
-        print 'stamp : %f sec' % time.time()
+        print('stamp : %f sec' % time.time())
 
     @staticmethod
     def get_utime():
@@ -677,4 +677,4 @@ class Time_Record(object):
         Print elapsed time
         :param t: start instant
         """
-        print 'execution elapsed time: %f sec' % (time.time() - t)
+        print('execution elapsed time: %f sec' % (time.time() - t))

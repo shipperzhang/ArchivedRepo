@@ -104,14 +104,14 @@ class Ail(object):
         self.pre_process()
         il, fl, re = Disam.disassemble(self.file, self.funcs, self.secs)
 
-        print colored('3: ANALYSIS', 'green')
+        print(colored('3: ANALYSIS', 'green'))
         fbl, bbl, cfg_t, cg, il, re = Analysis.analyze(il, fl, re, docfg)  # @UnusedVariable
 
         if instrument:
-            print colored('4: INSTRUMENTATION', 'green')
+            print(colored('4: INSTRUMENTATION', 'green'))
             for worker in config.instrumentors:
                 il = worker['main'].perform(il, fl)
 
-        print colored(('5' if instrument else '4') + ': POST-PROCESSING', 'green')
+        print(colored(('5' if instrument else '4') + ': POST-PROCESSING', 'green'))
         Analysis.post_analyze(il, re)
         self.post_process(instrument)

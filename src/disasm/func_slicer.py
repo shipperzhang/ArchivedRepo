@@ -102,5 +102,5 @@ class func_slicer(object):
         self.func_begins += [f.func_begin_addr for f in self.funcs if f.func_begin_addr != 0]
         self.build_func_info()
         fl = self.get_func_list()
-        print '     Sliced', len(self.func_begins), 'functions'
+        print('     Sliced', len(self.func_begins), 'functions')
         return fl

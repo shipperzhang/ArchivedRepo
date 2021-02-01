@@ -44,7 +44,7 @@ def main(filepath):
         info_range.append((items[1],items[2]))
 
     #print info_range
-    print "0: useless libc functions removing"
+    print("0: useless libc functions removing")
 
     for i in range(6,len(lines)):
         l = lines[i]

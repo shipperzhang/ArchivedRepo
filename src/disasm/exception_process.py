@@ -61,7 +61,7 @@ def main(fn):
             elif "S_" not in ms.group(1):
                 t = ms.group(1)
             else:
-                print "failed : "+s
+                print("failed : "+s)
             s1 = update_label2(t)
             s = s.replace(t,s1)
         return s
@@ -98,7 +98,7 @@ def main(fn):
         elif 'string' in t:
             return t
         else:
-            print "unsupported type trans : " + t
+            print("unsupported type trans : " + t)
 
     for l in lines:
         has_off = False
@@ -107,7 +107,7 @@ def main(fn):
             has_off = True
         l = l.replace('offset','')
         if "'" in l:
-            print l
+            print(l)
             l = l.replace("'", '"')
             is_str = True
         items = l.strip().split()

@@ -38,7 +38,7 @@ def main():
             cur_fun_name =  "inline_"+str(cur_fun_index)
             if inline_region == True:
                 # possibly inline function nested; abort
-                print "inline function nested"
+                print("inline function nested")
                 assert(False)
             else:
                 #print "find inline function : " + l
@@ -46,7 +46,7 @@ def main():
         elif "_next_inline:" in l:
             if inline_region == False:
                 # possibly inline function lost; abort
-                print "inline function lost"
+                print("inline function lost")
                 assert(False)
             else:
                 inline_region = False

@@ -58,14 +58,14 @@ class cg(ailVisitor):
         for k,v in self.cfi_tbl.iteritems():
             sys.stdout.write(dec_hex(k))
             for f in v:
-                print '    ' + f.func_name
+                print('    ' + f.func_name)
 
     def print_cfi_specified_graph(self):
         self.cfi_specified_tbl()
         for k,v in self.cfi_tbl.iteritems():
-            print k
+            print(k)
             for l in v:
-                print '    ' + dec_hex(l)
+                print('    ' + dec_hex(l))
 
     def get_cg_table(self):
         return self.cg_tbl

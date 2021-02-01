@@ -61,7 +61,7 @@ def get_secs (l):
     for k in secs1.keys():
         if ns >= secs1[k][0] and ns < secs1[k][1]:
             return k
-    print "cannot find corresponding sections!!"
+    print("cannot find corresponding sections!!")
 
 last_sec = ""
 
@@ -84,7 +84,7 @@ for i in range(1,len(lines)-1):
             last_sec = cur_sec
             continue
         # failed
-        print ns
+        print(ns)
         assert(len(ns) == 7)
         n1 = ".byte 0x" + ns[5:7]
         n2 = ".byte 0x" + ns[3:5]

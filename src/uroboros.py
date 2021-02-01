@@ -24,7 +24,7 @@ def process(filepath, instrument=False, fexclude=''):
     from postprocess import compile_process
     from disasm import main_discover, func_addr
 
-    print "Starting to process binary '" + filepath + "'"
+    print("Starting to process binary '" + filepath + "'")
     try:
 
         func_addr.func_addr(filepath, 0, fexclude)
@@ -51,7 +51,7 @@ def process(filepath, instrument=False, fexclude=''):
         if compile_process.reassemble() != 0: return False
 
     except Exception as e:
-        print e
+        print(e)
         traceback.print_exc()
         return False
 
@@ -92,7 +92,7 @@ def check(filepath, assumptions, gccopt='', excludedata='', instrument=False):
 
     # if assumption three is utilized, then input binary should be unstripped.
     if ('3' in assumptions or instrument) and not config.is_unstrip:
-        print colored('Warning:', 'yellow'), 'binary is stripped, function boundaries evaluation may not be precise'
+        print(colored('Warning:', 'yellow'), 'binary is stripped, function boundaries evaluation may not be precise')
 
     return True
 
@@ -111,8 +111,8 @@ def set_assumption (assumptions):
     else:
         chk = (i in ['2', '3'] for i in assumptions)
         if any(chk) == False:
-            print "assumption undefined!"
-            print "accepted assumptions: 2 for assumption two and 3 for assumption three"
+            print("assumption undefined!")
+            print("accepted assumptions: 2 for assumption two and 3 for assumption three")
             return False
         with open('assumption_set.info', 'w') as f:
             f.write(' '.join(assumptions) + '\n')
@@ -151,9 +151,9 @@ a label or an address range of data section to exclude from symbol search""")
 
     if check(filepath, args.assumption, args.gccopt, exclude, args.instrument) and set_assumption(args.assumption):
         if process(os.path.basename(filepath), args.instrument, fexclude):
-            print colored("Processing succeeded", "blue")
+            print(colored("Processing succeeded", "blue"))
             if outpath is not None: shutil.copy('a.out', outpath)
-        else: print colored("Processing failed", "red")
+        else: print(colored("Processing failed", "red"))
 
 
 if __name__ == "__main__":
