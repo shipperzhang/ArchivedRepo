@@ -85,7 +85,7 @@ if config.arch == config.ARCH_X86:
         """
         clist = comma_collect(e)
         blist = bracket_collect(e)
-        return filter(lambda com: not any(map(lambda br: br[0] < com < br[1], blist)), clist)
+        return list(filter(lambda com: not any(map(lambda br: br[0] < com < br[1], blist)), clist))
 else:
     def comma_in_brackets(e):
         """
@@ -96,7 +96,7 @@ else:
         clist = comma_collect(e)
         blist = zip(char_collect_all(e, '{'), char_collect_all(e, '}')) if '{' in e \
                 else zip(char_collect_all(e, '['), char_collect_all(e, ']'))
-        return filter(lambda com: not any(map(lambda br: br[0] < com < br[1], blist)), clist)
+        return list(filter(lambda com: not any(map(lambda br: br[0] < com < br[1], blist)), clist))
 
 def do_exp(e, op, l):
     """

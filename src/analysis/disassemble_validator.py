@@ -26,7 +26,7 @@ class simple_queue(object):
     def size(self):
         return len(self.queue)
     def exists(self, func):
-        return any(map(func, self.queue))
+        return any(list(map(func, self.queue)))
 
 
 def is_des(e):
@@ -68,9 +68,9 @@ class dis_validator(object):
             items = l.split()
             return (int(items[1], 16), int(items[3], 16))
         with open('text_sec.info') as f:
-            self.text_secs = map(secmapper, f)
+            self.text_secs = list(map(secmapper, f))
         with open('init_sec.info') as f:
-            self.text_secs += map(secmapper, f)
+            self.text_secs += list(map(secmapper, f))
 
     def invalid_opcode(self, instr):
         """
@@ -86,7 +86,7 @@ class dis_validator(object):
         :param instr: instruction tuple
         :return: True if invalid
         """
-        is_outside = lambda d: all(map(lambda e: d < e[0] or d >= e[0] + e[1], self.text_secs))
+        is_outside = lambda d: all(list(map(lambda e: d < e[0] or d >= e[0] + e[1], self.text_secs)))
         if isinstance(instr, Types.DoubleInstr) and Opcode_utils.is_cp(instr[0]):
             res = is_des(instr[1])
             return False if res is None else is_outside(res)
@@ -98,14 +98,15 @@ class dis_validator(object):
         :param instrlist: list of instruction objects
         """
         self.text_sec_collect()
-        self.locs = filter(lambda i: self.invalid_opcode(i) or self.invalid_transfer(i), instrlist)
-        self.locs = map(lambda i: get_loc(i).loc_addr, self.locs)
+        self.locs = list(filter(lambda i: self.invalid_opcode(i) or self.invalid_transfer(i), instrlist))
+        # print(self.locs)
+        self.locs = list(map(lambda i: get_loc(i).loc_addr, self.locs))
         if len(self.locs) != 0:
             if config.arch == config.ARCH_ARMT:
                 print(colored('     Warning:', 'yellow'), 'instructions at this locations were probably misinterpreted:')
-                print('     ' + str(map(hex, self.locs)))
+                print('     ' + str(list(map(hex, self.locs))))
             else:
-                print(map(hex, self.locs))
+                print(list(map(hex, self.locs)))
                 exit()
                 self.validate(instrlist)
 
@@ -124,7 +125,7 @@ class dis_validator(object):
         if not self.looking_for_cfd: return
         tl = instrlist[index:index+5]
         inv = lambda i: get_loc(i).loc_addr in self.locs
-        if not any(map(inv, tl)):
+        if not any(list(map(inv, tl))):
             self.looking_for_cfd = False
             self.update_trimtbl(self.up_bound.loc_addr, get_loc(tl[0]).loc_addr)
 

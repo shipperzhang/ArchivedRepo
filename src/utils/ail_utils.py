@@ -30,7 +30,8 @@ def unify_funclist_by_name(funclist):
     :param funclist: list of function objects
     :return: list of function objects with unique names
     """
-    return {f.func_name: f for f in funclist}.values()
+    v = {f.func_name: f for f in funclist}.values()
+    return list(v)
 
 def unify_funclist_by_addr(funclist):
     """
@@ -135,7 +136,8 @@ def read_file(filename):
     """
     with open(filename) as f:
         lines = f.readlines()
-    return map(str.rstrip, lines)
+    instrs = list(map(str.rstrip, lines))
+    return instrs
 
 def dec_hex(val):
     """

@@ -34,6 +34,7 @@ def process(filepath, instrument=False, fexclude=''):
 
         init.main(filepath, instrument)
         if not os.path.isfile("final.s"): return False
+        else: return True
 
         with open('final_data.s', 'a') as f:
             f.write('\n.section .eh_frame\n')

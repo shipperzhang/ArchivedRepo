@@ -28,7 +28,7 @@ class Disam(object):
         Filter out library functions
         :param funcs: list of functions
         """
-        return filter(lambda f: not f.is_lib, funcs)
+        return list(filter(lambda f: not f.is_lib, funcs))
 
     @staticmethod
     def disassemble(filepath, funcs, secs):
@@ -67,5 +67,7 @@ class Disam(object):
                 total += TR.elapsed(once)
             else:
                 cond = True
-
+        # print(il)
+        # print(fl)
+        # print(re)
         return (il, fl, re)

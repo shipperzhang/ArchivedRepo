@@ -257,7 +257,8 @@ class parseX86(base_parser):
         :param s: lexeme
         """
         r = s[1:].upper()
-        return Types.RegClass(r) if r in Types.Reg else None
+        p_r = Types.RegClass(r) if r in Types.Reg else None
+        return p_r
 
     def assist_sym(self, s):
         """
@@ -513,5 +514,6 @@ class parse(parseARM if (config.arch == config.ARCH_ARMT) else parseX86):
         has_pre = self.prefix_identify(instr)
         if has_pre: instr = prefix_sub(instr)
         lexem_list = lexer(instr, loc)
-        s = map(self.push_stack, lexem_list)
-        return self.reduce_stack(s, has_pre)
+        s = list(map(self.push_stack, lexem_list))
+        parsed_instr = self.reduce_stack(s,has_pre)
+        return parsed_instr

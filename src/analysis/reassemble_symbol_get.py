@@ -872,8 +872,8 @@ class reassemble(ailVisitor):
             self.pcreloffARM(instrs)
             instrs = map(self.vinst2ARM, enumerate(instrs))
             self.doublemovARM(instrs)
-        else: instrs = map(lambda i: self.vinst2(func, i), instrs)
-        self.symbol_list = map(lambda l: int(l.split('x')[1], 16), self.deslist) + self.symbol_list
+        else: instrs = list(map(lambda i: self.vinst2(func, i), instrs))
+        self.symbol_list = list(map(lambda l: int(l.split('x')[1], 16), self.deslist)) + self.symbol_list
         return instrs
 
     def lib32_processing(self, instrs, funcs):

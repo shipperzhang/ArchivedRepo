@@ -75,7 +75,7 @@ class Init(object):
         # useless_func_del.main(self.file)
         if ELF_utils.elf_arm(): arm_process.arm_process(self.file)
         else:
-            extern_symbol_process.pltgot(self.file)
+            # extern_symbol_process.pltgot(self.file)
             os.system("cat " + self.file + ".temp | grep \"^ \" | cut -f1,3 > instrs.info")
         os.system("cut -f 1 instrs.info > text_mem.info")
 
@@ -137,10 +137,14 @@ def main(filepath, instrument=False):
     :param filepath: path to executable
     :param instrument: True to apply instrumentation
     """
-    if ELF_utils.elf_strip() and ELF_utils.elf_exe():
-        init = Init(filepath)
-        init.disassemble()
-        init.process()
-        init.ailProcess(instrument)
-    else:
-        sys.stderr.write('Error: binary is not stripped or is a shared library\n')
+    # if ELF_utils.elf_strip() and ELF_utils.elf_exe():
+    #     init = Init(filepath)
+    #     init.disassemble()
+    #     init.process()
+    #     init.ailProcess(instrument)
+    # else:
+    #     sys.stderr.write('Error: binary is not stripped or is a shared library\n')
+    init = Init(filepath)
+    init.disassemble()
+    init.process()
+    init.ailProcess(instrument)

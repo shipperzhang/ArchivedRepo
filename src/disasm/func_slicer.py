@@ -45,7 +45,7 @@ class func_slicer(object):
         items = l.split()
         baddr = int(items[1], 16)
         eaddr = baddr + int(items[3], 16)
-        return filter(lambda n: n < baddr or n >= eaddr, bl)
+        return list(filter(lambda n: n < baddr or n >= eaddr, bl))
 
     def update_text_info(self):
         """
@@ -98,7 +98,7 @@ class func_slicer(object):
         """
         Evalute function info and return updated function list
         """
-        self.func_begins = map(lambda a: int(a, 16), read_file('faddr.txt'))
+        self.func_begins = list(map(lambda a: int(a, 16), read_file('faddr.txt')))
         self.func_begins += [f.func_begin_addr for f in self.funcs if f.func_begin_addr != 0]
         self.build_func_info()
         fl = self.get_func_list()

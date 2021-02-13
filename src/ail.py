@@ -40,6 +40,7 @@ class Ail(object):
         """
         Load library functions
         """
+        if config.is_lib: return
         def func_mapper(line):
             items = line.split()
             return Func(items[1], int(items[0], 16), 0, True)

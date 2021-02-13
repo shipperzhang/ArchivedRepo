@@ -92,7 +92,9 @@ class J(control): pass
 class F(control): pass
 
 # Instruction classes
-class Instr(tuple): pass
+class Instr(tuple): 
+    def __init__(self, items):
+        tuple.__init__(items)
 class SingleInstr(Instr):
     def __init__(self, items):
         if len(items) != 3: raise Exception('Invalid single')
@@ -116,7 +118,7 @@ class FiveInstr(Instr):
 
 # Symbol and expressions
 class Symbol(object): pass
-class Exp(object): pass
+class Exp: pass
 class SegClass(str): pass
 class Ptr(Exp): pass
 class Label(str, Exp): pass
@@ -134,7 +136,7 @@ class Normal(Const): pass
 class BinOP_Generic(tuple, Ptr):
     def __init__(self, items, preind=False):
         self.preind = preind
-        super(BinOP_Generic, self).__init__(items)
+        super().__init__()
     def __new__(cls, items, preind=False):  # @UnusedVariable
         return super(BinOP_Generic, cls).__new__(cls, items)
     def __repr__(self):
@@ -383,7 +385,7 @@ elif config.arch == config.ARCH_ARMT:
 class RegClass(str, Exp):
     def __init__(self, reg):
         if reg not in Reg: raise Exception('Not a register: ' + reg)
-        super(RegClass, self).__init__(reg)
+        super().__init__()
 class IncReg(RegClass):
     def __init__(self, reg):
         super(IncReg, self).__init__(reg[:-1])

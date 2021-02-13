@@ -40,7 +40,7 @@ class AilParser(object):
         Get function list
         """
         fl = unify_funclist_by_name(self.func_slicing())
-        fl.sort(cmp=lambda f1, f2: f1.func_begin_addr - f2.func_begin_addr)
+        fl.sort(key=lambda f: f.func_begin_addr)
         fl = self.filter_func_by_name(fl)
         fl = self.update_func_info(fl)
         fl = self.filter_func_by_secs(fl)
@@ -51,7 +51,7 @@ class AilParser(object):
         Filter out function with undesired names
         :param funcs: function list
         """
-        return filter(lambda f: '.text' not in f.func_name and f.func_name[:3] != '..@', funcs)
+        return list(filter(lambda f: '.text' not in f.func_name and f.func_name[:3] != '..@', funcs))
 
     def filter_func_by_secs(self, funcs):
         """
@@ -68,7 +68,7 @@ class AilParser(object):
             if len(f.func_name) < 3: return True
             opt = int_of_string_opt(f.func_name[2:], 16)
             return True if opt is None else (addr <= opt < end)
-        return filter(fil, funcs)
+        return list(filter(fil, funcs))
 
     def func_slicing(self):
         """

@@ -19,7 +19,7 @@ def main():
         if 'data32' in l or 'data16' in l:
             return ''
         return l
-    lines = map(helpf, lines)
+    lines = list(map(helpf, lines))
 
     with open("instrs.info", 'w') as f:
         f.writelines(lines)
