@@ -66,7 +66,7 @@ def pltgot(filepath):
     pltgottargets = {e[0]: '<' + pltgotsym[e[1]] + '@plt>' for e in iter(pltgottargets.items()) if e[1] in pltgotsym}
     if len(pltgottargets) == 0: return
 
-    pltgotre = re.compile(lastplt[1] + '\+(0x[0-9a-f]+)\>', re.I)
+    pltgotre = re.compile(lastplt[1] + r'\+(0x[0-9a-f]+)\>', re.I)
     def calldesmapper(l):
         m = pltgotre.search(l)
         if m:
