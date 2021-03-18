@@ -69,7 +69,8 @@ class datahandler:
         self.label_set = set(map(lambda e: e[1], self.label))
         self.label_arr = sorted(self.label_set)
 
-        fl = sorted(funcs, cmp=lambda f1,f2: f1.func_begin_addr - f2.func_begin_addr)
+        # fl = sorted(funcs, cmp=lambda f1,f2: f1.func_begin_addr - f2.func_begin_addr)
+        fl = sorted(funcs, key=lambda f: f.func_begin_addr)
         self.fl_sort = list(map(lambda f: ft(f.func_name, f.func_begin_addr, f.func_end_addr), fl))
 
         self.text_mem_addrs = list(map(lambda a: int(a.strip().rstrip(':'), 16), read_file('text_mem.info')))
@@ -127,12 +128,12 @@ class datahandler:
 
     def dump_c2d_labels(self, dl):
         with open('final_c2d_label.txt', 'a') as f:
-            f.write('\n'.join(map(lambda e: e[0] + ' : ' + dec_hex(e[1]), dl)))
+            f.write('\n'.join(list(map(lambda e: e[0] + ' : ' + dec_hex(e[1]), dl))))
             f.write('\n')
 
     def dump_d2d_labels(self, dl):
         with open('final_d2d_label.txt', 'a') as f:
-            f.write('\n'.join(map(dec_hex, dl)))
+            f.write('\n'.join(list(map(dec_hex, dl))))
             f.write('\n')
 
     def traverse64(self, l, startaddr):
@@ -145,7 +146,7 @@ class datahandler:
         holei = 0
         while holei < len(self.exclude) and startaddr > self.exclude[holei][1]: holei += 1
         while i < len(l) - 7:
-            val = int(''.join(map(lambda e: e[1][8:10], reversed(l[i:i+8]))), 16)
+            val = int(''.join(list(map(lambda e: e[1][8:10], reversed(l[i:i+8])))), 16)
             s = self.check_sec(val)
             if s is not None:
                 if self.assumption_two:
@@ -207,7 +208,7 @@ class datahandler:
         holei = 0
         while holei < len(self.exclude) and startaddr > self.exclude[holei][1]: holei += 1
         while i < len(l) - 3:
-            val = int(''.join(map(lambda e: e[1][8:10], reversed(l[i:i+4]))), 16)
+            val = int(''.join(list(map(lambda e: e[1][8:10], reversed(l[i:i+4])))), 16)
             s = self.check_sec(val)
             if s is not None:
                 if self.assumption_two:
@@ -282,7 +283,7 @@ class datahandler:
             items = l.split()
             return items[0], Types.Section(items[0], int(items[1], 16), int(items[3], 16))
         with open('sections.info') as f:
-            self.sec = dict(map(secmapper, f))
+            self.sec = dict(list(map(secmapper, f)))
         with open('plt_sec.info') as f:
             n, s = secmapper(f.readline())
             self.sec[n] = s
@@ -353,7 +354,7 @@ class datahandler:
         return None
 
     def label_locate(self):
-        return map(lambda l: (l[0], self.section_offset(l[0], l[1])), self.label)
+        return list(map(lambda l: (l[0], self.section_offset(l[0], l[1])), self.label))
 
     def add_data_label(self):
         dataoff = self.section_addr('.data')
@@ -420,7 +421,7 @@ class datahandler:
         self.bss_list.insert(0, ('.section .bss' + dataalign, ''))
         def createout(l):
             l = filter(lambda e: len(e[0]) + len(e[1]) > 0, l)
-            return '\n'.join(map(lambda e: e[0] + e[1], l))
+            return '\n'.join(list(map(lambda e: e[0] + e[1], l)))
         with open('final_data.s', 'a') as f:
             f.write(createout(self.rodata_list) + '\n')
             f.write('\n' + createout(self.data_list) + '\n')
@@ -446,17 +447,17 @@ class instrhandler(object):
         """
         Get instruction list
         """
-        return map(lambda e: set_loc(e[0],e[1]), zip(self.instr_list, self.locs))
+        return list(map(lambda e: set_loc(e[0],e[1]), zip(self.instr_list, self.locs)))
 
     def set_loc_list(self):
         """
         Load code locations from instructions
         """
-        self.locs = map(get_loc, self.instr_list)
+        self.locs = list(map(get_loc, self.instr_list))
 
     def clean_sort(self, ll):
-        ll = map(lambda l: int(l[3:] if '$' in l else l[2:], 16), ll)
-        ll = filter(lambda e: e != 0, ll)
+        ll = list(map(lambda l: int(l[3:] if '$' in l else l[2:], 16), ll))
+        ll = list(filter(lambda e: e != 0, ll))
         return unify_int_list(ll)
 
     def process(self):
@@ -939,7 +940,7 @@ class reassemble(ailVisitor):
             r = next((lab for lab in labels if lab in l), None)
             if r is not None: return l.replace(r, gbss_hs[r], 1)
             return l
-        return map(mapper, instr_list)
+        return list(map(mapper, instr_list))
 
     def data_dump(self, funcs):
         """
@@ -950,7 +951,7 @@ class reassemble(ailVisitor):
         p = datahandler(t)
         p.text_sec_collect()
         p.set_datas(funcs)
-        self.jmpreflist = map(lambda l: 'S_' + dec_hex(l), p.get_textlabel())
+        self.jmpreflist = list(map(lambda l: 'S_' + dec_hex(l), p.get_textlabel()))
         p.data_output()
 
     # def init_array_dump(self):
@@ -968,7 +969,7 @@ class reassemble(ailVisitor):
             s = self.check_sec(i)
             if s is None: raise Exception('unsupported export data')
             return (s.sec_name, i)
-        return map(mapper, export_data.main())
+        return list(map(mapper, export_data.main()))
 
     def reassemble_dump(self, u_funcs):
         self.data_dump(u_funcs)

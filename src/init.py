@@ -75,7 +75,7 @@ class Init(object):
         # useless_func_del.main(self.file)
         if ELF_utils.elf_arm(): arm_process.arm_process(self.file)
         else:
-            # extern_symbol_process.pltgot(self.file)
+            extern_symbol_process.pltgot(self.file)
             os.system("cat " + self.file + ".temp | grep \"^ \" | cut -f1,3 > instrs.info")
         os.system("cut -f 1 instrs.info > text_mem.info")
 

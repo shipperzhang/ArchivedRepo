@@ -34,7 +34,7 @@ class Ail(object):
             items = line.split()
             return Section(items[0], int(items[1], 16), int(items[3], 16))
         with open('sections.info') as f:
-            self.secs += map(sec_mapper,f)
+            self.secs += list(map(sec_mapper,f))
 
     def externfuncs(self):
         """
@@ -45,7 +45,7 @@ class Ail(object):
             items = line.split()
             return Func(items[1], int(items[0], 16), 0, True)
         with open('externfuncs.info') as f:
-            self.funcs += map(func_mapper, f)
+            self.funcs += list(map(func_mapper, f))
 
     def userfuncs(self):
         """
@@ -55,14 +55,14 @@ class Ail(object):
             items = line.split()
             return Func(items[1][1:-2].split('@')[0], int(items[0], 16), 0, False)
         with open('userfuncs.info') as f:
-            self.funcs += map(func_mapper,
-                filter(lambda line: not ('-0x' in line or '+0x' in line), f))
+            self.funcs += list(map(func_mapper,
+                list(filter(lambda line: not ('-0x' in line or '+0x' in line), f))))
 
     def get_userfuncs(self):
         """
         Get functions
         """
-        return filter(lambda f: not f.is_lib, self.funcs)
+        return list(filter(lambda f: not f.is_lib, self.funcs))
 
     def global_bss(self):
         """
@@ -72,7 +72,7 @@ class Ail(object):
             items = line.split()
             return (items[0][1:].upper(), items[1].strip())
         with open('globalbss.info') as f:
-            self.g_bss += map(bss_mapper, f)
+            self.g_bss += list(map(bss_mapper, f))
 
     def ehframe_dump(self):
         """
@@ -104,7 +104,6 @@ class Ail(object):
         """
         self.pre_process()
         il, fl, re = Disam.disassemble(self.file, self.funcs, self.secs)
-
         print(colored('3: ANALYSIS', 'green'))
         fbl, bbl, cfg_t, cg, il, re = Analysis.analyze(il, fl, re, docfg)  # @UnusedVariable
 

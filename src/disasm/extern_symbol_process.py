@@ -45,19 +45,19 @@ def pltgot(filepath):
     :param filepath: path to target executable
     """
     with open('plts.info') as f:
-        f.seek(-2, os.SEEK_END)
-        while f.read(1) != '\n': f.seek(-2, os.SEEK_CUR)
-        lastplt = f.readline().split()
+        lastline = f.readlines()[-1]
+        lastplt = lastline.split()
     lastplt = (int(lastplt[0],16), re.escape(lastplt[1].rstrip('>:')))
 
     pltgotsym = check_output('readelf -r ' + filepath + ' | awk \'/_GLOB_DAT/ {print $1,$5}\' | grep -v __gmon_start__ | cat', shell=True).strip()
     if len(pltgotsym) == 0: return
+    pltgotsym = pltgotsym.decode('utf-8').split('\n')
     def pltsymmapper(l):
         items = l.strip().split()
         return (int(items[0], 16), items[1].split('@')[0])
-    pltgotsym = dict(map(pltsymmapper, pltgotsym.split('\n')))
+    pltgotsym = dict(map(pltsymmapper, pltgotsym))
 
-    pltgottargets = check_output(config.objdump + ' -Dr -j .plt.got ' + filepath + ' | grep jmp | cut -f1,3', shell=True)
+    pltgottargets = check_output(config.objdump + ' -Dr -j .plt.got ' + filepath + ' | grep jmp | cut -f1,3', shell=True).decode('utf-8')
     def pltgotmapper(l):
         items = l.strip().split()
         dest = int(items[4] if '#' in items else items[2].lstrip('*'), 16)
@@ -74,7 +74,7 @@ def pltgot(filepath):
             if dest in pltgottargets: return pltgotre.sub(pltgottargets[dest], l)
         return l
     with open(filepath + '.temp') as f:
-        lines = map(calldesmapper, f)
+        lines = list(map(calldesmapper, f))
 
     with open(filepath + '.temp', 'w') as f:
         f.writelines(lines)

@@ -67,7 +67,4 @@ class Disam(object):
                 total += TR.elapsed(once)
             else:
                 cond = True
-        # print(il)
-        # print(fl)
-        # print(re)
         return (il, fl, re)

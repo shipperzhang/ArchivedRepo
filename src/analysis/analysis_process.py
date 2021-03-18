@@ -29,7 +29,7 @@ class Analysis(object):
         :param docfg: True to evaluate call graph and cfg
         :return: [fbl, block labels, CFG table, CG table,] instruction list, symbol reconstruction object
         """
-        u_fl = filter(lambda f: not f.is_lib, fl)
+        u_fl = list(filter(lambda f: not f.is_lib, fl))
 
         if docfg:
             _cg = cg()

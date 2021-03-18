@@ -73,6 +73,7 @@ def setup(filepath, gccopt='', exdata='', instrument=False):
     is_unstrip = 'not stripped' in elf_info
     gccoptions = gccopt
     excludedata = exdata
+    print(elf_info)
     if ', ARM,' in elf_info:
         global arch
         global strip

@@ -99,7 +99,6 @@ class dis_validator(object):
         """
         self.text_sec_collect()
         self.locs = list(filter(lambda i: self.invalid_opcode(i) or self.invalid_transfer(i), instrlist))
-        # print(self.locs)
         self.locs = list(map(lambda i: get_loc(i).loc_addr, self.locs))
         if len(self.locs) != 0:
             if config.arch == config.ARCH_ARMT:
