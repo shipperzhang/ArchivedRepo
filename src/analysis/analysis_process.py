@@ -2,6 +2,7 @@ from analysis.cg import cg
 from analysis.cfg import cfg
 from utils.ail_utils import read_file, ELF_utils
 from utils.pp_print import pp_print_list, pp_print_file
+import re as regex
 
 class Analysis(object):
     """
@@ -20,7 +21,7 @@ class Analysis(object):
         return map(mapper, lines)
 
     @staticmethod
-    def analyze(il, fl, re, docfg=False):
+    def analyze(il, fl, re, docfg=True):
         """
         Analyze code
         :param il: instruction list
@@ -31,14 +32,72 @@ class Analysis(object):
         """
         u_fl = list(filter(lambda f: not f.is_lib, fl))
 
+        il = re.adjust_loclabel(il)
+        re.reassemble_dump(u_fl)
+        il = re.adjust_jmpref(il)
+
+        stringtable = {}
+        addresstable = {}
+
+        symbol = ''
+        string = ''
+        with open('final_data.s','r') as f:
+            lines = f.readlines()
+            for line in lines:
+                if line.startswith('S_0x'):
+                    if symbol: 
+                        stringtable[symbol] = string
+                        # print(symbol,':',string)
+                    string = ''
+                    symbol, ch = line.split(':')
+                else: ch = line
+                ch = ch.strip()
+                if ch.startswith('.byte'):
+                    string = string + chr(int(ch.split()[1],16))
+                else:
+                    if symbol: stringtable[symbol] = string
+                    symbol = ''
+                    string = ''
+        
+        for I in il: addresstable[I[-2].loc_addr] = I
+            
+        for F in fl:
+            layer = False
+            d = {}
+            for address in range(F.func_begin_addr, F.func_end_addr):
+                I = addresstable.get(address, None)
+                if I is None: continue
+                if I[0] == 'lea': 
+                    string = stringtable.get(I[2][1], None)
+                    if string is None: continue
+                    m = regex.match(r'Assert fail: \((\d*) == int32\(arg(\d*)\.shape\[(\d*)\]\)\), .*', string)
+                    if m:
+                        layer = True
+                        argNum = int(m.group(2))
+                        if d.get(argNum, None) is None: d[argNum] = {}
+                        d[argNum][int(m.group(3))] = m.group(1)
+            if layer:
+                print(F.func_name)
+                i = 0
+                while True:
+                    if d.get(i,None) is None: break
+                    argD = d[i]
+                    j = 0
+                    dimension = ''
+                    while True:
+                        if argD.get(j, None) is None: break
+                        dimension = dimension + argD[j] + ','
+                        j += 1
+                    print('arg' + str(i) + '(' + dimension + ')')
+                    i += 1
+                print('-----------------------------------------------------')
+
+
+
         if docfg:
             _cg = cg()
             _cg.set_funcs(fl)
             il = _cg.visit(il)
-
-        il = re.adjust_loclabel(il)
-        re.reassemble_dump(u_fl)
-        il = re.adjust_jmpref(il)
 
         if docfg:
             _cfg = cfg()
