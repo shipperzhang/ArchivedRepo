@@ -251,7 +251,9 @@ if config.arch == config.ARCH_X86:
                        'MOVNTDQ', 'MOVZBQ', 'MOVZWQ', 'VMOVQ', 'VMOVD', 'CVTDQ2PD', 'VEXTRACTI128',
                        'VBROADCASTSS', 'XGETBV', 'VPBROADCASTD', 'VPMOVZXDQ', 'VPINSRQ', 'PMOVZXDQ',
                        'VINSERTI128', 'FLDLN2', 'FCMOVU', 'FLDL2E', 'FLDLG2', 'CVTSI2SSQ', 'VMOVSD',
-                       'VMOVLHPS', 'VINSERTPS', 'FISTTPL', 'FISTTPLL', 'FISTTP', 'VMOVSS', 'VUNPCKLPS'
+                       'VMOVLHPS', 'VINSERTPS', 'FISTTPL', 'FISTTPLL', 'FISTTP', 'VMOVSS', 'VUNPCKLPS',
+                       #########
+                       'MOVLPS'
     ], True)
     CompareOp = RecSet(['CMP', 'CMPQ', 'TEST', 'CMPL', 'CMPB', 'CMPW', 'TESTB', 'TESTL', 'CMPSB',
                         'BT', 'TESTW', 'CMPNLESS', 'CMPLTSS', 'CMPNLTSS', 'TESTQ', 'CMPNLTSD',

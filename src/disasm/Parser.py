@@ -211,7 +211,7 @@ class parseX86(base_parser):
         Parse jump destination symbol (address or label)
         :param s: lexeme
         """
-        if '+' in s or '-' in s:
+        if ('+' in s or '-' in s) and not s.startswith('-'):
             return Types.JumpDes(s.split()[0], 16)
         try: return Types.CallDes(self.calldes_symb(s))
         except AttributeError: return None
