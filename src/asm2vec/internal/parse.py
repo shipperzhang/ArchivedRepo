@@ -1,4 +1,4 @@
-from typing import *
+from typing import List, Dict, Iterable
 import logging
 
 import asm2vec.asm
@@ -165,7 +165,7 @@ class CFGBuilder:
             dict(map(lambda x: (x[0], asm2vec.asm.Function(self._blocks[x[1]], x[0])), func_entries.items()))
 
         # Fix function call relation.
-        for (name, f) in funcs.items():
+        for _, f in funcs.items():
             def block_action(block: asm2vec.asm.BasicBlock) -> None:
                 for instr in block:
                     if is_call(instr.op()):

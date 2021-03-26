@@ -36,6 +36,8 @@ class Analysis(object):
         re.reassemble_dump(u_fl)
         il = re.adjust_jmpref(il)
 
+        print([f.func_name for f in fl])
+
         stringtable = {}
         addresstable = {}
 
@@ -47,7 +49,6 @@ class Analysis(object):
                 if line.startswith('S_0x'):
                     if symbol: 
                         stringtable[symbol] = string
-                        # print(symbol,':',string)
                     string = ''
                     symbol, ch = line.split(':')
                 else: ch = line
@@ -60,37 +61,38 @@ class Analysis(object):
                     string = ''
         
         for I in il: addresstable[I[-2].loc_addr] = I
-            
-        for F in fl:
-            layer = False
-            d = {}
-            for address in range(F.func_begin_addr, F.func_end_addr):
-                I = addresstable.get(address, None)
-                if I is None: continue
-                if I[0] == 'lea': 
-                    string = stringtable.get(I[2][1], None)
-                    if string is None: continue
-                    m = regex.match(r'Assert fail: \((\d*) == int32\(arg(\d*)\.shape\[(\d*)\]\)\), .*', string)
-                    if m:
-                        layer = True
-                        argNum = int(m.group(2))
-                        if d.get(argNum, None) is None: d[argNum] = {}
-                        d[argNum][int(m.group(3))] = m.group(1)
-            if layer:
-                print(F.func_name)
-                i = 0
-                while True:
-                    if d.get(i,None) is None: break
-                    argD = d[i]
-                    j = 0
-                    dimension = ''
+
+        with open('dimension.txt','w') as f: 
+            for F in fl:
+                layer = False
+                d = {}
+                for address in range(F.func_begin_addr, F.func_end_addr):
+                    I = addresstable.get(address, None)
+                    if I is None: continue
+                    if I[0] == 'lea': 
+                        string = stringtable.get(I[2][1], None)
+                        if string is None: continue
+                        m = regex.match(r'Assert fail: \((\d*) == int32\(arg(\d*)\.shape\[(\d*)\]\)\), .*', string)
+                        if m:
+                            layer = True
+                            argNum = int(m.group(2))
+                            if d.get(argNum, None) is None: d[argNum] = {}
+                            d[argNum][int(m.group(3))] = m.group(1)
+                if layer:
+                    f.write(F.func_name + '\n')
+                    i = 0
                     while True:
-                        if argD.get(j, None) is None: break
-                        dimension = dimension + argD[j] + ','
-                        j += 1
-                    print('arg' + str(i) + '(' + dimension + ')')
-                    i += 1
-                print('-----------------------------------------------------')
+                        if d.get(i,None) is None: break
+                        argD = d[i]
+                        j = 0
+                        dimension = ''
+                        while True:
+                            if argD.get(j, None) is None: break
+                            dimension = dimension + argD[j] + ','
+                            j += 1
+                        f.write('arg' + str(i) + '(' + dimension + ')\n')
+                        i += 1
+                    f.write('-----------------------------------------------------\n')
 
 
 

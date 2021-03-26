@@ -1,4 +1,4 @@
-from typing import *
+from typing import List
 
 import asm2vec.asm
 import asm2vec.internal.parse
