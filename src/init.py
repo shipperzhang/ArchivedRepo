@@ -91,12 +91,16 @@ class Init(object):
         Dump section boundaries
         """
         badsec = '.got.plt' if ELF_utils.elf_32() else'.data.rel.ro'
-        os.system("readelf -SW " + self.file + " | awk \'/data|bss|got/ {print $2,$4,$5,$6} \' | awk \ '$1 != \"" + badsec + "\" {print $1,$2,$3,$4}\' > sections.info")
-        os.system("readelf -SW " + self.file + " | awk \'/text/ {print $2,$4,$5,$6} \' > text_sec.info")
-        os.system("readelf -SW " + self.file + " | awk \'/init/ {print $2,$4,$5,$6} \' | awk \'$1 != \".init_array\" {print $1,$2,$3,$4}\' > init_sec.info")
+        os.system("readelf -SW " + self.file + " | awk \'FNR<15\' | awk \'/data|bss|got/ {print $3,$5,$6,$7} \' | awk \ '$1 != \"" + badsec + "\" {print $1,$2,$3,$4}\' > sections.info")
+        os.system("readelf -SW " + self.file + " | awk \'FNR>14\' | awk \'/data|bss|got/ {print $2,$4,$5,$6} \' | awk \ '$1 != \"" + badsec + "\" {print $1,$2,$3,$4}\' >> sections.info")
+        os.system("readelf -SW " + self.file + " | awk \'FNR<15\' | awk \'/text/ {print $3,$5,$6,$7} \' > text_sec.info")
+        os.system("readelf -SW " + self.file + " | awk \'FNR>14\' | awk \'/text/ {print $2,$4,$5,$6} \' >> text_sec.info")
+        os.system("readelf -SW " + self.file + " | awk \'FNR<15\' | awk \'/init/ {print $3,$5,$6,$7} \' | awk \'$1 != \".init_array\" {print $1,$2,$3,$4}\' > init_sec.info")
+        os.system("readelf -SW " + self.file + " | awk \'FNR>14\' | awk \'/init/ {print $2,$4,$5,$6} \' | awk \'$1 != \".init_array\" {print $1,$2,$3,$4}\' >> init_sec.info")
         if os.path.isfile('init_array.info'): os.remove('init_array.info')
         os.system(config.objdump + " -s -j .init_array " + self.file + " >> init_array.info 2>&1")
-        os.system("readelf -SW " + self.file + " | awk '$2==\".plt\" {print $2,$4,$5,$6}' > plt_sec.info")
+        os.system("readelf -SW " + self.file + " | awk \'FNR<15\' | awk '$3==\".plt\" {print $3,$5,$6,$7}' > plt_sec.info")
+        os.system("readelf -SW " + self.file + " | awk \'FNR>14\' | awk '$2==\".plt\" {print $2,$4,$5,$6}' >> plt_sec.info")
 
     def export_tbl_dump(self):
         """
