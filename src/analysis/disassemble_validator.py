@@ -106,7 +106,6 @@ class dis_validator(object):
                 print('     ' + str(list(map(hex, self.locs))))
             else:
                 print(list(map(hex, self.locs)))
-                exit()
                 self.validate(instrlist)
 
     def trim_results(self):

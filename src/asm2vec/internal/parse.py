@@ -19,15 +19,15 @@ def raise_asm_syntax_error(expect: str, found: str) -> None:
 jmp_op = {
     'jmp', 'ja', 'jae', 'jb', 'jbe', 'jc', 'jcxz', 'jecxz', 'jrcxz', 'je', 'jg', 'jge', 'jl', 'jle', 'jna',
     'jnae', 'jnb', 'jnbe', 'jnc', 'jne', 'jng', 'jnge', 'jnl', 'jnle', 'jno', 'jnp', 'jns', 'jnz', 'jo', 'jp',
-    'jpe', 'jpo', 'js', 'jz'
+    'jpe', 'jpo', 'js', 'jz', 'jmpq'
 }
 
 call_op = {
-    'call'
+    'call', 'callq'
 }
 
 ret_op = {
-    'ret'
+    'ret','retq', 'retn'
 }
 
 x86_64_regs = {
@@ -38,6 +38,7 @@ x86_64_regs = {
     'r8b', 'r9b', 'r10b', 'r11b', 'r12b', 'r13b', 'r14b', 'r15b',
     'r8w', 'r9w', 'r10w', 'r11w', 'r12w', 'r13w', 'r14w', 'r15w',
     'r8d', 'r9d', 'r10d', 'r11d', 'r12d', 'r13d', 'r14d', 'r15d',
+    'r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7',
     'r8', 'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'r15',
     'cs', 'ss', 'ds', 'es', 'fs', 'gs',
     'ecs', 'ess', 'eds', 'ees', 'efs', 'egs',
@@ -248,6 +249,7 @@ def parse_asm_label(ln: str, context: ParseContext) -> None:
 
 
 def parse_asm_instr(ln: str, context: ParseContext) -> None:
+    ln = ' '.join(ln.split())
     delim_index = ln.find(' ')
     args = []
     if delim_index == -1:
