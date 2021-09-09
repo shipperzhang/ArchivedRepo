@@ -11,13 +11,13 @@ def info_collect(f):
     Retrieve info about .got.plt section
     :param f: path to target executable
     """
-    info = check_output("readelf -S " + f + " | awk '$2==\".got.plt\" {print $2,$4,$5,$6}'", shell=True).strip()
+    info = check_output("readelf -S " + f + " | awk '$2==\".got.plt\" {print $2,$4,$5,$6}'", shell=True).decode().strip()
     with open('gotplt.info', 'w') as f: f.write(info)
-    def mapper(l):
+    res = {}
+    for l in info.split('\n'):
         items = l.split()
-        # name ;  begin addr; ... ; size
-        return (items[0], (int(items[1], 16), int(items[3], 16)))
-    return dict(map(mapper, info.split('\n')))
+        res[items[0]] = (int(items[1],16), int(items[3],16))
+    return res
 
 def thunk_identify(ls):
     """

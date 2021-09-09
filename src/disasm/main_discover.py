@@ -32,7 +32,11 @@ def main_discover(filename):
                 if "<__libc_start_main@plt>" in l:
                     main_symbol = lines[i-1].split()[-1] if ELF_utils.elf_32() \
                         else lines[i-1].split()[-1].split(',')[0]
+                    if ELF_utils.elf_32() and '0x' not in main_symbol:
+                        main_symbol = lines[i-2].split()[-1].split(',')[0]
+                    print(main_symbol)
                     main_symbol = main_symbol.split('0x')[1]
+                    print(main_symbol)
                     break
                 #lines[i-1] = lines[i-1].replace(main_symbol, "main")
                 #main_symbol = main_symbol[1:].strip()
