@@ -265,7 +265,7 @@ def parse_asm_line(ln: str, context: ParseContext) -> None:
     if len(ln.strip()) == 0:
         return
 
-    if ln[0].isspace():
+    if not ln.strip().endswith(':'):
         # Expect production asm_line -> BLANKS asm_instr '\n'
         parse_asm_instr(ln.strip(), context)
     else:

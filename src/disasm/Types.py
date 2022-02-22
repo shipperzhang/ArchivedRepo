@@ -253,7 +253,7 @@ if config.arch == config.ARCH_X86:
                        'VINSERTI128', 'FLDLN2', 'FCMOVU', 'FLDL2E', 'FLDLG2', 'CVTSI2SSQ', 'VMOVSD',
                        'VMOVLHPS', 'VINSERTPS', 'FISTTPL', 'FISTTPLL', 'FISTTP', 'VMOVSS', 'VUNPCKLPS',
                        #########
-                       'MOVLPS'
+                       'MOVLPS', 'MOVMSKPS'
     ], True)
     CompareOp = RecSet(['CMP', 'CMPQ', 'TEST', 'CMPL', 'CMPB', 'CMPW', 'TESTB', 'TESTL', 'CMPSB',
                         'BT', 'TESTW', 'CMPNLESS', 'CMPLTSS', 'CMPNLTSS', 'TESTQ', 'CMPNLTSD',
@@ -266,7 +266,7 @@ if config.arch == config.ARCH_X86:
                     'SETE', 'SETNP', 'SETGE', 'SETG', 'SETLE',
                     'SETL', 'SETP', 'SETNS', 'SETS'
     ], True)
-    OtherOp = RecSet(['NOP', 'HLT', 'NOPW', 'NOPL', 'UD2'], True)
+    OtherOp = RecSet(['NOP', 'HLT', 'NOPW', 'NOPL', 'UD2', 'ENDBR64'], True)
     JumpOp = RecSet(['JMP', 'JNE', 'JE', 'JB', 'JNAE', 'JNP',
                      'JC', 'JNB', 'JAE', 'JNC', 'JBE', 'JNA', 'JO',
                      'JA', 'JNBE', 'JL', 'JNGE', 'JGE', 'JNL', 'JLE',
