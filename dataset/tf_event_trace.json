@@ -1,0 +1,13 @@
+[
+{"name": "process_name", "ph": "M", "pid": 0, "args": {"name": "Allocators"}},
+{"name": "process_name", "ph": "M", "pid": 1, "args": {"name": "/host:CPU Compute"}},
+{"name": "process_name", "ph": "M", "pid": 2, "args": {"name": "/host:CPU Tensors"}},
+{"name": "process_name", "ph": "M", "pid": 3, "args": {"name": "/job:localhost/replica:0/task:0/device:CPU:0 Compute"}},
+{"name": "process_name", "ph": "M", "pid": 4, "args": {"name": "/job:localhost/replica:0/task:0/device:CPU:0 Tensors"}},
+{"ph": "X", "cat": "Op", "name": "unknown", "pid": 1, "tid": 0, "ts": 1586986564701617, "dur": 32926, "args": {"name": "ngraph_cluster_0:NGraphEncapsulate", "op": "unknown"}},
+{"ph": "X", "cat": "Op", "name": "NoOp", "pid": 3, "tid": 0, "ts": 1586986564701572, "dur": 9, "args": {"name": "_SOURCE", "op": "NoOp"}},
+{"ph": "X", "cat": "Op", "name": "_Arg", "pid": 3, "tid": 0, "ts": 1586986564701593, "dur": 10, "args": {"name": "_arg_x_0_0", "op": "_Arg"}},
+{"ph": "X", "cat": "Op", "name": "_Arg", "pid": 3, "tid": 0, "ts": 1586986564701606, "dur": 5, "args": {"name": "_arg_y_0_1", "op": "_Arg"}},
+{"ph": "X", "cat": "Op", "name": "NGraphEncapsulate", "pid": 3, "tid": 0, "ts": 1586986564701614, "dur": 32944, "args": {"name": "ngraph_cluster_0", "op": "NGraphEncapsulate", "input0": "_arg_x_0_0", "input1": "_arg_y_0_1"}},
+{"ph": "X", "cat": "Op", "name": "_Retval", "pid": 3, "tid": 0, "ts": 1586986564734576, "dur": 4, "args": {"name": "_retval_add_0_0", "op": "_Retval", "input0": "ngraph_cluster_0"}},
+{"ph": "X", "cat": "Op", "name": "_Retval", "pid": 3, "tid": 0, "ts": 1586986564734583, "dur": 4, "args": {"name": "_retval_mul_0_1", "op": "_Retval", "input0": "ngraph_cluster_0:1"}},
